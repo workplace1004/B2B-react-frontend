@@ -788,9 +788,9 @@ export default function Dashboard() {
               backgroundSize: 'cover'
             }}>
               <div className="p-4 border-b border-white/10 flex items-center justify-between relative z-10">
-                <h6 className="text-sm font-semibold text-black mb-0">Total Revenue</h6>
+                <h6 className="text-sm font-semibold text-white mb-0">Total Revenue</h6>
                 <button className="p-1 hover:bg-white/20 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-black" />
+                  <MoreVertical className="w-4 h-4 text-white" />
                 </button>
               </div>
               <div className="p-4 pt-0 border-b border-white/10 relative z-10">
@@ -822,10 +822,11 @@ export default function Dashboard() {
                               offsetY: -35,
                               fontSize: '28px',
                               fontWeight: 600,
-                              color: '#000',
-                              formatter: () => formatCurrency(periodRevenue).replace(/\d/g, '').includes('$') 
-                                ? formatCurrency(periodRevenue).split('.')[0] + 'm'
-                                : '$5.7m'
+                              color: '#FFFFFF',
+                              formatter: () => {
+                                const revenue = periodRevenue / 1000000;
+                                return revenue > 0 ? `$${revenue.toFixed(1)}m` : '$0m';
+                              }
                             }
                           }
                         }
@@ -834,39 +835,39 @@ export default function Dashboard() {
                         padding: { top: 0, bottom: 0, left: 0, right: 0 }
                       },
                       fill: {
-                        colors: ['#000000']
+                        colors: ['#FFFFFF']
                       }
                     }}
                   />
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center text-black font-semibold">
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center text-white font-semibold">
                     {dashboardStats?.totalOrders || 673} Orders
                   </div>
                 </div>
                 <div className="px-4 mb-3 flex items-start justify-between">
                   <div className="flex items-start gap-2">
                     <div className="py-1">
-                      <div className="w-3 h-3 bg-black rounded"></div>
+                      <div className="w-3 h-3 bg-white rounded"></div>
                     </div>
                     <div>
-                      <h3 className="mb-0 text-black font-bold text-lg">
+                      <h3 className="mb-0 text-white font-bold text-lg">
                         {formatCurrency(periodRevenue * 0.5).split('.')[0]}m
                       </h3>
-                      <p className="text-black/50 mb-0 text-sm">245 Pickups</p>
+                      <p className="text-white/50 mb-0 text-sm">245 Pickups</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <div className="p-1">
-                      <div className="w-3 h-3 bg-black/50 rounded"></div>
+                      <div className="w-3 h-3 bg-white/50 rounded"></div>
                     </div>
                     <div>
-                      <h3 className="mb-0 text-black font-bold text-lg">$65,823</h3>
-                      <p className="text-black/50 mb-0 text-sm">120 Shipments</p>
+                      <h3 className="mb-0 text-white font-bold text-lg">$65,823</h3>
+                      <p className="text-white/50 mb-0 text-sm">120 Shipments</p>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="p-4 border-0">
-                <h6 className="text-sm font-semibold text-black mb-3">Orders Status</h6>
+                <h6 className="text-sm font-semibold text-white mb-3">Orders Status</h6>
                 <div className="flex gap-1 mb-4 bg-transparent">
                   <div className="flex-1 bg-transparent" style={{ width: '70%' }}>
                     <div className="h-2 bg-white rounded"></div>
@@ -886,10 +887,10 @@ export default function Dashboard() {
                   ].map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 bg-black ${item.opacity} rounded`}></div>
-                        <h6 className="font-light text-black mb-0 text-sm">{item.label}</h6>
+                        <div className={`w-3 h-3 bg-white ${item.opacity} rounded`}></div>
+                        <h6 className="font-light text-white mb-0 text-sm">{item.label}</h6>
                       </div>
-                      <strong className="text-black font-semibold">{item.value}</strong>
+                      <strong className="text-white font-semibold">{item.value}</strong>
                     </div>
                   ))}
                 </div>
