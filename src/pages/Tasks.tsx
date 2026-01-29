@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
 import { CheckCircle2, Circle, Clock, AlertCircle, Plus, Filter } from 'lucide-react';
+import { SkeletonPage } from '../components/Skeleton';
 
 interface Task {
   id: number;
@@ -14,45 +17,41 @@ interface Task {
 export default function Tasks() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
 
-  // Mock tasks data
-  const tasks: Task[] = [
-    {
-      id: 1,
-      title: 'Review Product Catalog',
-      description: 'Review and approve the new product catalog for Q1 2024',
-      status: 'pending',
-      priority: 'high',
-      dueDate: '2024-01-20',
-      assignedBy: 'Admin',
+  // Fetch orders to use as tasks
+  const { data: ordersData, isLoading } = useQuery({
+    queryKey: ['orders', 'tasks'],
+    queryFn: async () => {
+      const response = await api.get('/orders?skip=0&take=10000');
+      return response.data?.data || [];
     },
-    {
-      id: 2,
-      title: 'Update Inventory Levels',
-      description: 'Update inventory levels for warehouse A',
-      status: 'in-progress',
-      priority: 'medium',
-      dueDate: '2024-01-18',
-      assignedBy: 'Manager',
-    },
-    {
-      id: 3,
-      title: 'Process Order #12345',
-      description: 'Review and process the pending order',
-      status: 'completed',
-      priority: 'high',
-      dueDate: '2024-01-15',
-      assignedBy: 'Admin',
-    },
-    {
-      id: 4,
-      title: 'Generate Sales Report',
-      description: 'Generate monthly sales report for December',
-      status: 'pending',
-      priority: 'low',
-      dueDate: '2024-01-25',
-      assignedBy: 'Manager',
-    },
-  ];
+  });
+
+  // Transform orders into tasks
+  const tasks: Task[] = (ordersData || []).map((order: any) => {
+    let status: 'pending' | 'in-progress' | 'completed' = 'pending';
+    if (order.status === 'FULFILLED' || order.status === 'DELIVERED') {
+      status = 'completed';
+    } else if (order.status === 'PROCESSING' || order.status === 'CONFIRMED' || order.status === 'SHIPPED') {
+      status = 'in-progress';
+    }
+
+    let priority: 'low' | 'medium' | 'high' = 'medium';
+    const amount = typeof order.totalAmount === 'number' ? order.totalAmount : parseFloat(order.totalAmount || 0);
+    if (amount > 10000) priority = 'high';
+    else if (amount < 1000) priority = 'low';
+
+    const dueDate = order.requiredDate || order.orderDate || order.createdAt;
+    
+    return {
+      id: order.id,
+      title: `Process Order ${order.orderNumber || `#${order.id}`}`,
+      description: `Order for ${order.customer?.name || 'Customer'} - Amount: $${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      status,
+      priority,
+      dueDate: new Date(dueDate).toISOString().split('T')[0],
+      assignedBy: order.user?.firstName ? `${order.user.firstName} ${order.user.lastName}` : undefined,
+    };
+  });
 
   const filteredTasks = filter === 'all' ? tasks : tasks.filter(task => task.status === filter);
 

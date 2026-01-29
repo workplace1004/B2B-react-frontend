@@ -1,77 +1,54 @@
 import { useState } from 'react';
-import { FileText, Download, Eye, Plus, Filter, Search } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
+import { FileText, Download, Eye, Plus, Search } from 'lucide-react';
+import { SkeletonPage } from '../components/Skeleton';
 
 interface Document {
   id: number;
-  title: string;
+  name: string;
   type: string;
   date: string;
   status: 'new' | 'read';
   size?: string;
   description?: string;
+  url?: string;
+  mimeType?: string;
 }
 
 export default function Documents() {
   const [filter, setFilter] = useState<'all' | 'new' | 'read'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [readDocuments, setReadDocuments] = useState<Set<number>>(new Set());
 
-  // Mock documents data
-  const documents: Document[] = [
-    {
-      id: 1,
-      title: 'Product Catalog 2024',
-      type: 'PDF',
-      date: '2024-01-15',
-      status: 'new',
-      size: '2.4 MB',
-      description: 'Complete product catalog for Q1 2024',
+  // Fetch documents from DAM API (filter by DOCUMENT type)
+  const { data: damAssets, isLoading } = useQuery({
+    queryKey: ['dam', 'documents'],
+    queryFn: async () => {
+      const response = await api.get('/dam');
+      // Filter only DOCUMENT type assets
+      return (response.data || []).filter((asset: any) => asset.type === 'DOCUMENT');
     },
-    {
-      id: 2,
-      title: 'Inventory Report',
-      type: 'Excel',
-      date: '2024-01-14',
-      status: 'new',
-      size: '1.8 MB',
-      description: 'Monthly inventory report for December 2023',
-    },
-    {
-      id: 3,
-      title: 'Sales Forecast Q1',
-      type: 'PDF',
-      date: '2024-01-13',
-      status: 'read',
-      size: '3.2 MB',
-      description: 'Sales forecast and projections for Q1 2024',
-    },
-    {
-      id: 4,
-      title: 'Marketing Strategy 2024',
-      type: 'PDF',
-      date: '2024-01-12',
-      status: 'read',
-      size: '4.1 MB',
-      description: 'Annual marketing strategy and campaign plan',
-    },
-    {
-      id: 5,
-      title: 'Financial Summary',
-      type: 'Excel',
-      date: '2024-01-10',
-      status: 'read',
-      size: '2.9 MB',
-      description: 'Year-end financial summary and analysis',
-    },
-    {
-      id: 6,
-      title: 'Product Launch Plan',
-      type: 'PDF',
-      date: '2024-01-08',
-      status: 'read',
-      size: '5.3 MB',
-      description: 'Detailed plan for upcoming product launch',
-    },
-  ];
+  });
+
+  // Transform DAM assets to documents format
+  const documents: Document[] = (damAssets || []).map((asset: any) => {
+    const fileExtension = asset.mimeType?.split('/')[1]?.toUpperCase() || 'DOCUMENT';
+    const fileSize = asset.fileSize ? `${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB` : undefined;
+    const isRead = readDocuments.has(asset.id);
+    
+    return {
+      id: asset.id,
+      name: asset.name,
+      type: fileExtension,
+      date: new Date(asset.createdAt).toISOString().split('T')[0],
+      status: isRead ? 'read' : 'new',
+      size: fileSize,
+      description: asset.description,
+      url: asset.url,
+      mimeType: asset.mimeType,
+    };
+  });
 
   const filteredDocuments = documents.filter((doc) => {
     const matchesFilter =
@@ -97,14 +74,24 @@ export default function Documents() {
   };
 
   const handleDownload = (id: number) => {
-    console.log('Download document:', id);
-    // Placeholder for download logic
+    const doc = documents.find((d) => d.id === id);
+    if (doc?.url) {
+      window.open(doc.url, '_blank');
+    }
   };
 
   const handleView = (id: number) => {
-    console.log('View document:', id);
-    // Placeholder for view logic
+    const doc = documents.find((d) => d.id === id);
+    if (doc?.url) {
+      // Mark as read
+      setReadDocuments((prev) => new Set([...prev, id]));
+      window.open(doc.url, '_blank');
+    }
   };
+
+  if (isLoading) {
+    return <SkeletonPage />;
+  }
 
   return (
     <div>
@@ -204,7 +191,7 @@ export default function Documents() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{doc.title}</h4>
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{doc.name}</h4>
                           {doc.status === 'new' && (
                             <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                           )}

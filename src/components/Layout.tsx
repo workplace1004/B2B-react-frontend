@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
+import api from '../lib/api';
 import {
   LayoutDashboard,
   Package,
@@ -89,29 +91,223 @@ export default function Layout({ children }: LayoutProps) {
     };
   }, []);
 
-  // Mock data for documents/tasks
-  const documents = [
-    { id: 1, title: 'Product Catalog 2024', type: 'PDF', date: '2024-01-15', status: 'new' },
-    { id: 2, title: 'Inventory Report', type: 'Excel', date: '2024-01-14', status: 'new' },
-    { id: 3, title: 'Sales Forecast Q1', type: 'PDF', date: '2024-01-13', status: 'read' },
-  ];
+  // Track read documents and notifications locally
+  const [readDocuments, setReadDocuments] = useState<Set<number>>(new Set());
+  const [readNotifications, setReadNotifications] = useState<Set<string>>(new Set());
 
-  // Mock data for notifications
-  const notifications = [
-    { id: 1, title: 'Low Stock Alert', message: 'Product SKU-1234 is running low', type: 'warning', time: '2 hours ago', read: false },
-    { id: 2, title: 'New Order Received', message: 'Order #12345 has been placed', type: 'info', time: '5 hours ago', read: false },
-    { id: 3, title: 'Inventory Update', message: 'Warehouse A inventory has been updated', type: 'success', time: '1 day ago', read: true },
-    { id: 4, title: 'System Maintenance', message: 'Scheduled maintenance tonight at 2 AM', type: 'info', time: '2 days ago', read: true },
-  ];
+  // Fetch documents from DAM API
+  const { data: damAssets } = useQuery({
+    queryKey: ['dam', 'documents', 'dropdown'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/dam');
+        return (response.data || []).filter((asset: any) => asset.type === 'DOCUMENT');
+      } catch (error) {
+        return [];
+      }
+    },
+  });
 
-  // Mock data for calendar events
-  const calendarEvents = [
-    { id: 1, title: 'Team Meeting', date: '2024-01-20', time: '10:00 AM', type: 'meeting' },
-    { id: 2, title: 'Product Launch', date: '2024-01-22', time: '2:00 PM', type: 'event' },
-    { id: 3, title: 'Inventory Review', date: '2024-01-25', time: '11:00 AM', type: 'meeting' },
-  ];
+  // Transform DAM assets to documents format
+  const documents = useMemo(() => {
+    if (!damAssets || damAssets.length === 0) return [];
+    
+    return damAssets
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 3) // Show only latest 3 in dropdown
+      .map((asset: any) => {
+        const fileExtension = asset.mimeType?.split('/')[1]?.toUpperCase() || 'DOCUMENT';
+        const isRead = readDocuments.has(asset.id);
+        
+        return {
+          id: asset.id,
+          title: asset.name,
+          type: fileExtension,
+          date: new Date(asset.createdAt).toISOString().split('T')[0],
+          status: isRead ? 'read' : 'new' as 'new' | 'read',
+        };
+      });
+  }, [damAssets, readDocuments]);
 
-  const unreadDocumentsCount = documents.filter(doc => doc.status === 'new').length;
+  // Fetch notifications data
+  const { data: inventoryData } = useQuery({
+    queryKey: ['inventory', 'notifications', 'dropdown'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/inventory');
+        return response.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const { data: ordersData } = useQuery({
+    queryKey: ['orders', 'notifications', 'dropdown'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/orders?skip=0&take=10');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const { data: customersData } = useQuery({
+    queryKey: ['customers', 'notifications', 'dropdown'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/customers?skip=0&take=10');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Fetch all customers for "Today New Leads" calculation
+  const { data: allCustomersData } = useQuery({
+    queryKey: ['customers', 'today-leads'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/customers?skip=0&take=10000');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Calculate today's new leads (customers created today)
+  const todayNewLeads = useMemo(() => {
+    if (!allCustomersData || allCustomersData.length === 0) return 0;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return allCustomersData.filter((customer: any) => {
+      const customerDate = new Date(customer.createdAt);
+      return customerDate >= today && customerDate < tomorrow;
+    }).length;
+  }, [allCustomersData]);
+
+  // Helper function to calculate time ago
+  const getTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
+  };
+
+  // Transform system data into notifications
+  const notifications = useMemo(() => {
+    const notifs: Array<{ id: string; title: string; message: string; type: 'warning' | 'success' | 'info'; time: string; read: boolean }> = [];
+
+    // Add low stock alerts
+    (inventoryData || []).forEach((item: any) => {
+      if (item.quantity <= item.reorderPoint && item.quantity > 0) {
+        notifs.push({
+          id: `inventory-${item.id}`,
+          type: 'warning',
+          title: 'Low Stock Alert',
+          message: `${item.product?.name || 'Product'} is running low. Current stock: ${item.quantity} units.`,
+          time: getTimeAgo(new Date(item.lastUpdated || item.updatedAt)),
+          read: readNotifications.has(`inventory-${item.id}`),
+        });
+      }
+    });
+
+    // Add order status notifications
+    (ordersData || []).forEach((order: any) => {
+      if (order.status === 'SHIPPED' || order.status === 'DELIVERED') {
+        notifs.push({
+          id: `order-${order.id}`,
+          type: 'success',
+          title: `Order ${order.status}`,
+          message: `Order ${order.orderNumber || `#${order.id}`} has been ${order.status.toLowerCase()}.`,
+          time: getTimeAgo(new Date(order.updatedAt || order.createdAt)),
+          read: readNotifications.has(`order-${order.id}`),
+        });
+      } else if (order.status === 'PENDING') {
+        notifs.push({
+          id: `order-${order.id}`,
+          type: 'info',
+          title: 'New Order Received',
+          message: `Order ${order.orderNumber || `#${order.id}`} has been placed.`,
+          time: getTimeAgo(new Date(order.createdAt)),
+          read: readNotifications.has(`order-${order.id}`),
+        });
+      }
+    });
+
+    // Add new customer notifications (only recent ones)
+    (customersData || []).forEach((customer: any) => {
+      const customerDate = new Date(customer.createdAt);
+      const daysSinceCreation = (new Date().getTime() - customerDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceCreation < 7) {
+        notifs.push({
+          id: `customer-${customer.id}`,
+          type: 'info',
+          title: 'New Customer Registered',
+          message: `${customer.name} just signed up.`,
+          time: getTimeAgo(customerDate),
+          read: readNotifications.has(`customer-${customer.id}`),
+        });
+      }
+    });
+
+    // Sort by time (newest first) and take only latest 4 for dropdown
+    return notifs
+      .sort(() => {
+        // Already sorted by data source
+        return 0;
+      })
+      .slice(0, 4);
+  }, [inventoryData, ordersData, customersData, readNotifications]);
+
+  // Fetch calendar events from orders
+  const { data: calendarOrdersData } = useQuery({
+    queryKey: ['orders', 'calendar', 'dropdown'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/orders?skip=0&take=10');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Transform orders into calendar events
+  const calendarEvents = useMemo(() => {
+    if (!calendarOrdersData || calendarOrdersData.length === 0) return [];
+    
+    return calendarOrdersData
+      .slice(0, 3) // Show only latest 3 in dropdown
+      .map((order: any) => {
+        const orderDate = new Date(order.orderDate || order.createdAt);
+        const requiredDate = order.requiredDate ? new Date(order.requiredDate) : null;
+        const eventDate = requiredDate || orderDate;
+        
+        return {
+          id: order.id,
+          title: `Order ${order.orderNumber || `#${order.id}`}`,
+          date: eventDate.toISOString().split('T')[0],
+          time: eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          type: order.status === 'PENDING' ? 'meeting' : 'event' as 'meeting' | 'event',
+        };
+      })
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [calendarOrdersData]);
+
+  const unreadDocumentsCount = documents.filter((doc: { status: 'new' | 'read' }) => doc.status === 'new').length;
   const unreadNotificationsCount = notifications.filter(notif => !notif.read).length;
 
   return (
@@ -166,7 +362,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Badge */}
             <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700">
               <span className="text-sm text-gray-700 dark:text-gray-300">Today New Leads</span>
-              <span className="px-2 py-0.5 bg-primary-500 text-white text-xs font-semibold rounded-full">27</span>
+              <span className="px-2 py-0.5 bg-primary-500 text-white text-xs font-semibold rounded-full">{todayNewLeads}</span>
             </div>
           </div>
 
@@ -239,11 +435,14 @@ export default function Layout({ children }: LayoutProps) {
                       </div>
                     ) : (
                       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {documents.map((doc) => (
+                        {documents.map((doc: { id: number; title: string; type: string; date: string; status: 'new' | 'read' }) => (
                           <Link
                             key={doc.id}
                             to="/documents"
-                            onClick={() => setDocumentsDropdownOpen(false)}
+                            onClick={() => {
+                              setReadDocuments((prev) => new Set([...prev, doc.id]));
+                              setDocumentsDropdownOpen(false);
+                            }}
                             className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                               doc.status === 'new' ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                             }`}
@@ -335,7 +534,7 @@ export default function Layout({ children }: LayoutProps) {
                                 !notif.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                               }`}
                               onClick={() => {
-                                // Mark as read logic here
+                                setReadNotifications((prev) => new Set([...prev, notif.id]));
                                 setNotificationsDropdownOpen(false);
                               }}
                             >
@@ -401,7 +600,7 @@ export default function Layout({ children }: LayoutProps) {
                       </div>
                     ) : (
                       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {calendarEvents.map((event) => (
+                        {calendarEvents.map((event: { id: number; title: string; date: string; time: string; type: 'meeting' | 'event' }) => (
                           <Link
                             key={event.id}
                             to="/calendar"

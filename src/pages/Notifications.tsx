@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
 import { Bell, AlertCircle, CheckCircle2, Info, Check } from 'lucide-react';
+import { SkeletonPage } from '../components/Skeleton';
 
 interface Notification {
-  id: number;
+  id: number | string;
   type: 'warning' | 'success' | 'info';
   title: string;
   message: string;
@@ -12,58 +15,141 @@ interface Notification {
 
 export default function Notifications() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [readNotifications, setReadNotifications] = useState<Set<number | string>>(new Set());
 
-  // Mock notifications data
-  const notifications: Notification[] = [
-    {
-      id: 1,
-      type: 'warning',
-      title: 'Low Stock Alert',
-      message: 'Product A is running low. Current stock: 15 units.',
-      time: '2 hours ago',
-      read: false,
+  // Fetch inventory for low stock alerts
+  const { data: inventoryData, isLoading: inventoryLoading } = useQuery({
+    queryKey: ['inventory', 'alerts'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/inventory');
+        return response.data || [];
+      } catch (error) {
+        return [];
+      }
     },
-    {
-      id: 2,
-      type: 'success',
-      title: 'Order Shipped',
-      message: 'Order #12345 has been shipped successfully.',
-      time: '5 hours ago',
-      read: false,
+  });
+
+  // Fetch orders for order status notifications
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ['orders', 'notifications'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/orders?skip=0&take=50');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
     },
-    {
-      id: 3,
-      type: 'info',
-      title: 'New Customer Registered',
-      message: 'John Doe just signed up for an account.',
-      time: '1 day ago',
-      read: true,
+  });
+
+  // Fetch customers for new customer notifications
+  const { data: customersData } = useQuery({
+    queryKey: ['customers', 'notifications'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/customers?skip=0&take=50');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
     },
-    {
-      id: 4,
-      type: 'warning',
-      title: 'Payment Pending',
-      message: 'Order #12346 has a pending payment.',
-      time: '2 days ago',
-      read: false,
-    },
-    {
-      id: 5,
-      type: 'success',
-      title: 'Inventory Updated',
-      message: 'Warehouse A inventory levels have been updated.',
-      time: '3 days ago',
-      read: true,
-    },
-    {
-      id: 6,
-      type: 'info',
-      title: 'System Maintenance',
-      message: 'Scheduled maintenance will occur tonight at 2 AM.',
-      time: '4 days ago',
-      read: true,
-    },
-  ];
+  });
+
+  function getTimeAgo(date: Date): string {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
+  }
+
+  // Transform system data into notifications
+  const notifications: Notification[] = useMemo(() => {
+    const notifs: Notification[] = [];
+
+    // Add low stock alerts
+    (inventoryData || []).forEach((item: any) => {
+      if (item.quantity <= item.reorderPoint && item.quantity > 0) {
+        notifs.push({
+          id: `inventory-${item.id}`,
+          type: 'warning',
+          title: 'Low Stock Alert',
+          message: `${item.product?.name || 'Product'} is running low. Current stock: ${item.quantity} units.`,
+          time: getTimeAgo(new Date(item.lastUpdated || item.updatedAt)),
+          read: readNotifications.has(`inventory-${item.id}`),
+        });
+      }
+    });
+
+    // Add order status notifications
+    (ordersData || []).forEach((order: any) => {
+      if (order.status === 'SHIPPED' || order.status === 'DELIVERED') {
+        notifs.push({
+          id: `order-${order.id}`,
+          type: 'success',
+          title: `Order ${order.status}`,
+          message: `Order ${order.orderNumber || `#${order.id}`} has been ${order.status.toLowerCase()}.`,
+          time: getTimeAgo(new Date(order.updatedAt || order.createdAt)),
+          read: readNotifications.has(`order-${order.id}`),
+        });
+      } else if (order.status === 'PENDING' || order.status === 'CANCELLED') {
+        notifs.push({
+          id: `order-${order.id}`,
+          type: 'warning',
+          title: `Order ${order.status}`,
+          message: `Order ${order.orderNumber || `#${order.id}`} is ${order.status.toLowerCase()}.`,
+          time: getTimeAgo(new Date(order.updatedAt || order.createdAt)),
+          read: readNotifications.has(`order-${order.id}`),
+        });
+      }
+    });
+
+    // Add new customer notifications (recent customers)
+    (customersData || []).forEach((customer: any) => {
+      const createdAt = new Date(customer.createdAt);
+      const daysSinceCreation = Math.floor((new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Only show customers created in the last 7 days
+      if (daysSinceCreation <= 7) {
+        notifs.push({
+          id: `customer-${customer.id}`,
+          type: 'info',
+          title: 'New Customer Registered',
+          message: `${customer.name} just registered.`,
+          time: getTimeAgo(createdAt),
+          read: readNotifications.has(`customer-${customer.id}`),
+        });
+      }
+    });
+
+    // Sort by time (most recent first)
+    notifs.sort((a, b) => {
+      const timeA = parseTimeAgo(a.time);
+      const timeB = parseTimeAgo(b.time);
+      return timeB - timeA;
+    });
+
+    return notifs;
+  }, [inventoryData, ordersData, customersData, readNotifications]);
+
+  function parseTimeAgo(timeStr: string): number {
+    if (timeStr === 'just now') return 0;
+    const match = timeStr.match(/(\d+)\s*(minute|hour|day|week)s?\s*ago/);
+    if (!match) return 0;
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    const multipliers: Record<string, number> = {
+      minute: 60,
+      hour: 3600,
+      day: 86400,
+      week: 604800,
+    };
+    return value * (multipliers[unit] || 0);
+  }
 
   const filteredNotifications = notifications.filter((notif) => {
     if (filter === 'unread') return !notif.read;
@@ -99,15 +185,18 @@ export default function Notifications() {
     }
   };
 
-  const markAsRead = (id: number) => {
-    // Placeholder for mark as read logic
-    console.log('Mark as read:', id);
+  const markAsRead = (id: number | string) => {
+    setReadNotifications((prev) => new Set([...prev, id]));
   };
 
   const markAllAsRead = () => {
-    // Placeholder for mark all as read logic
-    console.log('Mark all as read');
+    const allIds = notifications.map((n) => n.id);
+    setReadNotifications((prev) => new Set([...prev, ...allIds]));
   };
+
+  if (inventoryLoading || ordersLoading) {
+    return <SkeletonPage />;
+  }
 
   return (
     <div>
@@ -236,4 +325,3 @@ export default function Notifications() {
     </div>
   );
 }
-

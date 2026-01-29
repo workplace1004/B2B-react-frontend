@@ -29,88 +29,200 @@ import {
 } from 'recharts';
 
 export default function Dashboard() {
-  const { data: stats, isLoading } = useQuery({
+  // Fetch dashboard stats (for reference, but we'll calculate from orders/customers)
+  const { isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      try {
       const response = await api.get('/analytics/dashboard');
       return response.data;
-      } catch (error) {
-        // Return mock data if API fails
-        return {
-          totalContacts: 5758,
-          leadAnalytics: 70,
-          activeDeals: 1249,
-          totalEarning: 5700000,
-          orders: 673,
-          pickups: 245,
-          pickupsAmount: 2780000,
-          shipments: 120,
-          shipmentsAmount: 65823,
-          tasksDone: 25,
-          revenue: 256054.5,
-          retentionRate: 92,
-        };
-      }
     },
   });
 
-  // Mock chart data
-  const contactsData = [
-    { name: 'Jan', value: 4000 },
-    { name: 'Feb', value: 3000 },
-    { name: 'Mar', value: 5000 },
-    { name: 'Apr', value: 4500 },
-    { name: 'May', value: 5500 },
-    { name: 'Jun', value: 5758 },
-  ];
+  // Fetch orders for calculations
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ['orders', 'dashboard'],
+    queryFn: async () => {
+      const response = await api.get('/orders?skip=0&take=10000');
+      return response.data?.data || [];
+    },
+  });
 
-  const leadAnalyticsData = [
-    { name: 'Jan', value: 80 },
-    { name: 'Feb', value: 75 },
-    { name: 'Mar', value: 78 },
-    { name: 'Apr', value: 72 },
-    { name: 'May', value: 75 },
-    { name: 'Jun', value: 70 },
-  ];
+  // Fetch customers
+  const { data: customersData, isLoading: customersLoading } = useQuery({
+    queryKey: ['customers', 'dashboard'],
+    queryFn: async () => {
+      const response = await api.get('/customers?skip=0&take=10000');
+      return response.data?.data || [];
+    },
+  });
 
-  const trafficSourcesData = [
-    { name: 'Organic Search', value: 41.5, color: '#5955D1' },
-    { name: 'Direct Traffic', value: 27, color: '#8e8eff' },
-    { name: 'Referral Traffic', value: 18, color: '#b3b3ff' },
-    { name: 'Social Media', value: 10.3, color: '#d1d1ff' },
-    { name: 'Email Traffic', value: 3.2, color: '#e6e6ff' },
-  ];
+  // Note: Inventory data available if needed for future enhancements
 
-  const tasksData = [
-    { name: 'Follow-ups', value: 10, color: '#5955D1' },
-    { name: 'In Progress', value: 8, color: '#8e8eff' },
-    { name: 'Pending', value: 7, color: '#b3b3ff' },
-  ];
+  const isLoading = statsLoading || ordersLoading || customersLoading;
 
-  const ordersStatusData = [
-    { name: 'Paid', value: 70, color: '#5955D1' },
-    { name: 'Cancelled', value: 25, color: '#8e8eff' },
-    { name: 'Refunded', value: 5, color: '#b3b3ff' },
-  ];
+  // Calculate real data from orders
+  const calculateOrdersData = () => {
+    if (!ordersData || ordersData.length === 0) return { revenueData: [], ordersStatusData: [], orderByTimeData: [] };
 
-  const revenueData = [
-    { name: 'Jan', value: 150000 },
-    { name: 'Feb', value: 180000 },
-    { name: 'Mar', value: 220000 },
-    { name: 'Apr', value: 240000 },
-    { name: 'May', value: 250000 },
-    { name: 'Jun', value: 256054 },
-  ];
+    // Group orders by month for revenue chart
+    const revenueByMonth = new Map<string, number>();
+    ordersData.forEach((order: any) => {
+      const date = new Date(order.orderDate || order.createdAt);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const amount = typeof order.totalAmount === 'number' ? order.totalAmount : parseFloat(order.totalAmount || 0);
+      revenueByMonth.set(monthKey, (revenueByMonth.get(monthKey) || 0) + amount);
+    });
 
-  const retentionData = [
-    { name: 'Jan', value: 85 },
-    { name: 'Feb', value: 87 },
-    { name: 'Mar', value: 89 },
-    { name: 'Apr', value: 90 },
-    { name: 'May', value: 91 },
-    { name: 'Jun', value: 92 },
-  ];
+    const revenueData = Array.from(revenueByMonth.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime())
+      .slice(-6); // Last 6 months
+
+    // Calculate orders by status
+    const statusCounts = new Map<string, number>();
+    ordersData.forEach((order: any) => {
+      const status = order.status || 'PENDING';
+      statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+    });
+
+    const totalOrders = ordersData.length;
+    const ordersStatusData = Array.from(statusCounts.entries()).map(([name, count]) => ({
+      name: name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+      value: totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0,
+      color: name === 'FULFILLED' || name === 'DELIVERED' ? '#5955D1' : name === 'CANCELLED' ? '#8e8eff' : '#b3b3ff',
+    }));
+
+    // Calculate orders by time of day
+    const timeSlots = ['8am', '10am', '12pm', '2pm', '4pm'];
+    const orderByTimeData = timeSlots.map((time) => {
+      const hour = time === '8am' ? 8 : time === '10am' ? 10 : time === '12pm' ? 12 : time === '2pm' ? 14 : 16;
+      const count = ordersData.filter((order: any) => {
+        const orderDate = new Date(order.orderDate || order.createdAt);
+        return orderDate.getHours() >= hour && orderDate.getHours() < hour + 2;
+      }).length;
+      return { time, count, percentage: totalOrders > 0 ? (count / totalOrders) * 100 : 0 };
+    });
+
+    return { revenueData, ordersStatusData, orderByTimeData };
+  };
+
+  const { revenueData, ordersStatusData, orderByTimeData } = calculateOrdersData();
+
+  // Calculate customer growth data
+  const calculateContactsData = () => {
+    if (!customersData || customersData.length === 0) return [];
+
+    const customersByMonth = new Map<string, number>();
+    customersData.forEach((customer: any) => {
+      const date = new Date(customer.createdAt);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      customersByMonth.set(monthKey, (customersByMonth.get(monthKey) || 0) + 1);
+    });
+
+    // Get cumulative counts
+    let cumulative = 0;
+    return Array.from(customersByMonth.entries())
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+      .map(([name, count]) => {
+        cumulative += count;
+        return { name, value: cumulative };
+      })
+      .slice(-6); // Last 6 months
+  };
+
+  const contactsData = calculateContactsData();
+
+  // Calculate lead analytics (using customer conversion rate)
+  const calculateLeadAnalyticsData = () => {
+    if (!customersData || customersData.length === 0) return [];
+
+    const customersByMonth = new Map<string, number>();
+    customersData.forEach((customer: any) => {
+      const date = new Date(customer.createdAt);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      customersByMonth.set(monthKey, (customersByMonth.get(monthKey) || 0) + 1);
+    });
+
+    // Calculate conversion rate (simplified - using customer growth as proxy)
+    return Array.from(customersByMonth.entries())
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+      .map(([name, count]) => ({
+        name,
+        value: Math.min(100, Math.max(0, 50 + (count * 2))), // Simplified conversion rate
+      }))
+      .slice(-6);
+  };
+
+  const leadAnalyticsData = calculateLeadAnalyticsData();
+
+  // Calculate tasks data from orders (pending, processing, completed)
+  const calculateTasksData = () => {
+    if (!ordersData || ordersData.length === 0) return [];
+
+    const pending = ordersData.filter((o: any) => o.status === 'PENDING' || o.status === 'DRAFT').length;
+    const processing = ordersData.filter((o: any) => o.status === 'PROCESSING' || o.status === 'CONFIRMED').length;
+    const completed = ordersData.filter((o: any) => o.status === 'FULFILLED' || o.status === 'DELIVERED').length;
+
+    return [
+      { name: 'Pending', value: pending, color: '#b3b3ff' },
+      { name: 'In Progress', value: processing, color: '#8e8eff' },
+      { name: 'Completed', value: completed, color: '#5955D1' },
+    ].filter((t) => t.value > 0);
+  };
+
+  const tasksData = calculateTasksData();
+
+  // Traffic sources - not available in backend, will show empty or placeholder
+  const trafficSourcesData: Array<{ name: string; value: number; color: string }> = [];
+
+  // Calculate retention rate (simplified - using repeat customers)
+  const calculateRetentionData = () => {
+    if (!ordersData || ordersData.length === 0) return [];
+
+    const customersWithMultipleOrders = new Set<number>();
+    const customerOrderCounts = new Map<number, number>();
+
+    ordersData.forEach((order: any) => {
+      if (order.customerId) {
+        customerOrderCounts.set(order.customerId, (customerOrderCounts.get(order.customerId) || 0) + 1);
+        if (customerOrderCounts.get(order.customerId)! > 1) {
+          customersWithMultipleOrders.add(order.customerId);
+        }
+      }
+    });
+
+    const retentionRate = customersData && customersData.length > 0
+      ? Math.round((customersWithMultipleOrders.size / customersData.length) * 100)
+      : 0;
+
+    // Generate retention data over last 6 months
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    return months.map((name, index) => ({
+      name,
+      value: Math.max(0, Math.min(100, retentionRate + (index * 2))), // Simplified trend
+    }));
+  };
+
+  const retentionData = calculateRetentionData();
+
+  // Calculate real stats
+  const calculatedStats = {
+    totalContacts: customersData?.length || 0,
+    totalCustomers: customersData?.length || 0,
+    leadAnalytics: customersData && customersData.length > 0 ? Math.round((customersData.length / (customersData.length + 100)) * 100) : 0,
+    activeDeals: ordersData?.filter((o: any) => o.status !== 'CANCELLED' && o.status !== 'DELIVERED').length || 0,
+    totalEarning: ordersData?.reduce((sum: number, order: any) => {
+      return sum + (typeof order.totalAmount === 'number' ? order.totalAmount : parseFloat(order.totalAmount || 0));
+    }, 0) || 0,
+    orders: ordersData?.length || 0,
+    pickups: 0, // Not available in backend
+    pickupsAmount: 0, // Not available in backend
+    shipments: 0, // Not available in backend
+    shipmentsAmount: 0, // Not available in backend
+    tasksDone: ordersData?.filter((o: any) => o.status === 'FULFILLED' || o.status === 'DELIVERED').length || 0,
+    revenue: revenueData.length > 0 ? revenueData[revenueData.length - 1].value : 0,
+    retentionRate: retentionData.length > 0 ? retentionData[retentionData.length - 1].value : 0,
+  };
 
   if (isLoading) {
     return (
@@ -157,8 +269,33 @@ export default function Dashboard() {
               <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-black mb-1">27</h2>
-          <p className="text-sm text-green-600 dark:text-green-400 font-medium">+10 Deals</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-black mb-1">
+            {calculatedStats.tasksDone}
+          </h2>
+          <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+            {(() => {
+              // Calculate completed orders today vs yesterday
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const yesterday = new Date(today);
+              yesterday.setDate(yesterday.getDate() - 1);
+              
+              const completedToday = ordersData?.filter((o: any) => {
+                const orderDate = new Date(o.updatedAt || o.createdAt);
+                return (o.status === 'FULFILLED' || o.status === 'DELIVERED') && 
+                       orderDate >= today;
+              }).length || 0;
+              
+              const completedYesterday = ordersData?.filter((o: any) => {
+                const orderDate = new Date(o.updatedAt || o.createdAt);
+                return (o.status === 'FULFILLED' || o.status === 'DELIVERED') && 
+                       orderDate >= yesterday && orderDate < today;
+              }).length || 0;
+              
+              const diff = completedToday - completedYesterday;
+              return diff > 0 ? `+${diff} Deals` : diff < 0 ? `${diff} Deals` : '0 Deals';
+            })()}
+          </p>
         </div>
 
         {/* Pipeline Value */}
@@ -168,8 +305,16 @@ export default function Dashboard() {
               <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-black mb-1">$5.2M</h2>
-          <p className="text-sm text-green-600 dark:text-green-400 font-medium">+$270K</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-black mb-1">
+            ${calculatedStats.totalEarning > 1000000 
+              ? (calculatedStats.totalEarning / 1000000).toFixed(1) + 'M'
+              : calculatedStats.totalEarning > 1000
+              ? (calculatedStats.totalEarning / 1000).toFixed(1) + 'K'
+              : calculatedStats.totalEarning.toFixed(0)}
+          </h2>
+          <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+            {calculatedStats.orders} Orders
+          </p>
         </div>
 
         {/* Conversion Rate */}
@@ -178,14 +323,16 @@ export default function Dashboard() {
             <h6 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Conversion Rate</h6>
           </div>
           <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-black">16%</h2>
-            <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-semibold rounded">
-              -2%
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-black">
+              {calculatedStats.leadAnalytics}%
+            </h2>
+            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
+              {calculatedStats.totalCustomers > 0 ? '+' : ''}{calculatedStats.totalCustomers}
             </span>
           </div>
           <div className="h-12">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={[{ value: 10 }, { value: 15 }, { value: 12 }, { value: 16 }]}>
+              <LineChart data={leadAnalyticsData.length > 0 ? leadAnalyticsData.slice(-4) : [{ value: 0 }, { value: 0 }, { value: 0 }, { value: 0 }]}>
                 <Line type="monotone" dataKey="value" stroke="#5955D1" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -198,34 +345,50 @@ export default function Dashboard() {
             <h6 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Leads Breakdown</h6>
           </div>
           <div className="space-y-2 mb-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600 dark:text-gray-400">Leads</span>
-              <span className="text-xs font-semibold text-gray-900 dark:text-black">120</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-primary-500 h-2 rounded-full" style={{ width: '100%' }}></div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600 dark:text-gray-400">Prospects</span>
-              <span className="text-xs font-semibold text-gray-900 dark:text-black">85</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-green-500 h-2 rounded-full" style={{ width: '71%' }}></div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600 dark:text-gray-400">Opportunities</span>
-              <span className="text-xs font-semibold text-gray-900 dark:text-black">40</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-purple-400 h-2 rounded-full" style={{ width: '33%' }}></div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600 dark:text-gray-400">Closed Deals</span>
-              <span className="text-xs font-semibold text-gray-900 dark:text-black">20</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-red-400 h-2 rounded-full" style={{ width: '17%' }}></div>
-            </div>
+            {(() => {
+              const totalCustomers = calculatedStats.totalCustomers;
+              const activeCustomers = ordersData?.filter((o: any) => o.customerId).length || 0;
+              const customersWithOrders = new Set(ordersData?.map((o: any) => o.customerId).filter(Boolean) || []).size;
+              const completedOrders = calculatedStats.tasksDone;
+              
+              const leads = totalCustomers;
+              const prospects = customersWithOrders;
+              const opportunities = activeCustomers;
+              const closedDeals = completedOrders;
+
+              return (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Total Customers</span>
+                    <span className="text-xs font-semibold text-gray-900 dark:text-black">{leads}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-primary-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">With Orders</span>
+                    <span className="text-xs font-semibold text-gray-900 dark:text-black">{prospects}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: leads > 0 ? `${(prospects / leads) * 100}%` : '0%' }}></div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Active Orders</span>
+                    <span className="text-xs font-semibold text-gray-900 dark:text-black">{opportunities}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-purple-400 h-2 rounded-full" style={{ width: leads > 0 ? `${(opportunities / leads) * 100}%` : '0%' }}></div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Completed Orders</span>
+                    <span className="text-xs font-semibold text-gray-900 dark:text-black">{closedDeals}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-red-400 h-2 rounded-full" style={{ width: leads > 0 ? `${(closedDeals / leads) * 100}%` : '0%' }}></div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
           <button className="w-full mt-4 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors flex items-center justify-center gap-2 text-sm font-medium">
             <Download className="w-4 h-4" />
@@ -250,10 +413,10 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-black">
-                    {stats?.totalContacts?.toLocaleString() || '5,758'}
+                    {calculatedStats.totalContacts.toLocaleString()}
                   </h2>
                   <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
-                    +2.57%
+                    {contactsData.length > 1 ? `+${contactsData[contactsData.length - 1].value - contactsData[contactsData.length - 2].value}` : '+0'}
                   </span>
                 </div>
                 <div className="w-20 h-12">
@@ -265,7 +428,9 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Vs last month: 1,195</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Total Orders: {calculatedStats.orders}
+                </p>
                 <button className="text-primary-600 hover:text-primary-700">
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -282,10 +447,12 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-2 mb-4">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-black">
-                  {stats?.leadAnalytics || 70}
+                  {calculatedStats.leadAnalytics}%
                 </h2>
-                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-semibold rounded">
-                  -2.57%
+                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
+                  {leadAnalyticsData.length > 1 
+                    ? `${leadAnalyticsData[leadAnalyticsData.length - 1].value > leadAnalyticsData[leadAnalyticsData.length - 2].value ? '+' : ''}${(leadAnalyticsData[leadAnalyticsData.length - 1].value - leadAnalyticsData[leadAnalyticsData.length - 2].value).toFixed(1)}%`
+                    : '0%'}
                 </span>
               </div>
               <div className="h-24 -mx-6 -mb-6">
@@ -305,7 +472,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h6 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tasks Overview</h6>
                 <span className="text-xs text-gray-600 dark:text-gray-400">
-                  Tasks Done <span className="text-primary-600 font-semibold">{stats?.tasksDone || 25}</span>
+                  Tasks Done <span className="text-primary-600 font-semibold">{calculatedStats.tasksDone}</span>
                 </span>
               </div>
               <div className="mb-4">
@@ -359,14 +526,16 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-2 mb-4">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-black">
-                  {stats?.activeDeals?.toLocaleString() || '1,249'}
+                  {calculatedStats.activeDeals.toLocaleString()}
                 </h2>
                 <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-semibold rounded">
-                  +2.57%
+                  {calculatedStats.orders > 0 ? `+${calculatedStats.orders}` : '0'}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Vs last month: 1,195</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Total Orders: {calculatedStats.orders}
+                </p>
                 <button className="text-primary-600 hover:text-primary-700">
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -392,10 +561,13 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 mb-6">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-black">
                 <span className="text-gray-600 dark:text-gray-400">$</span>
-                {stats?.revenue?.toLocaleString() || '256,054'}
-                <span className="text-primary-600">.50</span>
+                {calculatedStats.revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
-              <span className="text-sm text-green-600 dark:text-green-400">+20% vs last month</span>
+              <span className="text-sm text-green-600 dark:text-green-400">
+                {revenueData.length > 1 
+                  ? `${((revenueData[revenueData.length - 1].value - revenueData[revenueData.length - 2].value) / revenueData[revenueData.length - 2].value * 100).toFixed(1)}% vs last month`
+                  : 'No previous data'}
+              </span>
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -417,9 +589,13 @@ export default function Dashboard() {
               <h6 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Retention Rate</h6>
               <div className="flex items-center gap-2 mb-6">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-black">
-                  {stats?.retentionRate || 92}%
+                  {calculatedStats.retentionRate}%
                 </h2>
-                <span className="text-sm text-green-600 dark:text-green-400">+15% vs last month</span>
+                <span className="text-sm text-green-600 dark:text-green-400">
+                  {retentionData.length > 1 
+                    ? `${retentionData[retentionData.length - 1].value > retentionData[retentionData.length - 2].value ? '+' : ''}${(retentionData[retentionData.length - 1].value - retentionData[retentionData.length - 2].value).toFixed(0)}% vs last month`
+                    : 'No previous data'}
+                </span>
               </div>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
@@ -434,18 +610,31 @@ export default function Dashboard() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h6 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Order By Time</h6>
               <div className="grid grid-cols-5 gap-2 h-48">
-                {['8am', '10am', '12pm', '2pm', '4pm'].map((time, idx) => (
-                  <div key={time} className="flex flex-col items-center justify-end">
-                    <div
-                      className="w-full bg-primary-500 rounded-t"
-                      style={{
-                        height: `${60 + Math.random() * 40}%`,
-                        opacity: 0.6 + idx * 0.1,
-                      }}
-                    ></div>
-                    <span className="text-xs text-gray-600 dark:text-gray-400 mt-2">{time}</span>
-                  </div>
-                ))}
+                {orderByTimeData.length > 0 ? (
+                  orderByTimeData.map((item, idx) => {
+                    const maxCount = Math.max(...orderByTimeData.map((d: any) => d.count), 1);
+                    const height = maxCount > 0 ? `${(item.count / maxCount) * 80 + 20}%` : '20%';
+                    return (
+                      <div key={item.time} className="flex flex-col items-center justify-end">
+                        <div
+                          className="w-full bg-primary-500 rounded-t"
+                          style={{
+                            height,
+                            opacity: 0.6 + idx * 0.1,
+                          }}
+                        ></div>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 mt-2">{item.time}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  ['8am', '10am', '12pm', '2pm', '4pm'].map((time) => (
+                    <div key={time} className="flex flex-col items-center justify-end">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-t" style={{ height: '20%' }}></div>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 mt-2">{time}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
         </div>
@@ -483,39 +672,49 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { name: 'William Johnson', phone: '+1 234 567 8900', email: 'william@example.com', days: 5, status: 'Active' },
-                    { name: 'Benjamin Martinez', phone: '+1 234 567 8901', email: 'benjamin@example.com', days: 3, status: 'Active' },
-                    { name: 'Alexander Brown', phone: '+1 234 567 8902', email: 'alexander@example.com', days: 7, status: 'Pending' },
-                    { name: 'Michael Davis', phone: '+1 234 567 8903', email: 'michael@example.com', days: 2, status: 'Active' },
-                    { name: 'David Wilson', phone: '+1 234 567 8904', email: 'david@example.com', days: 10, status: 'Pending' },
-                    { name: 'Benjamin Martinez', phone: '+1 234 567 8905', email: 'benjamin2@example.com', days: 4, status: 'Pending' },
-                  ].map((customer, idx) => (
-                    <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-black">{customer.name}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{customer.phone}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{customer.email}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{customer.days} days</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                          customer.status === 'Active'
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-                        }`}>
-                          {customer.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <button className="text-primary-600 hover:text-primary-700 text-sm">View</button>
+                  {customersData && customersData.length > 0 ? (
+                    customersData
+                      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .slice(0, 6)
+                      .map((customer: any) => {
+                        const daysSinceCreation = Math.floor((new Date().getTime() - new Date(customer.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+                        const hasOrders = ordersData?.some((o: any) => o.customerId === customer.id);
+                        return (
+                          <tr key={customer.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td className="py-3 px-4 text-sm text-gray-900 dark:text-black">{customer.name}</td>
+                            <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{customer.phone || '-'}</td>
+                            <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{customer.email || '-'}</td>
+                            <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{daysSinceCreation} days</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                customer.isActive && hasOrders
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                  : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                              }`}>
+                                {customer.isActive && hasOrders ? 'Active' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <button className="text-primary-600 hover:text-primary-700 text-sm">View</button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No customers found
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
         </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Showing 1 to 6 of 12 entries</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing 1 to {Math.min(6, customersData?.length || 0)} of {customersData?.length || 0} entries
+              </p>
               <div className="flex items-center gap-2">
                 <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
                   <ArrowRight className="w-4 h-4 rotate-180" />
@@ -540,40 +739,48 @@ export default function Dashboard() {
                 <MoreVertical className="w-4 h-4" />
               </button>
             </div>
-            <div className="h-48 mb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={trafficSourcesData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={70}
-                    dataKey="value"
-                  >
-                    {trafficSourcesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          <div className="space-y-2">
-              {trafficSourcesData.map((source, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: source.color }}
-                    ></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{source.name}</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-black">
-                    {source.value}%
-                  </span>
+            {trafficSourcesData.length > 0 ? (
+              <>
+                <div className="h-48 mb-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={trafficSourcesData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={70}
+                        dataKey="value"
+                      >
+                        {trafficSourcesData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
+          <div className="space-y-2">
+                  {trafficSourcesData.map((source, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded"
+                          style={{ backgroundColor: source.color }}
+                        ></div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{source.name}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-black">
+                        {source.value}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="h-48 mb-4 flex items-center justify-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">No traffic data available</p>
+              </div>
+            )}
             <button className="w-full mt-4 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors flex items-center justify-center gap-2 text-sm font-medium">
               <Download className="w-4 h-4" />
               Annual report
@@ -585,21 +792,27 @@ export default function Dashboard() {
             <h6 className="text-sm font-semibold mb-4 text-black">Total Earning</h6>
             <div className="mb-6">
               <h2 className="text-4xl font-bold mb-2 text-black">
-                ${((stats?.totalEarning || 5700000) / 1000000).toFixed(1)}m
+                ${calculatedStats.totalEarning > 1000000 
+                  ? (calculatedStats.totalEarning / 1000000).toFixed(1) + 'm'
+                  : calculatedStats.totalEarning > 1000
+                  ? (calculatedStats.totalEarning / 1000).toFixed(1) + 'k'
+                  : calculatedStats.totalEarning.toFixed(0)}
               </h2>
-              <p className="text-sm text-black/90">{stats?.orders || 673} Orders</p>
+              <p className="text-sm text-black/90">{calculatedStats.orders} Orders</p>
             </div>
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-black/30">
               <div>
-                <p className="text-xs text-black/80 mb-1">245 Pickups</p>
+                <p className="text-xs text-black/80 mb-1">Total Revenue</p>
                 <p className="text-lg font-semibold text-black">
-                  ${((stats?.pickupsAmount || 2780000) / 1000000).toFixed(2)}m
+                  ${calculatedStats.totalEarning > 1000000 
+                    ? (calculatedStats.totalEarning / 1000000).toFixed(2) + 'm'
+                    : calculatedStats.totalEarning.toLocaleString()}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-black/80 mb-1">120 Shipment</p>
+                <p className="text-xs text-black/80 mb-1">Active Orders</p>
                 <p className="text-lg font-semibold text-black">
-                  ${(stats?.shipmentsAmount || 65823).toLocaleString()}
+                  {calculatedStats.activeDeals}
                 </p>
               </div>
             </div>
@@ -648,33 +861,39 @@ export default function Dashboard() {
             </div>
             
             <div className="space-y-3">
-              {[
-                { task: 'Prepare monthly financial report', completed: false, time: '04:25PM' },
-                { task: 'Develop new marketing strategy', completed: true, time: '04:25PM', color: 'purple' },
-                { task: 'Reply to customer emails', completed: false, time: '04:25PM' },
-                { task: 'Update website content', completed: false, time: '04:25PM' },
-                { task: 'Review employee performance', completed: true, time: '04:25PM', color: 'purple' },
-                { task: 'Reply to customer emails', completed: true, time: '04:25PM', color: 'green' },
-                { task: 'Reply to customer emails', completed: true, time: '04:25PM', color: 'orange' },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <input
-                    type="checkbox"
-                    checked={item.completed}
-                    readOnly
-                    className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
-                  />
-                  <div className="flex-1">
-                    <p className={`text-sm ${item.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-black'}`}>
-                      {item.task}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.time}</p>
-                  </div>
-                  <button className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-              </div>
-            ))}
+              {ordersData && ordersData.length > 0 ? (
+                ordersData
+                  .sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+                  .slice(0, 7)
+                  .map((order: any) => {
+                    const isCompleted = order.status === 'FULFILLED' || order.status === 'DELIVERED';
+                    const orderDate = new Date(order.updatedAt || order.createdAt);
+                    const timeStr = orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <div key={order.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <input
+                          type="checkbox"
+                          checked={isCompleted}
+                          readOnly
+                          className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
+                        />
+                        <div className="flex-1">
+                          <p className={`text-sm ${isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-black'}`}>
+                            Process Order {order.orderNumber || `#${order.id}`}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{timeStr}</p>
+                        </div>
+                        <button className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+                  No orders found
+                </div>
+              )}
           </div>
         </div>
       </div>

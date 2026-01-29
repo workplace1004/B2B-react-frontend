@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
 import { Calendar as CalendarIcon, Clock, MapPin, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SkeletonPage } from '../components/Skeleton';
 
 interface CalendarEvent {
   id: number;
@@ -15,54 +18,35 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
 
-  // Mock events data
-  const events: CalendarEvent[] = [
-    {
-      id: 1,
-      title: 'Team Meeting',
-      date: '2024-01-20',
-      time: '10:00 AM',
-      type: 'meeting',
-      location: 'Conference Room A',
-      description: 'Weekly team sync meeting',
+  // Fetch orders to use as calendar events
+  const { data: ordersData, isLoading } = useQuery({
+    queryKey: ['orders', 'calendar'],
+    queryFn: async () => {
+      const response = await api.get('/orders?skip=0&take=10000');
+      return response.data?.data || [];
     },
-    {
-      id: 2,
-      title: 'Product Launch',
-      date: '2024-01-22',
-      time: '2:00 PM',
+  });
+
+  // Transform orders into calendar events
+  const events: CalendarEvent[] = (ordersData || []).map((order: any) => {
+    const orderDate = new Date(order.orderDate || order.createdAt);
+    const requiredDate = order.requiredDate ? new Date(order.requiredDate) : null;
+    
+    // Use required date if available, otherwise use order date
+    const eventDate = requiredDate || orderDate;
+    const dateStr = eventDate.toISOString().split('T')[0];
+    const timeStr = eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    
+    return {
+      id: order.id,
+      title: `Order ${order.orderNumber || `#${order.id}`}`,
+      date: dateStr,
+      time: timeStr,
       type: 'event',
-      location: 'Main Hall',
-      description: 'Launch of new product line',
-    },
-    {
-      id: 3,
-      title: 'Inventory Review',
-      date: '2024-01-25',
-      time: '11:00 AM',
-      type: 'meeting',
-      location: 'Warehouse Office',
-      description: 'Monthly inventory review meeting',
-    },
-    {
-      id: 4,
-      title: 'Client Presentation',
-      date: '2024-01-28',
-      time: '3:00 PM',
-      type: 'meeting',
-      location: 'Client Office',
-      description: 'Present Q1 results to client',
-    },
-    {
-      id: 5,
-      title: 'Company Event',
-      date: '2024-02-01',
-      time: '6:00 PM',
-      type: 'event',
-      location: 'Event Center',
-      description: 'Annual company gathering',
-    },
-  ];
+      location: order.shippingAddress || undefined,
+      description: `Order for ${order.customer?.name || 'Customer'} - Status: ${order.status}`,
+    };
+  });
 
   const getEventsForDate = (date: string) => {
     return events.filter((event) => event.date === date);
@@ -125,6 +109,10 @@ export default function Calendar() {
 
   const calendarDays = getCalendarDays();
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  if (isLoading) {
+    return <SkeletonPage />;
+  }
 
   return (
     <div>
