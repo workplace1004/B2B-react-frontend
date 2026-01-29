@@ -14,9 +14,46 @@ import { SkeletonStatsCard } from '../components/Skeleton';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
+// Custom plugin to add center text to doughnut chart
+const centerTextPlugin = {
+  id: 'centerText',
+  afterDraw(chart: any) {
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return;
+
+    const centerX = (chartArea.left + chartArea.right) / 2;
+    const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+    // Calculate total
+    const dataset = chart.data.datasets[0];
+    const total = dataset.data.reduce((acc: number, val: number) => acc + val, 0);
+
+    // Check if dark mode
+    const isDark = document.documentElement.classList.contains('dark');
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Total value
+    ctx.font = 'bold 26px sans-serif';
+    ctx.fillStyle = isDark ? '#fff' : '#000';
+    ctx.fillText(total.toString(), centerX, centerY - 5);
+
+    // Label below
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = isDark ? '#9ca3af' : '#999';
+    ctx.fillText('Sources', centerX, centerY + 18);
+
+    ctx.restore();
+  },
+};
+
+ChartJS.register(centerTextPlugin);
+
 export default function FinanceDashboard() {
   // Fetch finance data
-  const { data: financeData, isLoading } = useQuery({
+  const { isLoading } = useQuery({
     queryKey: ['finance', 'dashboard'],
     queryFn: async () => {
       const response = await api.get('/analytics/dashboard');
@@ -42,12 +79,12 @@ export default function FinanceDashboard() {
       zoom: { enabled: false },
       toolbar: { show: false },
     },
-    colors: ['#6c757d', '#5955D1'],
+    colors: ['#5955D1', '#6c757d'], // Revenue: primary (purple), Expenses: secondary (grey)
     dataLabels: { enabled: false },
     stroke: {
       width: [2, 2],
       curve: 'smooth' as const,
-      dashArray: [8, 0],
+      dashArray: [0, 8], // Revenue: solid (0), Expenses: dashed (8)
     },
     markers: {
       size: 0,
@@ -288,44 +325,47 @@ export default function FinanceDashboard() {
             )}
           </div>
 
-          {/* Revenue vs Expenses Chart */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Revenue vs Expenses</h6>
-              <select className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
-                <option>This Year</option>
-                <option>Last Year</option>
-              </select>
-            </div>
-            <div className="p-2">
-              <Chart type="line" height={300} series={revenueExpensesChartConfig.series} options={revenueExpensesChartConfig} />
-            </div>
-          </div>
-
-          {/* Expense Breakdown */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="border-b border-gray-200 dark:border-gray-700 mb-4 pb-4">
-              <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Expense Breakdown</h6>
-            </div>
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
-              <div className="max-w-[175px] w-full">
-                <Doughnut data={expenseChartData} options={expenseChartOptions} />
+          {/* Revenue vs Expenses and Expense Breakdown - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Revenue vs Expenses Chart */}
+            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Revenue vs Expenses</h6>
+                <select className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option>This Year</option>
+                  <option>Last Year</option>
+                </select>
               </div>
-              <div className="flex-1 space-y-2">
-                {[
-                  { label: 'Salaries', value: '40%', opacity: 'opacity-10' },
-                  { label: 'Rent', value: '30%', opacity: 'opacity-25' },
-                  { label: 'Software', value: '20%', opacity: 'opacity-50' },
-                  { label: 'Marketing', value: '10%', opacity: 'opacity-75' },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 bg-primary ${item.opacity} rounded`}></div>
-                      <span className="text-sm text-gray-900 dark:text-white">{item.label}</span>
+              <div className="p-2">
+                <Chart type="line" height={300} series={revenueExpensesChartConfig.series} options={revenueExpensesChartConfig} />
+              </div>
+            </div>
+
+            {/* Expense Breakdown */}
+            <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="border-b border-gray-200 dark:border-gray-700 mb-4 pb-4">
+                <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Expense Breakdown</h6>
+              </div>
+              <div className="flex flex-col items-center gap-4">
+                <div className="max-w-[175px] w-full aspect-square">
+                  <Doughnut data={expenseChartData} options={expenseChartOptions} />
+                </div>
+                <div className="w-full space-y-2">
+                  {[
+                    { label: 'Salaries', value: '40%', opacity: 'opacity-10' },
+                    { label: 'Rent', value: '30%', opacity: 'opacity-25' },
+                    { label: 'Software', value: '20%', opacity: 'opacity-50' },
+                    { label: 'Marketing', value: '10%', opacity: 'opacity-75' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-1">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 bg-primary ${item.opacity} rounded`}></div>
+                        <span className="text-sm text-gray-900 dark:text-white">{item.label}</span>
+                      </div>
+                      <strong className="text-gray-900 dark:text-white font-semibold text-sm">{item.value}</strong>
                     </div>
-                    <strong className="text-gray-900 dark:text-white font-semibold text-sm">{item.value}</strong>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
