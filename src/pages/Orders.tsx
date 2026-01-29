@@ -259,7 +259,12 @@ export default function Orders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order created successfully!');
       closeModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create order';
+      toast.error(errorMessage);
     },
   });
 
@@ -270,7 +275,12 @@ export default function Orders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order updated successfully!');
       closeEditModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update order';
+      toast.error(errorMessage);
     },
   });
 
@@ -281,7 +291,12 @@ export default function Orders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order deleted successfully!');
       closeDeleteModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete order';
+      toast.error(errorMessage);
     },
   });
 

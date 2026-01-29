@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { Plus, Folder, X, ChevronDown, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { validators } from '../utils/validation';
@@ -240,7 +241,12 @@ export default function Collections() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collections'] });
+      toast.success('Collection created successfully!');
       closeModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create collection';
+      toast.error(errorMessage);
     },
   });
 
@@ -251,7 +257,12 @@ export default function Collections() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collections'] });
+      toast.success('Collection updated successfully!');
       closeEditModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update collection';
+      toast.error(errorMessage);
     },
   });
 
@@ -262,7 +273,12 @@ export default function Collections() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collections'] });
+      toast.success('Collection deleted successfully!');
       closeDeleteModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete collection';
+      toast.error(errorMessage);
     },
   });
 

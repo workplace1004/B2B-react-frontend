@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { Users, Plus, X, ChevronsLeft, ChevronsRight, Pencil, Trash2, AlertTriangle, ChevronDown } from 'lucide-react';
 import { validators } from '../utils/validation';
@@ -247,7 +248,12 @@ export default function Customers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success('Customer created successfully!');
       closeModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create customer';
+      toast.error(errorMessage);
     },
   });
 
@@ -258,7 +264,12 @@ export default function Customers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success('Customer updated successfully!');
       closeEditModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update customer';
+      toast.error(errorMessage);
     },
   });
 
@@ -269,7 +280,12 @@ export default function Customers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success('Customer deleted successfully!');
       closeDeleteModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete customer';
+      toast.error(errorMessage);
     },
   });
 

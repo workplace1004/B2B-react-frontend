@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { Warehouse, Plus, X, ChevronsLeft, ChevronsRight, Pencil, Trash2, AlertTriangle, ChevronDown } from 'lucide-react';
 import { validators } from '../utils/validation';
@@ -259,7 +260,12 @@ export default function Inventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      toast.success('Inventory item created successfully!');
       closeModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create inventory item';
+      toast.error(errorMessage);
     },
   });
 
@@ -270,7 +276,12 @@ export default function Inventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      toast.success('Inventory item updated successfully!');
       closeEditModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update inventory item';
+      toast.error(errorMessage);
     },
   });
 
@@ -281,7 +292,12 @@ export default function Inventory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      toast.success('Inventory item deleted successfully!');
       closeDeleteModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete inventory item';
+      toast.error(errorMessage);
     },
   });
 
