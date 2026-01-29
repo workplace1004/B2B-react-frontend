@@ -28,17 +28,17 @@ export default function Review() {
         zoom: { enabled: false },
         toolbar: { show: false },
       },
-      colors: ['#5955D1'], // Primary color
+      colors: ['#5955D1'], // Primary purple color
       fill: {
         type: ['gradient'],
         gradient: {
           shade: 'light',
           type: 'vertical',
           shadeIntensity: 0.1,
-          gradientToColors: ['#5955D1'],
+          gradientToColors: ['#5955D1'], // Primary purple color
           inverseColors: false,
-          opacityFrom: 0.08,
-          opacityTo: 0.01,
+          opacityFrom: 0.4, // Increased opacity for better visibility
+          opacityTo: 0.05, // Increased opacity for better visibility
           stops: [20, 100],
         },
       },
@@ -47,6 +47,7 @@ export default function Review() {
         width: [3],
         curve: 'smooth' as const,
         dashArray: [0, 5],
+        colors: ['#5955D1'], // Primary purple color for the line
       },
       markers: {
         size: 0,

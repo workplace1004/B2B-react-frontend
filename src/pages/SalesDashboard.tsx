@@ -26,17 +26,17 @@ export default function SalesDashboard() {
         zoom: { enabled: false },
         toolbar: { show: false },
       },
-      colors: ['#5955D1', '#dc3545'], // Income: primary (purple), Expenses: danger (red)
+      colors: ['#0d6efd', '#dc3545'], // Income: blue, Expenses: red
       fill: {
         type: ['gradient', 'gradient'],
         gradient: {
           shade: 'light',
           type: 'vertical',
           shadeIntensity: 0.1,
-          gradientToColors: ['#5955D1', '#dc3545'],
+          gradientToColors: ['#0d6efd', '#dc3545'], // Blue for Income, Red for Expenses
           inverseColors: false,
-          opacityFrom: 0.08,
-          opacityTo: 0.01,
+          opacityFrom: 0.4, // Increased opacity for better visibility
+          opacityTo: 0.1, // Increased opacity for better visibility
           stops: [20, 100],
         },
       },
@@ -45,6 +45,7 @@ export default function SalesDashboard() {
         width: [2, 2],
         curve: 'smooth' as const,
         dashArray: [0, 0],
+        colors: ['#0d6efd', '#dc3545'], // Explicit stroke colors: blue for Income, red for Expenses
       },
       markers: {
         size: 0,
