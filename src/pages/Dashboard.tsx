@@ -1442,60 +1442,60 @@ export default function Dashboard() {
                 <span className="text-sm text-gray-500 dark:text-gray-400">No customers found</span>
               </div>
             )}
-            {filteredCustomers.length > 0 && (
-              <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Showing {((customerPage - 1) * customersPerPage) + 1} to {Math.min(customerPage * customersPerPage, totalCustomers)} of {totalCustomers} entries
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setCustomerPage(1)}
-                    disabled={customerPage === 1}
-                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    &lt;&lt;
-                  </button>
-                  <button
-                    onClick={() => setCustomerPage(p => Math.max(1, p - 1))}
-                    disabled={customerPage === 1}
-                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    &lt;
-                  </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = i + 1;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCustomerPage(pageNum)}
-                        className={`px-3 py-1 text-sm border rounded ${
-                          customerPage === pageNum
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setCustomerPage(p => Math.min(totalPages, p + 1))}
-                    disabled={customerPage === totalPages}
-                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    &gt;
-                  </button>
-                  <button
-                    onClick={() => setCustomerPage(totalPages)}
-                    disabled={customerPage === totalPages}
-                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    &gt;&gt;
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
+          {filteredCustomers.length > 0 && (
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {((customerPage - 1) * customersPerPage) + 1} to {Math.min(customerPage * customersPerPage, totalCustomers)} of {totalCustomers} entries
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCustomerPage(1)}
+                  disabled={customerPage === 1}
+                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCustomerPage(p => Math.max(1, p - 1))}
+                  disabled={customerPage === 1}
+                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  &lt;
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCustomerPage(pageNum)}
+                      className={`px-3 py-1 text-sm border rounded ${
+                        customerPage === pageNum
+                          ? 'bg-primary text-white border-primary'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setCustomerPage(p => Math.min(totalPages, p + 1))}
+                  disabled={customerPage === totalPages}
+                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  &gt;
+                </button>
+                <button
+                  onClick={() => setCustomerPage(totalPages)}
+                  disabled={customerPage === totalPages}
+                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Task Update Card */}
