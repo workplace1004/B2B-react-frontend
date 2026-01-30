@@ -865,26 +865,37 @@ export default function SalesDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filteredSales.map((sale: any, idx: number) => (
-                  <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30">
-                    <td className="px-4 py-3">
-                      <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600" />
-                    </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{sale.id}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-xs">
-                          {sale.customer.charAt(0)}
-                        </div>
-                        <span className="text-gray-900 dark:text-white">{sale.customer}</span>
+                {filteredSales.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                        <span className="text-sm text-gray-500 dark:text-gray-400">No Sales Found</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{sale.product}</td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-white font-semibold">{sale.amount}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{sale.payment}</td>
-                    <td className="px-4 py-3">{getStatusBadge(sale.status)}</td>
                   </tr>
-                ))}
+                ) : (
+                  filteredSales.map((sale: any, idx: number) => (
+                    <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30">
+                      <td className="px-4 py-3">
+                        <input type="checkbox" className="rounded border-gray-300 dark:border-gray-600" />
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{sale.id}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-xs">
+                            {sale.customer.charAt(0)}
+                          </div>
+                          <span className="text-gray-900 dark:text-white">{sale.customer}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{sale.product}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white font-semibold">{sale.amount}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{sale.payment}</td>
+                      <td className="px-4 py-3">{getStatusBadge(sale.status)}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -924,23 +935,34 @@ export default function SalesDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedTopSelling.map((item, idx) => (
-                  <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30">
-                    <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{item.id}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-xs">
-                          {item.product.charAt(0)}
-                        </div>
-                        <span className="text-gray-900 dark:text-white">{item.product}</span>
+                {paginatedTopSelling.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                        <span className="text-sm text-gray-500 dark:text-gray-400">No Items Found</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.stock.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.price}</td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-white font-semibold">{item.totalSale}</td>
-                    <td className="px-4 py-3">{getStatusBadge(item.status)}</td>
                   </tr>
-                ))}
+                ) : (
+                  paginatedTopSelling.map((item, idx) => (
+                    <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30">
+                      <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{item.id}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-xs">
+                            {item.product.charAt(0)}
+                          </div>
+                          <span className="text-gray-900 dark:text-white">{item.product}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.stock.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{item.price}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white font-semibold">{item.totalSale}</td>
+                      <td className="px-4 py-3">{getStatusBadge(item.status)}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
             {/* Pagination */}

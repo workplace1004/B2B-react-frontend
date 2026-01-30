@@ -577,6 +577,8 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+                </>
+              )}
             </div>
 
             {/* Card 2: Order Analytics */}
@@ -660,6 +662,8 @@ export default function Dashboard() {
                   Compared to Last Month
                 </div>
               </div>
+                </>
+              )}
             </div>
 
             {/* Card 3: Tasks Overview */}
@@ -753,6 +757,8 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+                </>
+              )}
             </div>
 
             {/* Card 5: Revenue */}
@@ -889,71 +895,72 @@ export default function Dashboard() {
                         name: 'Revenue',
                         data: [120, 350, 450, 120, 200, 180, 300, 120, 250, 350, 250, 180]
                       }]}
-                    options={{
-                      chart: {
-                        toolbar: { show: false }
-                      },
-                      plotOptions: {
-                        bar: {
-                          horizontal: false,
-                          columnWidth: '70%',
-                          borderRadius: 4
-                        }
-                      },
-                      colors: ['#5955D1'],
-                      dataLabels: { enabled: false },
-                      stroke: { show: true },
-                      xaxis: {
-                        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                        axisBorder: { color: '#EEEEF3' },
-                        axisTicks: { show: false },
-                        labels: {
-                          style: {
-                            colors: '#696981',
-                            fontSize: '13px',
-                            fontWeight: 500
+                      options={{
+                        chart: {
+                          toolbar: { show: false }
+                        },
+                        plotOptions: {
+                          bar: {
+                            horizontal: false,
+                            columnWidth: '70%',
+                            borderRadius: 4
                           }
-                        }
-                      },
-                      yaxis: {
-                        min: 0,
-                        max: 500,
-                        tickAmount: 5,
-                        labels: {
-                          formatter: (val: number) => val + 'K',
-                          style: {
-                            colors: '#696981',
-                            fontSize: '13px',
-                            fontWeight: 500
+                        },
+                        colors: ['#5955D1'],
+                        dataLabels: { enabled: false },
+                        stroke: { show: true },
+                        xaxis: {
+                          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                          axisBorder: { color: '#EEEEF3' },
+                          axisTicks: { show: false },
+                          labels: {
+                            style: {
+                              colors: '#696981',
+                              fontSize: '13px',
+                              fontWeight: 500
+                            }
                           }
-                        }
-                      },
-                      grid: {
-                        borderColor: '#EEEEF3',
-                        strokeDashArray: 5,
-                        xaxis: { lines: { show: false } },
-                        yaxis: { lines: { show: true } }
-                      },
-                      fill: {
-                        type: 'gradient',
-                        gradient: {
-                          shade: 'light',
-                          type: 'vertical',
-                          shadeIntensity: 0.1,
-                          gradientToColors: ['#7008E7'],
-                          inverseColors: false,
-                          opacityFrom: 1,
-                          opacityTo: 0.6,
-                          stops: [20, 100]
-                        }
-                      },
-                      tooltip: {
-                        y: { formatter: (val: number) => '$ ' + val + ' thousands' }
-                      },
-                      legend: { show: false }
-                    }}
-                  />
-                </div>
+                        },
+                        yaxis: {
+                          min: 0,
+                          max: 500,
+                          tickAmount: 5,
+                          labels: {
+                            formatter: (val: number) => val + 'K',
+                            style: {
+                              colors: '#696981',
+                              fontSize: '13px',
+                              fontWeight: 500
+                            }
+                          }
+                        },
+                        grid: {
+                          borderColor: '#EEEEF3',
+                          strokeDashArray: 5,
+                          xaxis: { lines: { show: false } },
+                          yaxis: { lines: { show: true } }
+                        },
+                        fill: {
+                          type: 'gradient',
+                          gradient: {
+                            shade: 'light',
+                            type: 'vertical',
+                            shadeIntensity: 0.1,
+                            gradientToColors: ['#7008E7'],
+                            inverseColors: false,
+                            opacityFrom: 1,
+                            opacityTo: 0.6,
+                            stops: [20, 100]
+                          }
+                        },
+                        tooltip: {
+                          y: { formatter: (val: number) => '$ ' + val + ' thousands' }
+                        },
+                        legend: { show: false }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
