@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
-import { Wallet, ShoppingCart, TrendingUp, Target, Search, Edit, Trash2, X, AlertTriangle } from 'lucide-react';
+import { Wallet, ShoppingCart, Search, Edit, Trash2, X, AlertTriangle, Inbox } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { SkeletonStatsCard } from '../components/Skeleton';
 
@@ -609,58 +609,62 @@ export default function SalesDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-4 pb-0 border-0">
-            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-              <Wallet className="w-6 h-6" />
+          {totalEarning === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+              <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
             </div>
-          </div>
-          <div className="p-4 flex items-end">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Earning</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{formatCurrency(totalEarning)}</h2>
+          ) : (
+            <>
+              <div className="p-4 pb-0 border-0">
+                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <Wallet className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="p-4 flex items-end">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Earning</p>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{formatCurrency(totalEarning)}</h2>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          {totalOrders === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+              <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
             </div>
+          ) : (
+            <>
+              <div className="p-4 pb-0 border-0">
+                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center">
+                  <ShoppingCart className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="p-4 flex items-end">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Orders</p>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{totalOrders.toLocaleString()}</h2>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-4 pb-0 border-0">
-            <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center">
-              <ShoppingCart className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="p-4 flex items-end">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Orders</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{totalOrders.toLocaleString()}</h2>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-4 pb-0 border-0">
-            <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="p-4 flex items-end">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Revenue Growth</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">N/A</h2>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-4 pb-0 border-0">
-            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center">
-              <Target className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="p-4 flex items-end">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Conversion Rate</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">N/A</h2>
-            </div>
+          <div className="flex flex-col items-center justify-center py-8">
+            <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
           </div>
         </div>
       </div>

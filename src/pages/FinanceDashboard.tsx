@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import api from '../lib/api';
-import { Coins, CreditCard, TrendingUp, Calendar, Search, MoreVertical, ChevronDown } from 'lucide-react';
+import { Coins, CreditCard, TrendingUp, Calendar, Search, MoreVertical, ChevronDown, Inbox } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { Doughnut } from 'react-chartjs-2';
 import {
@@ -428,51 +428,79 @@ export default function FinanceDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex gap-3 items-center">
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <Coins className="w-6 h-6 text-green-600 dark:text-green-400" />
+            {totalRevenue === 0 ? (
+              <div className="flex flex-col items-center justify-center py-4">
+                <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
               </div>
-              <div>
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Revenue</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalRevenue)}</h2>
+            ) : (
+              <div className="flex gap-3 items-center">
+                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <Coins className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Revenue</span>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalRevenue)}</h2>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex gap-3 items-center">
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <CreditCard className="w-6 h-6 text-red-600 dark:text-red-400" />
+            {totalExpenses === 0 ? (
+              <div className="flex flex-col items-center justify-center py-4">
+                <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
               </div>
-              <div>
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Expenses</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalExpenses)}</h2>
+            ) : (
+              <div className="flex gap-3 items-center">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <CreditCard className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Expenses</span>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalExpenses)}</h2>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex gap-3 items-center">
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            {netProfit === 0 ? (
+              <div className="flex flex-col items-center justify-center py-4">
+                <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
               </div>
-              <div>
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Net Profit</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(netProfit)}</h2>
+            ) : (
+              <div className="flex gap-3 items-center">
+                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Net Profit</span>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(netProfit)}</h2>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex gap-3 items-center">
-              <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            {pendingInvoices === 0 ? (
+              <div className="flex flex-col items-center justify-center py-4">
+                <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
               </div>
-              <div>
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Pending Invoices</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{pendingInvoices}</h2>
+            ) : (
+              <div className="flex gap-3 items-center">
+                <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Pending Invoices</span>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{pendingInvoices}</h2>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -522,9 +550,16 @@ export default function FinanceDashboard() {
                   )}
                 </div>
               </div>
-              <div className="p-2">
-                <Chart type="line" height={300} series={revenueExpensesChartConfig.series} options={revenueExpensesChartConfig} />
-              </div>
+              {chartData.revenueData.length === 0 || chartData.revenueData.every((val: number) => val === 0) ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">No Data Available</span>
+                </div>
+              ) : (
+                <div className="p-2">
+                  <Chart type="line" height={300} series={revenueExpensesChartConfig.series} options={revenueExpensesChartConfig} />
+                </div>
+              )}
             </div>
 
             {/* Expense Breakdown */}
@@ -532,10 +567,16 @@ export default function FinanceDashboard() {
               <div className="border-b border-gray-200 dark:border-gray-700 mb-4 pb-4">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Expense Breakdown</h6>
               </div>
-              <div className="flex flex-col items-center gap-4">
-                <div className="max-w-[175px] w-full aspect-square">
-                  <Doughnut data={expenseChartData} options={expenseChartOptions} />
+              {expenseChartData.datasets[0].data.every((val: number) => val === 0) ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">No Data Available</span>
                 </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="max-w-[175px] w-full aspect-square">
+                    <Doughnut data={expenseChartData} options={expenseChartOptions} />
+                  </div>
                 <div className="w-full space-y-2">
                   {[
                     { label: 'Salaries', value: '40%', opacity: 'opacity-10' },
@@ -552,7 +593,8 @@ export default function FinanceDashboard() {
                     </div>
                   ))}
                 </div>
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Monthly Target */}
@@ -568,21 +610,28 @@ export default function FinanceDashboard() {
                 <MoreVertical className="w-4 h-4 text-white" />
               </button>
             </div>
-            <div className="p-4 pt-2 pb-0 flex-1 flex flex-col">
-              <div className="flex gap-2 items-center mb-3">
-                <h2 className="mb-0 text-white text-2xl font-bold">92%</h2>
-                <span className="text-white text-sm">+15% vs last month</span>
+            {totalRevenue === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 flex-1">
+                <Inbox className="w-12 h-12 text-white/50 mb-3" />
+                <span className="text-sm text-white/70">No Data Available</span>
               </div>
-              <div className="mb-5 relative -z-10 flex-1 flex items-center justify-center">
-                <Chart type="radialBar" height={350} series={monthlyStatusChartConfig.series} options={monthlyStatusChartConfig} />
-                <div className="-mt-10 text-center text-white font-semibold">673 Orders</div>
+            ) : (
+              <div className="p-4 pt-2 pb-0 flex-1 flex flex-col">
+                <div className="flex gap-2 items-center mb-3">
+                  <h2 className="mb-0 text-white text-2xl font-bold">92%</h2>
+                  <span className="text-white text-sm">+15% vs last month</span>
+                </div>
+                <div className="mb-5 relative -z-10 flex-1 flex items-center justify-center">
+                  <Chart type="radialBar" height={350} series={monthlyStatusChartConfig.series} options={monthlyStatusChartConfig} />
+                  <div className="-mt-10 text-center text-white font-semibold">673 Orders</div>
+                </div>
+                <div className="text-center px-3 mb-4">
+                  <p className="text-white mb-0 text-sm">
+                    You earn <strong className="text-yellow-300">$7540</strong> today, its higher than last month keep up your good trends!
+                  </p>
+                </div>
               </div>
-              <div className="text-center px-3 mb-4">
-                <p className="text-white mb-0 text-sm">
-                  You earn <strong className="text-yellow-300">$7540</strong> today, its higher than last month keep up your good trends!
-                </p>
-              </div>
-            </div>
+            )}
             <div className="p-4 border-t border-white/10 pt-3">
               <div className="bg-white dark:bg-gray-800 py-3 px-3 rounded-lg flex">
                 <div className="text-center flex-1 py-2">

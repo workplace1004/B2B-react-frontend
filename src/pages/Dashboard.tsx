@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { Package, ShoppingCart, AlertTriangle, ArrowRight, TrendingUp, Calendar, Search, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, ShoppingCart, AlertTriangle, ArrowRight, TrendingUp, Calendar, Search, Plus, Trash2, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { SkeletonStatsCard, SkeletonTable } from '../components/Skeleton';
 import Chart from 'react-apexcharts';
 import { Doughnut } from 'react-chartjs-2';
@@ -492,15 +492,22 @@ export default function Dashboard() {
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Total Customers</h6>
               </div>
-              <div className="p-4 pb-0 flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
-                    {dashboardStats?.totalCustomers?.toLocaleString() || '0'}
-                  </h2>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                    +2.57%
-                  </span>
+              {(dashboardStats?.totalCustomers || 0) === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
                 </div>
+              ) : (
+                <>
+                  <div className="p-4 pb-0 flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                        {dashboardStats?.totalCustomers?.toLocaleString() || '0'}
+                      </h2>
+                      <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
+                        +2.57%
+                      </span>
+                    </div>
                 <div className="w-[150px] h-[120px] -mt-3 -mb-4">
                   <Chart
                     type="bar"
@@ -577,16 +584,23 @@ export default function Dashboard() {
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Order Analytics</h6>
               </div>
-              <div className="p-4 pt-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
-                    {dashboardStats?.totalOrders?.toLocaleString() || '0'}
-                  </h2>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">
-                    -2.57%
-                  </span>
+              {(dashboardStats?.totalOrders || 0) === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="p-4 pt-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                        {dashboardStats?.totalOrders?.toLocaleString() || '0'}
+                      </h2>
+                      <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">
+                        -2.57%
+                      </span>
+                    </div>
+                  </div>
               <div className="relative -mx-1" style={{ height: '120px', paddingBottom: '20px' }}>
                 <Chart
                   type="area"
@@ -711,16 +725,23 @@ export default function Dashboard() {
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Active Orders</h6>
               </div>
-              <div className="p-4 pt-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
-                    {dashboardStats?.totalOrders?.toLocaleString() || '0'}
-                  </h2>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                    +2.57%
-                  </span>
+              {(dashboardStats?.totalOrders || 0) === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="p-4 pt-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                        {dashboardStats?.totalOrders?.toLocaleString() || '0'}
+                      </h2>
+                      <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
+                        +2.57%
+                      </span>
+                    </div>
+                  </div>
               <div className="p-4 pt-2 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-0">Vs last month: 1,195</p>
@@ -854,14 +875,20 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="p-4 pt-0">
-                <div style={{ height: '280px' }}>
-                  <Chart
-                    type="bar"
-                    height={280}
-                    series={[{
-                      name: 'Revenue',
-                      data: [120, 350, 450, 120, 200, 180, 300, 120, 250, 350, 250, 180]
-                    }]}
+                {periodRevenue === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12" style={{ height: '280px' }}>
+                    <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                    <span className="text-sm text-gray-500 dark:text-gray-400">No Data Available</span>
+                  </div>
+                ) : (
+                  <div style={{ height: '280px' }}>
+                    <Chart
+                      type="bar"
+                      height={280}
+                      series={[{
+                        name: 'Revenue',
+                        data: [120, 350, 450, 120, 200, 180, 300, 120, 250, 350, 250, 180]
+                      }]}
                     options={{
                       chart: {
                         toolbar: { show: false }
@@ -1120,108 +1147,117 @@ export default function Dashboard() {
               <div className="p-4 border-b border-white/10 relative z-10">
                 <h6 className="text-sm font-semibold text-white mb-0">Total Revenue</h6>
               </div>
-              <div className="p-4 pt-0 border-b border-white/10 relative z-10">
-                <div className="mb-5 -mt-3 relative" style={{ height: '350px' }}>
-                  <Chart
-                    type="radialBar"
-                    height={350}
-                    series={[35]}
-                    options={{
-                      chart: {
-                        type: 'radialBar',
-                        offsetY: 0,
-                        height: 350,
-                        sparkline: { enabled: true }
-                      },
-                      plotOptions: {
-                        radialBar: {
-                          startAngle: -95,
-                          endAngle: 95,
-                          track: {
-                            background: 'rgba(255, 255, 255, 0.3)',
-                            strokeWidth: '100%',
-                            margin: 25
+              {periodRevenue === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 flex-1" style={{ minHeight: '350px' }}>
+                  <Inbox className="w-12 h-12 text-white/50 mb-3" />
+                  <span className="text-sm text-white/70">No Data Available</span>
+                </div>
+              ) : (
+                <>
+                  <div className="p-4 pt-0 border-b border-white/10 relative z-10">
+                    <div className="mb-5 -mt-3 relative" style={{ height: '350px' }}>
+                      <Chart
+                        type="radialBar"
+                        height={350}
+                        series={[35]}
+                        options={{
+                          chart: {
+                            type: 'radialBar',
+                            offsetY: 0,
+                            height: 350,
+                            sparkline: { enabled: true }
                           },
-                          dataLabels: {
-                            name: { show: false },
-                            value: {
-                              show: true,
-                              offsetY: -35,
-                              fontSize: '28px',
-                              fontWeight: 600,
-                              color: '#FFFFFF',
-                              formatter: () => {
-                                const revenue = periodRevenue / 1000000;
-                                return revenue > 0 ? `$${revenue.toFixed(1)}m` : '$0m';
+                          plotOptions: {
+                            radialBar: {
+                              startAngle: -95,
+                              endAngle: 95,
+                              track: {
+                                background: 'rgba(255, 255, 255, 0.3)',
+                                strokeWidth: '100%',
+                                margin: 25
+                              },
+                              dataLabels: {
+                                name: { show: false },
+                                value: {
+                                  show: true,
+                                  offsetY: -35,
+                                  fontSize: '28px',
+                                  fontWeight: 600,
+                                  color: '#FFFFFF',
+                                  formatter: () => {
+                                    const revenue = periodRevenue / 1000000;
+                                    return revenue > 0 ? `$${revenue.toFixed(1)}m` : '$0m';
+                                  }
+                                }
                               }
                             }
+                          },
+                          grid: {
+                            padding: { top: 0, bottom: 0, left: 0, right: 0 }
+                          },
+                          fill: {
+                            colors: ['#FFFFFF']
                           }
-                        }
-                      },
-                      grid: {
-                        padding: { top: 0, bottom: 0, left: 0, right: 0 }
-                      },
-                      fill: {
-                        colors: ['#FFFFFF']
-                      }
-                    }}
-                  />
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center text-white font-semibold">
-                    {dashboardStats?.totalOrders || 673} Orders
-                  </div>
-                </div>
-                <div className="px-4 mb-3 flex items-start justify-between">
-                  <div className="flex items-start gap-2">
-                    <div className="py-1">
-                      <div className="w-3 h-3 bg-white rounded"></div>
-                    </div>
-                    <div>
-                      <h3 className="mb-0 text-white font-bold text-lg">
-                        {formatCurrency(periodRevenue * 0.5).split('.')[0]}m
-                      </h3>
-                      <p className="text-white/50 mb-0 text-sm">245 Pickups</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="p-1">
-                      <div className="w-3 h-3 bg-white/50 rounded"></div>
-                    </div>
-                    <div>
-                      <h3 className="mb-0 text-white font-bold text-lg">$65,823</h3>
-                      <p className="text-white/50 mb-0 text-sm">120 Shipments</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 border-0">
-                <h6 className="text-sm font-semibold text-white mb-3">Orders Status</h6>
-                <div className="flex gap-1 mb-4 bg-transparent">
-                  <div className="flex-1 bg-transparent" style={{ width: '70%' }}>
-                    <div className="h-2 bg-white rounded"></div>
-                  </div>
-                  <div className="flex-1 bg-transparent" style={{ width: '25%' }}>
-                    <div className="h-2 bg-white/50 rounded"></div>
-                  </div>
-                  <div className="flex-1 bg-transparent" style={{ width: '5%' }}>
-                    <div className="h-2 bg-white/25 rounded"></div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { label: 'Paid', value: '70%', opacity: 'opacity-100' },
-                    { label: 'Cancelled', value: '25%', opacity: 'opacity-50' },
-                    { label: 'Refunded', value: '5%', opacity: 'opacity-25' }
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 bg-white ${item.opacity} rounded`}></div>
-                        <h6 className="font-light text-white mb-0 text-sm">{item.label}</h6>
+                        }}
+                      />
+                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center text-white font-semibold">
+                        {dashboardStats?.totalOrders || 673} Orders
                       </div>
-                      <strong className="text-white font-semibold">{item.value}</strong>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="px-4 mb-3 flex items-start justify-between">
+                      <div className="flex items-start gap-2">
+                        <div className="py-1">
+                          <div className="w-3 h-3 bg-white rounded"></div>
+                        </div>
+                        <div>
+                          <h3 className="mb-0 text-white font-bold text-lg">
+                            {formatCurrency(periodRevenue * 0.5).split('.')[0]}m
+                          </h3>
+                          <p className="text-white/50 mb-0 text-sm">245 Pickups</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="p-1">
+                          <div className="w-3 h-3 bg-white/50 rounded"></div>
+                        </div>
+                        <div>
+                          <h3 className="mb-0 text-white font-bold text-lg">$65,823</h3>
+                          <p className="text-white/50 mb-0 text-sm">120 Shipments</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border-0">
+                    <h6 className="text-sm font-semibold text-white mb-3">Orders Status</h6>
+                    <div className="flex gap-1 mb-4 bg-transparent">
+                      <div className="flex-1 bg-transparent" style={{ width: '70%' }}>
+                        <div className="h-2 bg-white rounded"></div>
+                      </div>
+                      <div className="flex-1 bg-transparent" style={{ width: '25%' }}>
+                        <div className="h-2 bg-white/50 rounded"></div>
+                      </div>
+                      <div className="flex-1 bg-transparent" style={{ width: '5%' }}>
+                        <div className="h-2 bg-white/25 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { label: 'Paid', value: '70%', opacity: 'opacity-100' },
+                        { label: 'Cancelled', value: '25%', opacity: 'opacity-50' },
+                        { label: 'Refunded', value: '5%', opacity: 'opacity-25' }
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 bg-white ${item.opacity} rounded`}></div>
+                            <h6 className="font-light text-white mb-0 text-sm">{item.label}</h6>
+                          </div>
+                          <strong className="text-white font-semibold">{item.value}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Card 9: Orders By Time */}
@@ -1229,73 +1265,80 @@ export default function Dashboard() {
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Orders By Time</h6>
               </div>
-              <div className="p-4 p-0">
-                <div style={{ height: '250px' }} className="-mt-3 -mb-1">
-                  <Chart
-                    type="heatmap"
-                    height={250}
-                    series={[
-                      { name: '8am', data: [10, 12, 8, 15, 5, 7, 9] },
-                      { name: '10am', data: [20, 25, 18, 30, 12, 15, 10] },
-                      { name: '12pm', data: [30, 28, 22, 50, 25, 20, 18] },
-                      { name: '2pm', data: [15, 18, 12, 22, 28, 25, 14] },
-                      { name: '4pm', data: [10, 14, 9, 18, 20, 15, 12] }
-                    ]}
-                    options={{
-                      chart: {
-                        height: 250,
-                        type: 'heatmap',
-                        toolbar: { show: false }
-                      },
-                      stroke: {
-                        width: 2,
-                        colors: ['var(--bs-body-bg)']
-                      },
-                      dataLabels: { enabled: false },
-                      plotOptions: {
-                        heatmap: {
-                          shadeIntensity: 0.95,
-                          radius: 6,
-                          distributed: false,
-                          colorScale: {
-                            ranges: [
-                              { from: 0, to: 10, color: '#E0E7FF' },
-                              { from: 11, to: 25, color: '#A5B4FC' },
-                              { from: 26, to: 50, color: '#6366F1' }
-                            ]
-                          }
-                        }
-                      },
-                      grid: { show: false },
-                      yaxis: {
-                        min: 0,
-                        max: 500,
-                        tickAmount: 5,
-                        labels: {
-                          style: {
-                            colors: '#696981',
-                            fontSize: '13px',
-                            fontWeight: 500
-                          }
-                        }
-                      },
-                      xaxis: {
-                        categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                        axisBorder: { show: false },
-                        axisTicks: { show: false },
-                        labels: {
-                          style: {
-                            colors: '#696981',
-                            fontSize: '13px',
-                            fontWeight: 500
-                          }
-                        }
-                      },
-                      legend: { show: false }
-                    }}
-                  />
+              {(dashboardStats?.totalOrders || 0) === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12" style={{ height: '250px' }}>
+                  <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">No Data Available</span>
                 </div>
-              </div>
+              ) : (
+                <div className="p-4 p-0">
+                  <div style={{ height: '250px' }} className="-mt-3 -mb-1">
+                    <Chart
+                      type="heatmap"
+                      height={250}
+                      series={[
+                        { name: '8am', data: [10, 12, 8, 15, 5, 7, 9] },
+                        { name: '10am', data: [20, 25, 18, 30, 12, 15, 10] },
+                        { name: '12pm', data: [30, 28, 22, 50, 25, 20, 18] },
+                        { name: '2pm', data: [15, 18, 12, 22, 28, 25, 14] },
+                        { name: '4pm', data: [10, 14, 9, 18, 20, 15, 12] }
+                      ]}
+                      options={{
+                        chart: {
+                          height: 250,
+                          type: 'heatmap',
+                          toolbar: { show: false }
+                        },
+                        stroke: {
+                          width: 2,
+                          colors: ['var(--bs-body-bg)']
+                        },
+                        dataLabels: { enabled: false },
+                        plotOptions: {
+                          heatmap: {
+                            shadeIntensity: 0.95,
+                            radius: 6,
+                            distributed: false,
+                            colorScale: {
+                              ranges: [
+                                { from: 0, to: 10, color: '#E0E7FF' },
+                                { from: 11, to: 25, color: '#A5B4FC' },
+                                { from: 26, to: 50, color: '#6366F1' }
+                              ]
+                            }
+                          }
+                        },
+                        grid: { show: false },
+                        yaxis: {
+                          min: 0,
+                          max: 500,
+                          tickAmount: 5,
+                          labels: {
+                            style: {
+                              colors: '#696981',
+                              fontSize: '13px',
+                              fontWeight: 500
+                            }
+                          }
+                        },
+                        xaxis: {
+                          categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                          axisBorder: { show: false },
+                          axisTicks: { show: false },
+                          labels: {
+                            style: {
+                              colors: '#696981',
+                              fontSize: '13px',
+                              fontWeight: 500
+                            }
+                          }
+                        },
+                        legend: { show: false }
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
@@ -1387,8 +1430,9 @@ export default function Dashboard() {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">No customers found</p>
+              <div className="flex flex-col items-center justify-center py-12">
+                <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">No customers found</span>
               </div>
             )}
             {filteredCustomers.length > 0 && (
@@ -1476,22 +1520,29 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="p-2 pt-3 overflow-auto" style={{ maxHeight: '385px' }}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={tasks.map(task => task.id)}
-                strategy={verticalListSortingStrategy}
+            {tasks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">No Tasks Found</span>
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
               >
-                <ul className="space-y-1">
-                  {tasks.map((task) => (
-                    <SortableTaskItem key={task.id} task={task} />
-                  ))}
-                </ul>
-              </SortableContext>
-            </DndContext>
+                <SortableContext
+                  items={tasks.map(task => task.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <ul className="space-y-1">
+                    {tasks.map((task) => (
+                      <SortableTaskItem key={task.id} task={task} />
+                    ))}
+                  </ul>
+                </SortableContext>
+              </DndContext>
+            )}
           </div>
         </div>
       </div>
