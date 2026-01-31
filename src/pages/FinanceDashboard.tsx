@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import api from '../lib/api';
-import { Coins, CreditCard, TrendingUp, Calendar, Search, MoreVertical, ChevronDown } from 'lucide-react';
+import { Coins, CreditCard, TrendingUp, Calendar, Search, MoreVertical, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { Doughnut } from 'react-chartjs-2';
 import {
@@ -234,6 +234,14 @@ export default function FinanceDashboard() {
   const [selectedYear, setSelectedYear] = useState('This Year');
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
   const yearDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Calendar and date range states
+  const [selectedDateRange, setSelectedDateRange] = useState('Month');
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   const filteredTransactions = transactions.filter((tx) =>
     tx.name.toLowerCase().includes(transactionSearch.toLowerCase()) ||
@@ -247,6 +255,9 @@ export default function FinanceDashboard() {
       if (yearDropdownRef.current && !yearDropdownRef.current.contains(event.target as Node)) {
         setIsYearDropdownOpen(false);
       }
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setIsCalendarOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -254,6 +265,60 @@ export default function FinanceDashboard() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Calendar helper functions
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month: number, year: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      if (currentMonth === 0) {
+        setCurrentMonth(11);
+        setCurrentYear(currentYear - 1);
+      } else {
+        setCurrentMonth(currentMonth - 1);
+      }
+    } else {
+      if (currentMonth === 11) {
+        setCurrentMonth(0);
+        setCurrentYear(currentYear + 1);
+      } else {
+        setCurrentMonth(currentMonth + 1);
+      }
+    }
+  };
+
+  const isToday = (day: number) => {
+    const today = new Date();
+    return (
+      day === today.getDate() &&
+      currentMonth === today.getMonth() &&
+      currentYear === today.getFullYear()
+    );
+  };
+
+  const isSelected = (day: number) => {
+    if (!selectedDate) return false;
+    return (
+      day === selectedDate.getDate() &&
+      currentMonth === selectedDate.getMonth() &&
+      currentYear === selectedDate.getFullYear()
+    );
+  };
+
+  const handleDateSelect = (day: number) => {
+    const newDate = new Date(currentYear, currentMonth, day);
+    setSelectedDate(newDate);
+    setIsCalendarOpen(false);
+  };
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { bg: string; text: string }> = {
@@ -430,6 +495,130 @@ export default function FinanceDashboard() {
               </button>
             </div>
             <div className="p-4 pt-2 pb-0 flex-1 flex flex-col">
+              {/* Date Range Selector */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex gap-1 bg-white/10 rounded-lg p-1">
+                  <button
+                    onClick={() => setSelectedDateRange('Today')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      selectedDateRange === 'Today'
+                        ? 'bg-primary text-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    onClick={() => setSelectedDateRange('Week')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      selectedDateRange === 'Week'
+                        ? 'bg-primary text-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => setSelectedDateRange('Month')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      selectedDateRange === 'Month'
+                        ? 'bg-primary text-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Month
+                  </button>
+                </div>
+                <div className="relative" ref={calendarRef}>
+                  <button
+                    onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                    className="p-1.5 border border-white/30 rounded-md hover:bg-white/20 transition-colors"
+                  >
+                    <Calendar className="w-4 h-4 text-white" />
+                  </button>
+                  {isCalendarOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 p-4">
+                      {/* Calendar Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <button
+                          onClick={() => navigateMonth('prev')}
+                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                        </button>
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                          {monthNames[currentMonth]} {currentYear}
+                        </h3>
+                        <button
+                          onClick={() => navigateMonth('next')}
+                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                        </button>
+                      </div>
+                      
+                      {/* Calendar Days */}
+                      <div className="grid grid-cols-7 gap-1 mb-2">
+                        {dayNames.map((day) => (
+                          <div
+                            key={day}
+                            className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2"
+                          >
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="grid grid-cols-7 gap-1">
+                        {Array.from({ length: getFirstDayOfMonth(currentMonth, currentYear) }).map((_, idx) => (
+                          <div key={`empty-${idx}`} className="aspect-square" />
+                        ))}
+                        {Array.from({ length: getDaysInMonth(currentMonth, currentYear) }).map((_, idx) => {
+                          const day = idx + 1;
+                          const isTodayDate = isToday(day);
+                          const isSelectedDate = isSelected(day);
+                          return (
+                            <button
+                              key={day}
+                              onClick={() => handleDateSelect(day)}
+                              className={`aspect-square rounded-lg text-sm font-medium transition-all duration-200 ${
+                                isSelectedDate
+                                  ? 'bg-primary text-white shadow-lg scale-105'
+                                  : isTodayDate
+                                  ? 'bg-primary/20 text-primary border-2 border-primary'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Quick Actions */}
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                        <button
+                          onClick={() => {
+                            const today = new Date();
+                            setCurrentMonth(today.getMonth());
+                            setCurrentYear(today.getFullYear());
+                            setSelectedDate(today);
+                          }}
+                          className="flex-1 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          Today
+                        </button>
+                        <button
+                          onClick={() => setIsCalendarOpen(false)}
+                          className="flex-1 px-3 py-2 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="flex gap-2 items-center mb-3">
                 <h2 className="mb-0 text-white text-2xl font-bold">92%</h2>
                 <span className="text-white text-sm">+15% vs last month</span>
