@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { Star, MessageSquare, TrendingUp, Users, MessageCircle, BarChart3, Search, MoreVertical } from 'lucide-react';
 import Chart from 'react-apexcharts';
@@ -9,6 +9,21 @@ export default function Review() {
   const [reviewTimeRange, setReviewTimeRange] = useState<'today' | 'week' | 'month'>('month');
   const [recentReviewSearch, setRecentReviewSearch] = useState('');
   const [topRatedSearch, setTopRatedSearch] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Check for dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch review data
   const { data: reviewsData, isLoading } = useQuery({
@@ -66,7 +81,7 @@ export default function Review() {
         labels: {
           formatter: (value: number) => value > 1000 ? `${(value / 1000).toFixed(1)}K` : value.toString(),
           style: {
-            colors: 'var(--bs-body-color)',
+            colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
             fontFamily: 'var(--bs-body-font-family)',
@@ -96,7 +111,7 @@ export default function Review() {
           height: 10,
         },
         labels: {
-          colors: 'var(--bs-heading-color)',
+          colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontFamily: 'var(--bs-body-font-family)',
           fontSize: '13px',
         },
@@ -122,7 +137,7 @@ export default function Review() {
         axisTicks: { show: false },
         labels: {
           style: {
-            colors: 'var(--bs-body-color)',
+            colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
             fontFamily: 'var(--bs-body-font-family)',
@@ -269,8 +284,8 @@ export default function Review() {
           <>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 pb-0 border-0 flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center">
+                  <i className="fi fi-rr-objects-column text-lg"></i>
                 </div>
                 {reviewsData?.totalReviewsChange !== undefined && (
                   <span className={`px-2 py-0.5 text-xs font-medium rounded ${
@@ -292,8 +307,8 @@ export default function Review() {
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 pb-0 border-0 flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-lg bg-blue-500 text-white flex items-center justify-center">
+                  <i className="fi fi-rr-comment-alt text-lg"></i>
                 </div>
                 {reviewsData?.totalReviewsChange !== undefined && (
                   <span className={`px-2 py-0.5 text-xs font-medium rounded ${
@@ -315,8 +330,8 @@ export default function Review() {
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 pb-0 border-0 flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center">
-                  <Star className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-lg bg-orange-500 text-white flex items-center justify-center">
+                  <i className="fi fi-rr-star text-lg"></i>
                 </div>
                 {reviewsData?.avgRatingChange !== undefined && reviewsData.avgRatingChange !== 0 && (
                   <span className={`px-2 py-0.5 text-xs font-medium rounded ${
@@ -338,8 +353,8 @@ export default function Review() {
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 pb-0 border-0 flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-lg bg-green-500 text-white flex items-center justify-center">
+                  <i className="fi fi-rr-social-network text-lg"></i>
                 </div>
                 {reviewsData?.positiveRatioChange !== undefined && reviewsData.positiveRatioChange !== 0 && (
                   <span className={`px-2 py-0.5 text-xs font-medium rounded ${
@@ -361,8 +376,8 @@ export default function Review() {
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 pb-0 border-0 flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-lg bg-red-500 text-white flex items-center justify-center">
+                  <i className="fi fi-rr-chat-arrow-grow text-lg"></i>
                 </div>
                 {reviewsData?.responseRateChange !== undefined && reviewsData.responseRateChange !== 0 && (
                   <span className={`px-2 py-0.5 text-xs font-medium rounded ${
@@ -384,12 +399,12 @@ export default function Review() {
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 pb-0 border-0 flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex items-center justify-center">
-                  <Users className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-lg bg-gray-500 text-white flex items-center justify-center">
+                  <i className="fi fi-rr-chart-histogram text-lg"></i>
                 </div>
               </div>
               <div className="p-4">
-                <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Reviews</h6>
+                <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Star Distribution</h6>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">
                   {reviewsData?.totalReviews?.toLocaleString() || '0'}
                 </h4>
