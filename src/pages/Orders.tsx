@@ -733,7 +733,7 @@ function AddOrderModal({
           onClick={(e) => e.stopPropagation()}
           style={{ maxWidth: '42rem' }}
         >
-          <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
+          <div className="modal-content w-full flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
               <h5 id="addOrderModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
                 Create New Order
@@ -774,84 +774,83 @@ function AddOrderModal({
                         placeholder="Select type"
                       />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                    <CustomSelect
-                      options={statusOptions}
-                      value={formData.status}
-                      onChange={(value) => handleChange('status', value)}
-                      placeholder="Select status"
-                      noOverflow={true}
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                      <CustomSelect
+                        options={statusOptions}
+                        value={formData.status}
+                        onChange={(value) => handleChange('status', value)}
+                        placeholder="Select status"
+                        noOverflow={true}
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Order Lines <span className="text-red-500">*</span></label>
-                    {formData.orderLines.map((line: any, index: number) => (
-                      <div key={index} className="mb-4">
-                        <div className="grid grid-cols-12 gap-2 mb-1">
-                          <div className="col-span-5">
-                            <CustomSelect
-                              options={productOptions}
-                              value={line.productId}
-                              onChange={(value) => handleOrderLineChange(index, 'productId', value)}
-                              placeholder="Product"
-                              error={!!errors[`orderLines.${index}.productId`]}
-                            />
-                            {errors[`orderLines.${index}.productId`] && (
-                              <p className="mt-1 text-sm text-red-500">{errors[`orderLines.${index}.productId`]}</p>
-                            )}
+                    <div className="space-y-3">
+                      {formData.orderLines.map((line: any, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <div className="flex-1 grid grid-cols-12 gap-2">
+                            <div className="col-span-5">
+                              <CustomSelect
+                                options={productOptions}
+                                value={line.productId}
+                                onChange={(value) => handleOrderLineChange(index, 'productId', value)}
+                                placeholder="Product"
+                                error={!!errors[`orderLines.${index}.productId`]}
+                              />
+                              {errors[`orderLines.${index}.productId`] && (
+                                <p className="mt-1 text-sm text-red-500">{errors[`orderLines.${index}.productId`]}</p>
+                              )}
+                            </div>
+                            <div className="col-span-3">
+                              <input
+                                type="number"
+                                value={line.quantity}
+                                onChange={(e) => handleOrderLineChange(index, 'quantity', e.target.value)}
+                                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
+                                  errors[`orderLines.${index}.quantity`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                }`}
+                                placeholder="Qty"
+                              />
+                              {errors[`orderLines.${index}.quantity`] && (
+                                <p className="mt-1 text-sm text-red-500">{errors[`orderLines.${index}.quantity`]}</p>
+                              )}
+                            </div>
+                            <div className="col-span-3">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={line.unitPrice}
+                                onChange={(e) => handleOrderLineChange(index, 'unitPrice', e.target.value)}
+                                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
+                                  errors[`orderLines.${index}.unitPrice`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                                }`}
+                                placeholder="Price"
+                              />
+                              {errors[`orderLines.${index}.unitPrice`] && (
+                                <p className="mt-1 text-sm text-red-500">{errors[`orderLines.${index}.unitPrice`]}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="col-span-3">
-                            <input
-                              type="number"
-                              value={line.quantity}
-                              onChange={(e) => handleOrderLineChange(index, 'quantity', e.target.value)}
-                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                                errors[`orderLines.${index}.quantity`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                              }`}
-                              placeholder="Qty"
-                            />
-                            {errors[`orderLines.${index}.quantity`] && (
-                              <p className="mt-1 text-sm text-red-500">{errors[`orderLines.${index}.quantity`]}</p>
-                            )}
-                          </div>
-                          <div className="col-span-3">
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={line.unitPrice}
-                              onChange={(e) => handleOrderLineChange(index, 'unitPrice', e.target.value)}
-                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                                errors[`orderLines.${index}.unitPrice`] ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                              }`}
-                              placeholder="Price"
-                            />
-                            {errors[`orderLines.${index}.unitPrice`] && (
-                              <p className="mt-1 text-sm text-red-500">{errors[`orderLines.${index}.unitPrice`]}</p>
-                            )}
-                          </div>
-                          <div className="col-span-1 flex items-center">
-                            {formData.orderLines.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeOrderLine(index)}
-                                className="w-full h-full min-h-[42px] flex items-center justify-center text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700 rounded-lg transition-colors"
-                                title="Remove line"
-                              >
-                                <X className="w-5 h-5" />
-                              </button>
-                            )}
-                          </div>
+                          {formData.orderLines.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeOrderLine(index)}
+                              className="mt-0.5 flex items-center justify-center w-10 h-10 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700 rounded-lg transition-colors flex-shrink-0"
+                              title="Remove line"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                     <button
                       type="button"
                       onClick={addOrderLine}
-                      className="mt-2 px-4 py-2 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 border border-primary-300 dark:border-primary-600 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors font-medium"
+                      className="mt-3 px-4 py-2 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 border border-primary-300 dark:border-primary-600 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors font-medium"
                     >
                       + Add Line
                     </button>
@@ -863,8 +862,8 @@ function AddOrderModal({
                     <textarea
                       value={formData.shippingAddress}
                       onChange={(e) => handleChange('shippingAddress', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                      rows={2}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white resize-none"
+                      rows={3}
                       placeholder="Enter shipping address"
                     />
                   </div>
@@ -874,8 +873,8 @@ function AddOrderModal({
                     <textarea
                       value={formData.billingAddress}
                       onChange={(e) => handleChange('billingAddress', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                      rows={2}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white resize-none"
+                      rows={3}
                       placeholder="Enter billing address"
                     />
                   </div>
@@ -885,8 +884,8 @@ function AddOrderModal({
                     <textarea
                       value={formData.notes}
                       onChange={(e) => handleChange('notes', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                      rows={2}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white resize-none"
+                      rows={3}
                       placeholder="Enter notes"
                     />
                   </div>
@@ -1116,7 +1115,7 @@ function EditOrderModal({
           onClick={(e) => e.stopPropagation()}
           style={{ maxWidth: '42rem' }}
         >
-          <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
+          <div className="modal-content w-full flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
               <h5 id="editOrderModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
                 Edit Order
