@@ -75,6 +75,7 @@ interface Task {
 export default function Dashboard() {
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const [revenueTimeRange, setRevenueTimeRange] = useState<'today' | 'week' | 'month'>('week');
   const [customerSearchInput, setCustomerSearchInput] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerPage, setCustomerPage] = useState(1);
@@ -485,6 +486,49 @@ export default function Dashboard() {
     },
   });
 
+  // Get date range for Revenue card based on revenueTimeRange
+  const getRevenueDateRange = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    switch (revenueTimeRange) {
+      case 'today':
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'week':
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setDate(endDate.getDate() - 30);
+        break;
+    }
+
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+  };
+
+  const { startDate: revenueStartDate, endDate: revenueEndDate } = getRevenueDateRange();
+
+  // Separate query for Revenue card
+  const { data: revenueReport, isLoading: revenueReportLoading } = useQuery({
+    queryKey: ['analytics', 'sales', 'revenue', revenueStartDate, revenueEndDate, revenueTimeRange],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams();
+        params.append('startDate', revenueStartDate);
+        params.append('endDate', revenueEndDate);
+        params.append('timeRange', revenueTimeRange);
+        const response = await api.get(`/analytics/sales?${params.toString()}`);
+        return response.data;
+      } catch (error) {
+        return { orders: [], totalRevenue: 0, orderCount: 0, monthlyRevenue: [], revenueData: [], labels: [] };
+      }
+    },
+  });
+
   // Fetch orders for task statistics
   const { data: ordersData, isLoading: ordersDataLoading } = useQuery({
     queryKey: ['orders', 'task-stats'],
@@ -583,6 +627,9 @@ export default function Dashboard() {
 
   // Calculate revenue for the period
   const periodRevenue = salesReport?.totalRevenue || 0;
+  
+  // Calculate revenue for the Revenue card based on its own time range
+  const revenuePeriodRevenue = revenueReport?.totalRevenue || 0;
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -1117,12 +1164,12 @@ export default function Dashboard() {
                     {(['Today', 'Week', 'Month'] as const).map((tab) => (
                       <button
                         key={tab}
-                        onClick={() => setDateRange(tab === 'Today' ? '7d' : tab === 'Week' ? '30d' : '90d')}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${(tab === 'Month' && dateRange === '90d') ||
-                          (tab === 'Week' && dateRange === '30d') ||
-                          (tab === 'Today' && dateRange === '7d')
+                        onClick={() => setRevenueTimeRange(tab === 'Today' ? 'today' : tab === 'Week' ? 'week' : 'month')}
+                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${(tab === 'Month' && revenueTimeRange === 'month') ||
+                          (tab === 'Week' && revenueTimeRange === 'week') ||
+                          (tab === 'Today' && revenueTimeRange === 'today')
                           ? 'bg-primary text-white'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          : 'text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                       >
                         {tab}
@@ -1219,21 +1266,21 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl mt-3 font-bold text-gray-900 dark:text-white mb-0">
                     <span className="text-gray-600 dark:text-gray-400">$</span>
-                    {formatCurrency(periodRevenue).replace('$', '').split('.')[0]}.
-                    <span className="text-primary">{formatCurrency(periodRevenue).split('.')[1]}</span>
+                    {formatCurrency(revenuePeriodRevenue).replace('$', '').split('.')[0]}.
+                    <span className="text-primary">{formatCurrency(revenuePeriodRevenue).split('.')[1]}</span>
                   </h2>
-                  {salesReport?.revenueChangePercent !== undefined && (
-                    <span className={`text-sm mt-3 ${salesReport.revenueChangePercent >= 0
+                  {revenueReport?.revenueChangePercent !== undefined && (
+                    <span className={`text-sm mt-3 ${revenueReport.revenueChangePercent >= 0
                       ? 'text-green-600 dark:text-green-400'
                       : 'text-red-600 dark:text-red-400'
                       }`}>
-                      {salesReport.revenueChangePercent >= 0 ? '+' : ''}{salesReport.revenueChangePercent.toFixed(0)}% vs last month
+                      {revenueReport.revenueChangePercent >= 0 ? '+' : ''}{revenueReport.revenueChangePercent.toFixed(0)}% vs last month
                     </span>
                   )}
                 </div>
               </div>
               <div className="p-4 pt-0">
-                {periodRevenue === 0 ? (
+                {revenuePeriodRevenue === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12" style={{ height: '280px' }}>
                     <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
                     <span className="text-sm text-gray-500 dark:text-gray-400">No Data Available</span>
@@ -1245,7 +1292,7 @@ export default function Dashboard() {
                       height={280}
                       series={[{
                         name: 'Revenue',
-                        data: salesReport?.monthlyRevenue || Array(12).fill(0)
+                        data: revenueReport?.revenueData || (revenueReport?.monthlyRevenue || Array(12).fill(0))
                       }]}
                       options={{
                         chart: {
@@ -1262,7 +1309,7 @@ export default function Dashboard() {
                         dataLabels: { enabled: false },
                         stroke: { show: true },
                         xaxis: {
-                          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                          categories: revenueReport?.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                           axisBorder: { color: '#EEEEF3' },
                           axisTicks: { show: false },
                           labels: {
@@ -1275,7 +1322,7 @@ export default function Dashboard() {
                         },
                         yaxis: {
                           min: 0,
-                          max: Math.max(...(salesReport?.monthlyRevenue || [0]), 1) * 1.2,
+                          max: Math.max(...(revenueReport?.revenueData || revenueReport?.monthlyRevenue || [0]), 1) * 1.2,
                           tickAmount: 5,
                           labels: {
                             formatter: (val: number) => (val / 1000).toFixed(0) + 'K',
