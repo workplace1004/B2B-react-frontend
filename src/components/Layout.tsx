@@ -329,14 +329,14 @@ export default function Layout({ children }: LayoutProps) {
       {/* Header and Sidebar Brand Row */}
       <div className="fixed top-0 left-0 right-0 h-16 flex z-50">
         {/* Sidebar Brand Section */}
-        <div className={`h-16 flex items-center justify-between px-4 border-b border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-300 ${
+        <div className={`h-20 flex items-center justify-between px-4 border-b border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-300 ${
           sidebarOpen ? 'w-72' : 'w-20'
         }`}>
           {sidebarOpen ? (
             <>
               <div>
-                <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">HAZEL</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Inventory Platform</p>
+                <h1 className="text-2xl font-bold text-primary-600 dark:text-primary-400">HAZEL</h1>
+                <p className="text-md text-gray-500 dark:text-gray-400">Inventory Platform</p>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -356,7 +356,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Header */}
-        <header className="flex-1 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <header className="flex-1 h-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
             {/* Left side */}
             <div className="flex items-center gap-4 flex-1">
@@ -368,7 +368,7 @@ export default function Layout({ children }: LayoutProps) {
                 <input
                   type="text"
                   placeholder="Search anything's"
-                  className="pl-10 pr-4 py-2 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-black"
+                  className="pl-10 pr-4 py-3 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-black"
                 />
               </div>
             </div>
@@ -423,7 +423,7 @@ export default function Layout({ children }: LayoutProps) {
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative"
                 title="Documents & Tasks"
               >
-                <i className="fi fi-rr-file text-xl text-gray-700 dark:text-white"></i>
+                <i className="fi fi-rr-file text-2xl text-gray-700 dark:text-white"></i>
                 {unreadDocumentsCount > 0 && (
                   <span className="absolute top-0 right-0 w-3 h-3 bg-primary-500 rounded-full border-2 border-white dark:border-gray-800"></span>
                 )}
@@ -510,7 +510,7 @@ export default function Layout({ children }: LayoutProps) {
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative"
                 title="Notifications"
               >
-                <i className="fi fi-rr-bell text-xl text-gray-700 dark:text-white"></i>
+                <i className="fi fi-rr-bell text-2xl text-gray-700 dark:text-white"></i>
                 {unreadNotificationsCount > 0 && (
                   <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
                 )}
@@ -597,7 +597,7 @@ export default function Layout({ children }: LayoutProps) {
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title="Calendar & Events"
               >
-                <i className="fi fi-rr-calendar text-xl text-gray-700 dark:text-white"></i>
+                <i className="fi fi-rr-calendar text-2xl text-gray-700 dark:text-white"></i>
               </button>
 
               {calendarDropdownOpen && (
@@ -747,7 +747,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-16 bottom-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 z-40 ${
+        className={`fixed left-0 top-20 bottom-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 z-40 flex flex-col ${
           sidebarOpen ? 'w-72' : 'w-20'
         }`}
       >
@@ -769,22 +769,36 @@ export default function Layout({ children }: LayoutProps) {
                   }`}
                 >
                     {item.useFlaticon && item.flaticonClass ? (
-                      <i className={item.flaticonClass} style={{ fontSize: '20px', width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
+                      <i className={item.flaticonClass} style={{ fontSize: '26px', width: '24px', height: '24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
                     ) : (
                       <Icon className="w-5 h-5 flex-shrink-0" />
                     )}
-                    {sidebarOpen && <span className="text-sm">{item.label}</span>}
+                    {sidebarOpen && <span className="text-lg">{item.label}</span>}
                 </Link>
               </li>
               );
             })}
           </ul>
         </nav>
+
+        {/* Logout Button */}
+        <div className="border-t border-gray-200 dark:border-gray-700 p-2">
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              sidebarOpen ? '' : 'justify-center'
+            }`}
+            title="Log Out"
+          >
+            <i className="fi fi-rr-exit" style={{ fontSize: '26px', width: '24px', height: '24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
+            {sidebarOpen && <span className="text-lg">Log Out</span>}
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
       <main
-        className={`pt-16 transition-all duration-300 bg-gray-50 dark:bg-gray-900 ${
+        className={`pt-20 transition-all duration-300 bg-gray-50 dark:bg-gray-900 ${
           sidebarOpen ? 'ml-72' : 'ml-20'
         }`}
       >
