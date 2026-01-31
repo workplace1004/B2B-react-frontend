@@ -990,7 +990,7 @@ export default function Dashboard() {
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Order Analytics</h6>
               </div>
-              {(dashboardStats?.totalOrders || 0) === 0 ? (
+              {(dashboardStats?.thisMonthOrders || 0) === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
                   <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
@@ -1000,7 +1000,7 @@ export default function Dashboard() {
                   <div className="p-4 pt-0">
                     <div className="flex items-center gap-2 mb-3 mt-3">
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                        {dashboardStats?.totalOrders?.toLocaleString() || '0'}
+                        {dashboardStats?.thisMonthOrders?.toLocaleString() || '0'}
                       </h2>
                       {orderChangePercent !== 0 && (
                         <span className={`px-2 py-0.5 text-xs font-medium rounded ${orderChangePercent > 0
@@ -1045,7 +1045,7 @@ export default function Dashboard() {
                           hover: { size: 6 }
                         },
                         xaxis: {
-                          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                          categories: dashboardStats?.orderTrendLabels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
                           labels: { show: false },
                           axisBorder: { show: false },
                           axisTicks: { show: false }
@@ -1056,13 +1056,13 @@ export default function Dashboard() {
                         },
                         yaxis: {
                           min: 0,
-                          max: 100,
+                          max: Math.max(...(dashboardStats?.orderTrend || [0]), 1) * 1.2,
                           labels: { show: false }
                         },
                         tooltip: {
                           enabled: true,
                           theme: 'dark',
-                          y: { formatter: (val: number) => val + '%' }
+                          y: { formatter: (val: number) => val.toLocaleString() + ' orders' }
                         },
                         legend: { show: false }
                       }}
@@ -1387,7 +1387,15 @@ export default function Dashboard() {
                           }
                         },
                         tooltip: {
-                          y: { formatter: (val: number) => '$ ' + val + ' thousands' }
+                          y: { 
+                            formatter: (val: number) => {
+                              // Format as currency with 2 decimal places
+                              return '$' + val.toLocaleString('en-US', { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                              });
+                            }
+                          }
                         },
                         legend: { show: false }
                       }}
@@ -2151,7 +2159,7 @@ export default function Dashboard() {
                       <th className="px-3 py-2 text-left text-gray-700 dark:text-gray-300 font-semibold min-w-[200px]">Name</th>
                       <th className="px-3 py-2 text-left text-gray-700 dark:text-gray-300 font-semibold min-w-[150px]">Phone</th>
                       <th className="px-3 py-2 text-left text-gray-700 dark:text-gray-300 font-semibold min-w-[150px]">Email</th>
-                      <th className="px-3 py-2 text-left text-gray-700 dark:text-gray-300 font-semibold min-w-[125px]">Days</th>
+                      <th className="px-3 py-2 text-left text-gray-700 dark:text-gray-300 font-semibold min-w-[125px]">Type</th>
                       <th className="px-3 py-2 text-left text-gray-700 dark:text-gray-300 font-semibold">Status</th>
                     </tr>
                   </thead>
@@ -2172,7 +2180,7 @@ export default function Dashboard() {
                         <td className="px-3 py-3 text-gray-600 dark:text-gray-400">{customer.phone || 'N/A'}</td>
                         <td className="px-3 py-3 text-gray-600 dark:text-gray-400">{customer.email || 'N/A'}</td>
                         <td className="px-3 py-3 text-gray-600 dark:text-gray-400">
-                          {customer.createdAt ? getDaysSince(customer.createdAt) : 'N/A'}
+                          {customer.type || 'N/A'}
                         </td>
                         <td className="px-3 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${customer.isActive

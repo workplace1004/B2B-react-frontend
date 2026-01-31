@@ -12,7 +12,24 @@ export default function SalesDashboard() {
   const [topSellingSearchInput, setTopSellingSearchInput] = useState('');
   const [topSellingSearch, setTopSellingSearch] = useState('');
   const [topSellingPage, setTopSellingPage] = useState(1);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const itemsPerPage = 5;
+
+  // Check for dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   // Get date range based on time range
   const getDateRange = () => {
@@ -28,7 +45,11 @@ export default function SalesDashboard() {
         startDate.setDate(endDate.getDate() - 7);
         break;
       case 'month':
-        startDate.setMonth(endDate.getMonth() - 1);
+        // Go back 12 months from endDate
+        startDate.setMonth(endDate.getMonth() - 11);
+        startDate.setDate(1); // First day of the month
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
         break;
     }
     
@@ -106,22 +127,73 @@ export default function SalesDashboard() {
       const incomeData = dayNames.map(day => dailyData[day] || 0);
       return { incomeData, expensesData: new Array(7).fill(0), categories: dayNames, maxValue: Math.max(...incomeData, 0) };
     } else {
-      // Group by month
+      // Group by month - last 12 months from current date
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthlyData: Record<number, number> = {};
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      
+      // Create a map of year-month to array index (last 12 months)
+      const monthMap: Record<string, number> = {};
+      const labels: string[] = [];
+      
+      for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(currentYear, currentMonth - (11 - i), 1);
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth();
+        const key = `${year}-${month}`;
+        monthMap[key] = i;
+        labels.push(monthNames[month]);
+      }
+      
+      const monthlyData: number[] = Array(12).fill(0);
       orders.forEach((order: any) => {
         const orderDate = new Date(order.orderDate || order.createdAt);
+        const year = orderDate.getFullYear();
         const month = orderDate.getMonth();
-        if (!monthlyData[month]) monthlyData[month] = 0;
-        monthlyData[month] += Number(order.totalAmount || 0);
+        const key = `${year}-${month}`;
+        
+        if (monthMap[key] !== undefined) {
+          monthlyData[monthMap[key]] += Number(order.totalAmount || 0);
+        }
       });
       
-      const incomeData = monthNames.map((_, idx) => monthlyData[idx] || 0);
-      return { incomeData, expensesData: new Array(12).fill(0), categories: monthNames, maxValue: Math.max(...incomeData, 0) };
+      return { incomeData: monthlyData, expensesData: new Array(12).fill(0), categories: labels, maxValue: Math.max(...monthlyData, 0) };
     }
   };
 
   const chartData = processOrdersForChart();
+
+  // Format date display based on time range (similar to Revenue card)
+  const getSalesDateDisplay = () => {
+    const now = new Date();
+
+    switch (salesTimeRange) {
+      case 'today':
+        // Display: "15 Jan 2024"
+        return now.toLocaleDateString('en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      case 'week':
+        // Display: "Week 2 Jan 2024"
+        // Calculate week number of the month (1-5)
+        // Week 1 starts from the 1st of the month
+        const daysSinceFirstDay = now.getDate() - 1;
+        const weekNumber = Math.floor(daysSinceFirstDay / 7) + 1;
+        const monthYear = now.toLocaleDateString('en-US', {
+          month: 'short',
+          year: 'numeric'
+        });
+        return `Week ${weekNumber} ${monthYear}`;
+      case 'month':
+        // Display: "2026" (just the year)
+        return now.getFullYear().toString();
+      default:
+        return '';
+    }
+  };
 
   // Sales Chart Configuration
   const getSalesChartConfig = () => {
@@ -167,7 +239,7 @@ export default function SalesDashboard() {
         labels: {
           formatter: (value: number) => `$${(value / 1000).toFixed(0)}K`,
           style: {
-            colors: 'var(--bs-body-color)',
+            colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
             fontFamily: 'var(--bs-body-font-family)',
@@ -192,7 +264,7 @@ export default function SalesDashboard() {
           height: 10,
         },
         labels: {
-          colors: 'var(--bs-heading-color)',
+          colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontFamily: 'var(--bs-body-font-family)',
           fontSize: '13px',
         },
@@ -216,7 +288,7 @@ export default function SalesDashboard() {
         axisTicks: { show: false },
         labels: {
           style: {
-            colors: 'var(--bs-body-color)',
+            colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
             fontFamily: 'var(--bs-body-font-family)',
@@ -267,7 +339,7 @@ export default function SalesDashboard() {
   });
 
   // Sales Growth Chart
-  const salesGrowthChartConfig = {
+  const getSalesGrowthChartConfig = () => ({
     series: [
       {
         name: '',
@@ -321,7 +393,7 @@ export default function SalesDashboard() {
       axisTicks: { show: false },
       labels: {
         style: {
-          colors: 'var(--bs-body-color)',
+          colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontSize: '13px',
           fontWeight: 500,
           fontFamily: 'var(--bs-body-font-family)',
@@ -335,14 +407,14 @@ export default function SalesDashboard() {
       labels: {
         formatter: (value: number) => `$${(value / 100).toFixed(0)}K`,
         style: {
-          colors: 'var(--bs-body-color)',
+          colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontSize: '13px',
           fontWeight: 500,
           fontFamily: 'var(--bs-body-font-family)',
         },
       },
     },
-  };
+  });
 
   // Visitors Chart
   const visitorsChartConfig = {
@@ -740,7 +812,7 @@ export default function SalesDashboard() {
               </div>
               <div className="p-4 flex items-end">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Earning</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Total Earning</p>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{formatCurrency(totalEarning)}</h2>
                 </div>
               </div>
@@ -763,7 +835,7 @@ export default function SalesDashboard() {
               </div>
               <div className="p-4 flex items-end">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Orders</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Total Orders</p>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{totalOrders.toLocaleString()}</h2>
                 </div>
               </div>
@@ -786,7 +858,7 @@ export default function SalesDashboard() {
               </div>
               <div className="p-4 flex items-end">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Revenue Growth</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Revenue Growth</p>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
                     {revenueGrowth !== null ? (
                       <>
@@ -818,7 +890,7 @@ export default function SalesDashboard() {
               </div>
               <div className="p-4 flex items-end">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Conversion Rate</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Conversion Rate</p>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
                     {conversionRate.toFixed(1)}%
                   </h2>
@@ -834,7 +906,10 @@ export default function SalesDashboard() {
         {/* Sales Report Chart - 6/12 on xl, 8/12 on lg */}
         <div className="lg:col-span-8 xl:col-span-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between">
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales Report</h6>
+            <div>
+              <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales Report</h6>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-0">{getSalesDateDisplay()}</p>
+            </div>
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
               <button
                 onClick={() => setSalesTimeRange('today')}
@@ -901,7 +976,7 @@ export default function SalesDashboard() {
         {/* Monthly Target - 3/12 on xl, 4/12 on lg */}
         <div className="lg:col-span-4 xl:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0">
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Monthly Target</h6>
+            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Monthly Target</h6>
           </div>
           <div className="p-4 pt-0 border-b border-gray-200 dark:border-gray-700">
             <div className="mb-0 -mt-2">
@@ -943,7 +1018,7 @@ export default function SalesDashboard() {
         {/* Sales by Country - 3/12 on xl, 6/12 on lg */}
         <div className="lg:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex items-center justify-between">
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales by Country</h6>
+            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Sales by Country</h6>
             <a href="#" className="text-sm text-primary hover:text-primary/80">View All</a>
           </div>
           <div className="p-4 pt-2">
@@ -998,7 +1073,7 @@ export default function SalesDashboard() {
         {/* Total Visitors - 4/12 on xl, 6/12 on lg */}
         <div className="lg:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex items-center justify-between">
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Total Visitors</h6>
+            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Total Visitors</h6>
           </div>
           <div className="p-4 pt-2 pb-0">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
@@ -1013,7 +1088,7 @@ export default function SalesDashboard() {
         {/* Recent Sales - 8/12 on xl, 6/12 on lg */}
         <div className="lg:col-span-6 xl:col-span-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-3 items-center justify-between">
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Recent Sales</h6>
+            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Recent Sales</h6>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -1223,7 +1298,7 @@ export default function SalesDashboard() {
           <div className="p-4 pt-2 pb-0">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">78.50%</h2>
             <div className="-mx-3">
-              <Chart type="area" height={280} series={salesGrowthChartConfig.series} options={salesGrowthChartConfig} />
+              <Chart type="area" height={280} series={getSalesGrowthChartConfig().series} options={getSalesGrowthChartConfig()} />
             </div>
           </div>
         </div>
