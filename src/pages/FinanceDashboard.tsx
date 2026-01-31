@@ -177,7 +177,7 @@ export default function FinanceDashboard() {
       ],
     },
     grid: {
-      borderColor: 'var(--bs-border-color)',
+      borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
       strokeDashArray: 5,
       xaxis: { lines: { show: false } },
       yaxis: { lines: { show: true } },

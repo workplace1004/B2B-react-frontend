@@ -952,17 +952,33 @@ export default function SalesDashboard() {
             </div>
             <div className="grid grid-cols-1 gap-1">
               {[
-                { country: 'America', products: '4,265', flag: '🇺🇸', label: 'PRODUCTS' },
-                { country: 'China', products: '3,740', flag: '🇨🇳', label: 'Products' },
-                { country: 'Germany', products: '2,980', flag: '🇩🇪', label: 'Products' },
-                { country: 'Japan', products: '1,640', flag: '🇯🇵', label: 'Products' },
+                { country: 'America', code: 'US', products: '4,265', label: 'PRODUCTS' },
+                { country: 'China', code: 'CN', products: '3,740', label: 'Products' },
+                { country: 'Germany', code: 'DE', products: '2,980', label: 'Products' },
+                { country: 'Japan', code: 'JP', products: '1,640', label: 'Products' },
               ].map((item, idx) => (
                 <div key={idx} className="p-3 border border-gray-200 dark:border-gray-700 rounded">
                   <div className="flex items-center mb-1">
-                    <div className="w-6 h-6 rounded-full mr-2 flex items-center justify-center overflow-hidden shrink-0">
-                      <span className="text-xl leading-none" style={{ fontSize: '20px', lineHeight: '1', display: 'inline-block' }}>
-                        {item.flag}
-                      </span>
+                    <div className="w-6 h-6 rounded mr-2 flex items-center justify-center overflow-hidden shrink-0" style={{ aspectRatio: '1' }}>
+                      <img 
+                        src={`https://flagcdn.com/w20/${item.code.toLowerCase()}.png`}
+                        alt={`${item.country} flag`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to emoji if image fails to load
+                          const emojiMap: Record<string, string> = {
+                            'US': '🇺🇸',
+                            'CN': '🇨🇳',
+                            'DE': '🇩🇪',
+                            'JP': '🇯🇵',
+                          };
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `<span style="font-size: 20px; line-height: 1; display: inline-block;">${emojiMap[item.code] || '🏳️'}</span>`;
+                          }
+                        }}
+                      />
                     </div>
                     <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">{item.country}</h5>
                   </div>
