@@ -537,39 +537,39 @@ export default function FinanceDashboard() {
                     <Calendar className="w-4 h-4 text-white" />
                   </button>
                   {isCalendarOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 p-4">
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 p-3">
                       {/* Calendar Header */}
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-3">
                         <button
                           onClick={() => navigateMonth('prev')}
-                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                         >
-                          <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                          <ChevronLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                         </button>
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                           {monthNames[currentMonth]} {currentYear}
                         </h3>
                         <button
                           onClick={() => navigateMonth('next')}
-                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                         >
-                          <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                          <ChevronRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                         </button>
                       </div>
                       
                       {/* Calendar Days */}
-                      <div className="grid grid-cols-7 gap-1 mb-2">
+                      <div className="grid grid-cols-7 gap-0.5 mb-1.5">
                         {dayNames.map((day) => (
                           <div
                             key={day}
-                            className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2"
+                            className="text-center text-[10px] font-semibold text-gray-500 dark:text-gray-400 py-1"
                           >
                             {day}
                           </div>
                         ))}
                       </div>
                       
-                      <div className="grid grid-cols-7 gap-1">
+                      <div className="grid grid-cols-7 gap-0.5">
                         {Array.from({ length: getFirstDayOfMonth(currentMonth, currentYear) }).map((_, idx) => (
                           <div key={`empty-${idx}`} className="aspect-square" />
                         ))}
@@ -581,11 +581,11 @@ export default function FinanceDashboard() {
                             <button
                               key={day}
                               onClick={() => handleDateSelect(day)}
-                              className={`aspect-square rounded-lg text-sm font-medium transition-all duration-200 ${
+                              className={`aspect-square rounded-md text-xs font-medium transition-all duration-200 ${
                                 isSelectedDate
-                                  ? 'bg-primary text-white shadow-lg scale-105'
+                                  ? 'bg-primary text-white shadow-md scale-105'
                                   : isTodayDate
-                                  ? 'bg-primary/20 text-primary border-2 border-primary'
+                                  ? 'bg-primary/20 text-primary border border-primary'
                                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                               }`}
                             >
@@ -596,7 +596,7 @@ export default function FinanceDashboard() {
                       </div>
                       
                       {/* Quick Actions */}
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-1.5">
                         <button
                           onClick={() => {
                             const today = new Date();
@@ -604,13 +604,13 @@ export default function FinanceDashboard() {
                             setCurrentYear(today.getFullYear());
                             setSelectedDate(today);
                           }}
-                          className="flex-1 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          className="flex-1 px-2 py-1.5 text-[10px] font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         >
                           Today
                         </button>
                         <button
                           onClick={() => setIsCalendarOpen(false)}
-                          className="flex-1 px-3 py-2 text-xs font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+                          className="flex-1 px-2 py-1.5 text-[10px] font-medium text-white bg-primary rounded-md hover:bg-primary/90 transition-colors"
                         >
                           Apply
                         </button>
