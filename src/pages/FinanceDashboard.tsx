@@ -9,6 +9,7 @@ export default function FinanceDashboard() {
   const [selectedYear, setSelectedYear] = useState('This Year');
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
   const yearDropdownRef = useRef<HTMLDivElement>(null);
+  const [transactionSearchInput, setTransactionSearchInput] = useState('');
   const [transactionSearch, setTransactionSearch] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -566,7 +567,7 @@ export default function FinanceDashboard() {
                   <div className="flex items-center justify-center">
                     <Chart
                       type="donut"
-                      height={220}
+                      height={270}
                       series={[
                         todayRevenue,
                         Math.max(0, currentMonthRevenue - todayRevenue),
@@ -757,7 +758,7 @@ export default function FinanceDashboard() {
                   <div className="absolute bottom-0 left-0 right-0 text-center text-white font-semibold" style={{ marginTop: '-40px' }}>{salesStatus.totalOrders.toLocaleString()} Orders</div>
                 </div>
                 <div className="text-center px-3 mb-0">
-                  <p className="text-white mb-0 text-sm">
+                  <p className="text-white mb-5 text-sm">
                     {todayRevenue > 0 ? (
                       <>You earn <strong className="text-yellow-500">{formatCurrency(todayRevenue)}</strong> today, its higher than last month keep up your good trends!</>
                     ) : (
@@ -799,8 +800,14 @@ export default function FinanceDashboard() {
             <input
               type="text"
               placeholder="Search"
-              value={transactionSearch}
-              onChange={(e) => setTransactionSearch(e.target.value)}
+              value={transactionSearchInput}
+              onChange={(e) => setTransactionSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setTransactionSearch(e.currentTarget.value);
+                }
+              }}
               className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>

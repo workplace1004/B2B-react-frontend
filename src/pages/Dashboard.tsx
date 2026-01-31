@@ -75,6 +75,7 @@ interface Task {
 export default function Dashboard() {
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const [customerSearchInput, setCustomerSearchInput] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerPage, setCustomerPage] = useState(1);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -2025,8 +2026,14 @@ export default function Dashboard() {
                 <input
                   type="text"
                   placeholder="Search"
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  value={customerSearchInput}
+                  onChange={(e) => setCustomerSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      setCustomerSearch(e.currentTarget.value);
+                    }
+                  }}
                   className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>

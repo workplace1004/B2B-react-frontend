@@ -7,7 +7,9 @@ import { SkeletonStatsCard } from '../components/Skeleton';
 
 export default function SalesDashboard() {
   const [salesTimeRange, setSalesTimeRange] = useState<'today' | 'week' | 'month'>('month');
+  const [salesSearchInput, setSalesSearchInput] = useState('');
   const [salesSearch, setSalesSearch] = useState('');
+  const [topSellingSearchInput, setTopSellingSearchInput] = useState('');
   const [topSellingSearch, setTopSellingSearch] = useState('');
   const [topSellingPage, setTopSellingPage] = useState(1);
   const itemsPerPage = 5;
@@ -527,7 +529,7 @@ export default function SalesDashboard() {
   const filteredSales = recentSales.filter((sale: any) =>
     sale.id.toLowerCase().includes(salesSearch.toLowerCase()) ||
     sale.customer.toLowerCase().includes(salesSearch.toLowerCase()) ||
-    sale.product.toLowerCase().includes(topSellingSearch.toLowerCase())
+    sale.product.toLowerCase().includes(salesSearch.toLowerCase())
   );
 
   const filteredTopSelling = topSellingItems.filter((item) =>
@@ -1000,8 +1002,14 @@ export default function SalesDashboard() {
               <input
                 type="text"
                 placeholder="Q Search"
-                value={salesSearch}
-                onChange={(e) => setSalesSearch(e.target.value)}
+                value={salesSearchInput}
+                onChange={(e) => setSalesSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setSalesSearch(e.currentTarget.value);
+                  }
+                }}
                 className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
@@ -1070,10 +1078,14 @@ export default function SalesDashboard() {
               <input
                 type="text"
                 placeholder="Search"
-                value={topSellingSearch}
-                onChange={(e) => {
-                  setTopSellingSearch(e.target.value);
-                  setTopSellingPage(1);
+                value={topSellingSearchInput}
+                onChange={(e) => setTopSellingSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setTopSellingSearch(e.currentTarget.value);
+                    setTopSellingPage(1);
+                  }
                 }}
                 className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />

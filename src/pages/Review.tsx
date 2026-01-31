@@ -7,7 +7,9 @@ import { SkeletonStatsCard } from '../components/Skeleton';
 
 export default function Review() {
   const [reviewTimeRange, setReviewTimeRange] = useState<'today' | 'week' | 'month'>('month');
+  const [recentReviewSearchInput, setRecentReviewSearchInput] = useState('');
   const [recentReviewSearch, setRecentReviewSearch] = useState('');
+  const [topRatedSearchInput, setTopRatedSearchInput] = useState('');
   const [topRatedSearch, setTopRatedSearch] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -567,8 +569,14 @@ export default function Review() {
               <input
                 type="text"
                 placeholder="Search"
-                value={recentReviewSearch}
-                onChange={(e) => setRecentReviewSearch(e.target.value)}
+                value={recentReviewSearchInput}
+                onChange={(e) => setRecentReviewSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setRecentReviewSearch(e.currentTarget.value);
+                  }
+                }}
                 className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
@@ -615,8 +623,14 @@ export default function Review() {
               <input
                 type="text"
                 placeholder="Search"
-                value={topRatedSearch}
-                onChange={(e) => setTopRatedSearch(e.target.value)}
+                value={topRatedSearchInput}
+                onChange={(e) => setTopRatedSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setTopRatedSearch(e.currentTarget.value);
+                  }
+                }}
                 className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
