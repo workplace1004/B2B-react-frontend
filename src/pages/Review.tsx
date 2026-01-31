@@ -11,7 +11,7 @@ export default function Review() {
   const [topRatedSearch, setTopRatedSearch] = useState('');
 
   // Fetch review data
-  const { isLoading } = useQuery({
+  const { data: reviewsData, isLoading } = useQuery({
     queryKey: ['reviews', 'dashboard'],
     queryFn: async () => {
       const response = await api.get('/analytics/reviews');
@@ -21,6 +21,9 @@ export default function Review() {
 
   // Review Trend Chart Configuration
   const getReviewTrendChartConfig = () => {
+    const reviewTrends = reviewsData?.reviewTrends || [];
+    const maxValue = Math.max(...reviewTrends, 1);
+    
     const baseConfig = {
       chart: {
         height: 270,
@@ -58,10 +61,10 @@ export default function Review() {
       },
       yaxis: {
         min: 0,
-        max: 8000,
+        max: maxValue > 1000 ? maxValue * 1.1 : 1000,
         tickAmount: 5,
         labels: {
-          formatter: (value: number) => `${(value / 100).toFixed(0)}K`,
+          formatter: (value: number) => value > 1000 ? `${(value / 1000).toFixed(1)}K` : value.toString(),
           style: {
             colors: 'var(--bs-body-color)',
             fontSize: '13px',
@@ -78,7 +81,7 @@ export default function Review() {
       },
       tooltip: {
         y: {
-          formatter: (val: number) => `${val}K`,
+          formatter: (val: number) => val > 1000 ? `${(val / 1000).toFixed(1)}K` : val.toString(),
         },
       },
       legend: {
@@ -100,167 +103,112 @@ export default function Review() {
       },
     };
 
-    if (reviewTimeRange === 'today') {
-      return {
-        ...baseConfig,
-        series: [
-          {
-            name: 'Reviews',
-            data: [1500, 4200, 4500, 5500, 3800, 5200, 7800, 6000, 5000, 4200, 7000, 7950],
-          },
-        ],
-        xaxis: {
-          categories: ['2 AM', '4 AM', '6 AM', '8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM', '8 PM', '10 PM', '12 AM'],
-          axisBorder: { color: 'var(--bs-border-color)' },
-          axisTicks: { show: false },
-          labels: {
-            style: {
-              colors: 'var(--bs-body-color)',
-              fontSize: '13px',
-              fontWeight: '500',
-              fontFamily: 'var(--bs-body-font-family)',
-            },
+    // Use last 12 months of data
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const data = reviewTrends.length > 0 ? reviewTrends.slice(-12) : Array(12).fill(0);
+    const categories = monthNames.slice(-data.length);
+
+    return {
+      ...baseConfig,
+      series: [
+        {
+          name: 'Reviews',
+          data: data,
+        },
+      ],
+      xaxis: {
+        categories: categories,
+        axisBorder: { color: 'var(--bs-border-color)' },
+        axisTicks: { show: false },
+        labels: {
+          style: {
+            colors: 'var(--bs-body-color)',
+            fontSize: '13px',
+            fontWeight: '500',
+            fontFamily: 'var(--bs-body-font-family)',
           },
         },
-      };
-    } else if (reviewTimeRange === 'week') {
-      return {
-        ...baseConfig,
-        series: [
-          {
-            name: 'Reviews',
-            data: [1500, 4000, 4200, 6200, 5000, 4200, 7000],
-          },
-        ],
-        xaxis: {
-          categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          axisBorder: { color: 'var(--bs-border-color)' },
-          axisTicks: { show: false },
-          labels: {
-            style: {
-              colors: 'var(--bs-body-color)',
-              fontSize: '13px',
-              fontWeight: '500',
-              fontFamily: 'var(--bs-body-font-family)',
-            },
-          },
-        },
-      };
-    } else {
-      return {
-        ...baseConfig,
-        series: [
-          {
-            name: 'Reviews',
-            data: [1500, 4000, 4200, 5500, 4000, 5200, 7800, 6200, 5000, 4200, 7000, 7950],
-          },
-        ],
-        xaxis: {
-          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-          axisBorder: { color: 'var(--bs-border-color)' },
-          axisTicks: { show: false },
-          labels: {
-            style: {
-              colors: 'var(--bs-body-color)',
-              fontSize: '13px',
-              fontWeight: '500',
-              fontFamily: 'var(--bs-body-font-family)',
-            },
-          },
-        },
-      };
-    }
+      },
+    };
   };
 
   // Review Sources Chart (Horizontal Stacked Bar)
-  const reviewSourcesChartConfig = {
-    series: [
-      { name: 'Website', data: [30] },
-      { name: 'Google', data: [25] },
-      { name: 'App Store', data: [20] },
-      { name: 'Play Store', data: [15] },
-      { name: 'Social Media', data: [10] },
-    ],
-    chart: {
-      type: 'bar' as const,
-      height: 95,
-      stacked: true,
-      stackType: '100%' as const,
-      toolbar: { show: false },
-      animations: { enabled: true },
-    },
-    plotOptions: {
-      bar: {
-        horizontal: true,
-        barHeight: '100%',
-        borderRadius: 0,
+  const getReviewSourcesChartConfig = () => {
+    const sourceBreakdown = reviewsData?.sourceBreakdown || {};
+    const total = Object.values(sourceBreakdown).reduce((sum: number, val: number) => sum + val, 0) as number;
+    
+    // Convert to percentages
+    const sources = Object.entries(sourceBreakdown).map(([name, count]) => ({
+      name,
+      percentage: total > 0 ? ((count as number) / total) * 100 : 0,
+    })).sort((a, b) => b.percentage - a.percentage);
+
+    return {
+      series: sources.map(s => ({ name: s.name, data: [s.percentage] })),
+      chart: {
+        type: 'bar' as const,
+        height: 95,
+        stacked: true,
+        stackType: '100%' as const,
+        toolbar: { show: false },
+        animations: { enabled: true },
       },
-    },
-    dataLabels: { enabled: false },
-    stroke: {
-      width: 0,
-      colors: ['#ffffff'],
-    },
-    xaxis: {
-      labels: { show: false },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-    },
-    yaxis: {
-      labels: { show: false },
-    },
-    grid: {
-      show: false,
-      padding: {
-        top: -15,
-        bottom: -15,
-        left: -15,
-        right: 0,
-      },
-    },
-    legend: { show: false },
-    fill: {
-      opacity: 1,
-      colors: [
-        'rgba(89, 85, 209, 0.1)',
-        'rgba(89, 85, 209, 0.25)',
-        'rgba(89, 85, 209, 0.50)',
-        'rgba(89, 85, 209, 0.75)',
-        'rgba(89, 85, 209, 1)',
-      ],
-    },
-    tooltip: {
-      enabled: true,
-      y: {
-        formatter: (val: number) => {
-          return `${val}%`;
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          barHeight: '100%',
+          borderRadius: 0,
         },
       },
-      x: { show: false },
-      marker: { show: false },
-    },
+      dataLabels: { enabled: false },
+      stroke: {
+        width: 0,
+        colors: ['#ffffff'],
+      },
+      xaxis: {
+        labels: { show: false },
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+      },
+      yaxis: {
+        labels: { show: false },
+      },
+      grid: {
+        show: false,
+        padding: {
+          top: -15,
+          bottom: -15,
+          left: -15,
+          right: 0,
+        },
+      },
+      legend: { show: false },
+      fill: {
+        opacity: 1,
+        colors: [
+          'rgba(89, 85, 209, 0.1)',
+          'rgba(89, 85, 209, 0.25)',
+          'rgba(89, 85, 209, 0.50)',
+          'rgba(89, 85, 209, 0.75)',
+          'rgba(89, 85, 209, 1)',
+        ],
+      },
+      tooltip: {
+        enabled: true,
+        y: {
+          formatter: (val: number) => {
+            return `${val.toFixed(1)}%`;
+          },
+        },
+        x: { show: false },
+        marker: { show: false },
+      },
+    };
   };
 
-  // Sample data
-  const recentReviews = [
-    { customer: 'Emily Parker', rating: 5, review: 'Amazing experience!', date: 'Nov 20, 2025', status: 'Responded' },
-    { customer: 'Emma Johnson', rating: 5, review: 'Good service but could improve support.', date: 'Nov 19, 2025', status: 'Pending' },
-    { customer: 'Sarah Williams', rating: 4, review: 'Loved the product, highly recommend!', date: 'Nov 18, 2025', status: 'Responded' },
-    { customer: 'Chris Adams', rating: 5, review: 'Delivery was late.', date: 'Nov 16, 2025', status: 'Resolved' },
-    { customer: 'Olivia Brown', rating: 4, review: 'Average experience.', date: 'Nov 15, 2025', status: 'Responded' },
-    { customer: 'Michael Chen', rating: 5, review: 'Excellent quality and fast shipping!', date: 'Nov 14, 2025', status: 'Responded' },
-    { customer: 'David Wilson', rating: 3, review: 'Could be better.', date: 'Nov 13, 2025', status: 'Pending' },
-  ];
-
-  const topRatedProducts = [
-    { product: 'Professional Sports Fitness Gear', rating: 4.8, totalReviews: 2860 },
-    { product: 'Modern Wooden Office Chair', rating: 4.7, totalReviews: 1940 },
-    { product: 'Organic Beauty Skincare Set', rating: 4.6, totalReviews: 3130 },
-    { product: 'Smart Home Electronics Kit', rating: 4.4, totalReviews: 890 },
-    { product: 'Trendy Travel Luggage Bag', rating: 4.9, totalReviews: 3292 },
-    { product: 'Wireless Bluetooth Earbuds', rating: 4.5, totalReviews: 2150 },
-    { product: 'Premium Coffee Maker Machine', rating: 4.3, totalReviews: 1750 },
-  ];
+  // Use real data from API
+  const recentReviews = reviewsData?.recentReviews || [];
+  const topRatedProducts = reviewsData?.topRatedProducts || [];
 
   const filteredRecentReviews = recentReviews.filter((review) =>
     review.customer.toLowerCase().includes(recentReviewSearch.toLowerCase()) ||
@@ -320,13 +268,21 @@ export default function Review() {
                 <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                   <BarChart3 className="w-5 h-5" />
                 </div>
-                <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                  +12.8%
-                </span>
+                {reviewsData?.totalReviewsChange !== undefined && (
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                    reviewsData.totalReviewsChange >= 0
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {reviewsData.totalReviewsChange >= 0 ? '+' : ''}{reviewsData.totalReviewsChange.toFixed(1)}%
+                  </span>
+                )}
               </div>
               <div className="p-4">
                 <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Reviews</h6>
-                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">18,420</h4>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">
+                  {reviewsData?.totalReviews?.toLocaleString() || '0'}
+                </h4>
               </div>
             </div>
 
@@ -335,13 +291,21 @@ export default function Review() {
                 <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                   <MessageSquare className="w-5 h-5" />
                 </div>
-                <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                  +5.3%
-                </span>
+                {reviewsData?.totalReviewsChange !== undefined && (
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                    reviewsData.totalReviewsChange >= 0
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {reviewsData.totalReviewsChange >= 0 ? '+' : ''}{reviewsData.totalReviewsChange.toFixed(1)}%
+                  </span>
+                )}
               </div>
               <div className="p-4">
                 <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Reviews (Month)</h6>
-                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">1,240</h4>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">
+                  {reviewsData?.newReviewsThisMonth?.toLocaleString() || '0'}
+                </h4>
               </div>
             </div>
 
@@ -350,13 +314,21 @@ export default function Review() {
                 <div className="w-10 h-10 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center">
                   <Star className="w-5 h-5" />
                 </div>
-                <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                  +2.1%
-                </span>
+                {reviewsData?.avgRatingChange !== undefined && reviewsData.avgRatingChange !== 0 && (
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                    reviewsData.avgRatingChange >= 0
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {reviewsData.avgRatingChange >= 0 ? '+' : ''}{reviewsData.avgRatingChange.toFixed(1)}%
+                  </span>
+                )}
               </div>
               <div className="p-4">
                 <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Average Rating</h6>
-                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">4.3 / 5</h4>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">
+                  {reviewsData?.avgRating?.toFixed(1) || '0.0'} / 5
+                </h4>
               </div>
             </div>
 
@@ -365,13 +337,21 @@ export default function Review() {
                 <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center">
                   <TrendingUp className="w-5 h-5" />
                 </div>
-                <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                  +3.9%
-                </span>
+                {reviewsData?.positiveRatioChange !== undefined && reviewsData.positiveRatioChange !== 0 && (
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                    reviewsData.positiveRatioChange >= 0
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {reviewsData.positiveRatioChange >= 0 ? '+' : ''}{reviewsData.positiveRatioChange.toFixed(1)}%
+                  </span>
+                )}
               </div>
               <div className="p-4">
                 <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Positive Review Ratio</h6>
-                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">88%</h4>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">
+                  {reviewsData?.positiveRatio?.toFixed(0) || '0'}%
+                </h4>
               </div>
             </div>
 
@@ -380,13 +360,21 @@ export default function Review() {
                 <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center">
                   <MessageCircle className="w-5 h-5" />
                 </div>
-                <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">
-                  -4.2%
-                </span>
+                {reviewsData?.responseRateChange !== undefined && reviewsData.responseRateChange !== 0 && (
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                    reviewsData.responseRateChange >= 0
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {reviewsData.responseRateChange >= 0 ? '+' : ''}{reviewsData.responseRateChange.toFixed(1)}%
+                  </span>
+                )}
               </div>
               <div className="p-4">
                 <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Response Rate</h6>
-                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">72%</h4>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">
+                  {reviewsData?.responseRate?.toFixed(0) || '0'}%
+                </h4>
               </div>
             </div>
 
@@ -395,13 +383,12 @@ export default function Review() {
                 <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex items-center justify-center">
                   <Users className="w-5 h-5" />
                 </div>
-                <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                  +1.4%
-                </span>
               </div>
               <div className="p-4">
-                <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Star Distribution</h6>
-                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">18,420</h4>
+                <h6 className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Reviews</h6>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-0">
+                  {reviewsData?.totalReviews?.toLocaleString() || '0'}
+                </h4>
               </div>
             </div>
           </>
@@ -461,26 +448,37 @@ export default function Review() {
             </button>
           </div>
           <div className="p-4 pt-0">
-            <div className="my-1">
-              <Chart type="bar" height={95} series={reviewSourcesChartConfig.series} options={reviewSourcesChartConfig} />
-            </div>
-            <div className="space-y-1 mt-4">
-              {[
-                { label: 'Website', value: '41%', opacity: 'opacity-10' },
-                { label: 'Google', value: '32%', opacity: 'opacity-25' },
-                { label: 'App Store', value: '16%', opacity: 'opacity-50' },
-                { label: 'Play Store', value: '9%', opacity: 'opacity-75' },
-                { label: 'Social Media', value: '2%', opacity: 'opacity-100' },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 bg-primary ${item.opacity} rounded`}></div>
-                    <span className="text-sm text-gray-900 dark:text-white">{item.label}</span>
-                  </div>
-                  <strong className="text-gray-900 dark:text-white font-semibold text-sm">{item.value}</strong>
+            {reviewsData?.sourceBreakdown && Object.keys(reviewsData.sourceBreakdown).length > 0 ? (
+              <>
+                <div className="my-1">
+                  <Chart type="bar" height={95} series={getReviewSourcesChartConfig().series} options={getReviewSourcesChartConfig()} />
                 </div>
-              ))}
-            </div>
+                <div className="space-y-1 mt-4">
+                  {Object.entries(reviewsData.sourceBreakdown)
+                    .map(([name, count]) => {
+                      const total = Object.values(reviewsData.sourceBreakdown).reduce((sum: number, val: number) => sum + val, 0) as number;
+                      const percentage = total > 0 ? ((count as number) / total) * 100 : 0;
+                      return { name, percentage, count: count as number };
+                    })
+                    .sort((a, b) => b.percentage - a.percentage)
+                    .slice(0, 5)
+                    .map((item, idx) => {
+                      const opacityMap = ['opacity-10', 'opacity-25', 'opacity-50', 'opacity-75', 'opacity-100'];
+                      return (
+                        <div key={idx} className="flex items-center justify-between py-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 bg-primary ${opacityMap[idx] || 'opacity-100'} rounded`}></div>
+                            <span className="text-sm text-gray-900 dark:text-white">{item.name}</span>
+                          </div>
+                          <strong className="text-gray-900 dark:text-white font-semibold text-sm">{item.percentage.toFixed(1)}%</strong>
+                        </div>
+                      );
+                    })}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">No review sources data</div>
+            )}
           </div>
         </div>
 
@@ -492,35 +490,49 @@ export default function Review() {
           </div>
           <div className="p-4">
             <div className="text-center mb-4">
-              <h2 className="text-5xl font-semibold text-gray-900 dark:text-white mb-0 leading-none">4.5</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-0 mt-1">120 Review</p>
+              <h2 className="text-5xl font-semibold text-gray-900 dark:text-white mb-0 leading-none">
+                {reviewsData?.avgRating?.toFixed(1) || '0.0'}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-0 mt-1">
+                {reviewsData?.totalReviews || 0} Review{reviewsData?.totalReviews !== 1 ? 's' : ''}
+              </p>
             </div>
-            {[
-              { stars: 5, percentage: 69.8, color: 'bg-primary' },
-              { stars: 4, percentage: 18.5, color: 'bg-yellow-500' },
-              { stars: 3, percentage: 5.5, color: 'bg-green-500' },
-              { stars: 2, percentage: 3.1, color: 'bg-blue-500' },
-              { stars: 1, percentage: 3.1, color: 'bg-red-500' },
-            ].map((item, idx) => (
-              <div key={idx} className="flex items-center gap-3 mb-2">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-3 h-3 ${
-                        star <= item.stars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.percentage}%` }}></div>
-                </div>
-                <div className="text-sm text-gray-900 dark:text-white font-semibold min-w-[40px] text-right">
-                  {item.percentage}%
-                </div>
-              </div>
-            ))}
+            {reviewsData?.ratingDistribution ? (
+              [5, 4, 3, 2, 1].map((stars) => {
+                const count = reviewsData.ratingDistribution[stars] || 0;
+                const total = reviewsData.totalReviews || 1;
+                const percentage = (count / total) * 100;
+                const colorMap: Record<number, string> = {
+                  5: 'bg-primary',
+                  4: 'bg-yellow-500',
+                  3: 'bg-green-500',
+                  2: 'bg-blue-500',
+                  1: 'bg-red-500',
+                };
+                return (
+                  <div key={stars} className="flex items-center gap-3 mb-2">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-3 h-3 ${
+                            star <= stars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className={`h-full ${colorMap[stars]} rounded-full`} style={{ width: `${percentage}%` }}></div>
+                    </div>
+                    <div className="text-sm text-gray-900 dark:text-white font-semibold min-w-[40px] text-right">
+                      {percentage.toFixed(1)}%
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-4 text-gray-500 dark:text-gray-400">No rating data</div>
+            )}
           </div>
         </div>
       </div>

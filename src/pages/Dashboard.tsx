@@ -403,6 +403,19 @@ export default function Dashboard() {
     },
   });
 
+  // Fetch reviews statistics
+  const { data: reviewsStats } = useQuery({
+    queryKey: ['analytics', 'reviews'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/analytics/reviews');
+        return response.data;
+      } catch (error) {
+        return null;
+      }
+    },
+  });
+
   // Calculate task statistics from orders
   const calculateTaskStats = () => {
     const orders = ordersData || [];
@@ -1237,12 +1250,14 @@ export default function Dashboard() {
                   const prevRetention = retentionData.length > 1 ? retentionData[retentionData.length - 2] : 0;
                   const change = prevRetention > 0 ? ((avgRetention - prevRetention) / prevRetention) * 100 : 0;
 
+                  // Review statistics
+                  const totalReviews = reviewsStats?.totalReviews || 0;
+                  const avgRating = reviewsStats?.avgRating || 0;
+                  const positiveRatio = reviewsStats?.positiveRatio || 0;
+
                   return (
                     <>
                       <div className="flex items-center gap-2 mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
-                          {avgRetention.toFixed(0)}%
-                        </h2>
                         {change !== 0 && (
                           <span className={`text-sm ${change >= 0
                             ? 'text-green-600 dark:text-green-400'
@@ -1252,16 +1267,65 @@ export default function Dashboard() {
                           </span>
                         )}
                       </div>
+                      {reviewsStats && (
+                        <div className="grid grid-cols-3 gap-3 mb-3 dark:border-gray-700">
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Reviews</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{totalReviews.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Avg Rating</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{avgRating.toFixed(1)} / 5</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Positive</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{positiveRatio.toFixed(0)}%</p>
+                          </div>
+                        </div>
+                      )}
                     </>
                   );
                 })()}
               </div>
               <div className="p-4 pt-1 pb-0">
                 {(() => {
-                  // Group customers by type for retention chart
+                  // Use review trends data for the chart
+                  const reviewTrends = reviewsStats?.reviewTrends || [];
                   const retentionData = dashboardStats?.customerRetention || [];
-                  // Since we don't have customer type breakdown in retention, show overall retention trend
-                  const data = retentionData.length > 0 ? retentionData : [0, 0, 0, 0, 0, 0];
+                  
+                  // Use review trends if available, otherwise fall back to retention data
+                  let chartData: number[];
+                  let chartLabel: string;
+                  
+                  if (reviewTrends.length > 0) {
+                    // Use last 6 months of review trends
+                    chartData = reviewTrends.slice(-6);
+                    chartLabel = 'Reviews';
+                  } else if (retentionData.length > 0) {
+                    chartData = retentionData.slice(-6);
+                    chartLabel = 'Retention Rate';
+                  } else {
+                    // Default empty data
+                    chartData = [0, 0, 0, 0, 0, 0];
+                    chartLabel = 'Retention Rate';
+                  }
+
+                  // Ensure we have exactly 6 data points
+                  while (chartData.length < 6) {
+                    chartData.unshift(0);
+                  }
+                  chartData = chartData.slice(-6);
+
+                  // Get month labels for the last 6 months
+                  const now = new Date();
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  const monthLabels: string[] = [];
+                  for (let i = 5; i >= 0; i--) {
+                    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    monthLabels.push(monthNames[monthDate.getMonth()]);
+                  }
+
+                  const maxValue = Math.max(...chartData, 1);
 
                   return (
                     <div style={{ height: '295px' }} className="-mt-1">
@@ -1269,29 +1333,39 @@ export default function Dashboard() {
                         type="bar"
                         height={295}
                         series={[{
-                          name: 'Retention Rate',
-                          data: data
+                          name: chartLabel,
+                          data: chartData
                         }]}
                         options={{
                           chart: {
                             type: 'bar',
                             height: 295,
-                            stacked: true,
+                            stacked: false,
                             toolbar: { show: false },
                             zoom: { enabled: false }
                           },
                           plotOptions: {
                             bar: {
                               horizontal: false,
-                              colors: {
-                                backgroundBarColors: ['rgba(89, 85, 209, 0.03)'],
-                                backgroundBarOpacity: 1
+                              borderRadius: 4,
+                              columnWidth: '60%',
+                            }
+                          },
+                          colors: ['#5955D1'],
+                          yaxis: { 
+                            show: true,
+                            min: 0,
+                            max: maxValue > 0 ? maxValue * 1.2 : 100,
+                            labels: {
+                              style: {
+                                colors: '#696981',
+                                fontSize: '12px',
+                                fontWeight: 500
                               }
                             }
                           },
-                          yaxis: { show: false },
                           xaxis: {
-                            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                            categories: monthLabels,
                             axisTicks: { show: false },
                             axisBorder: { show: false },
                             labels: {
@@ -1303,25 +1377,33 @@ export default function Dashboard() {
                             }
                           },
                           legend: {
-                            position: 'bottom',
-                            offsetY: 0,
-                            labels: {
-                              colors: '#696981'
-                            },
-                            markers: { strokeWidth: 0 },
-                            fontSize: '12px',
-                            fontWeight: 500
+                            show: false
                           },
                           grid: {
                             borderColor: 'transparent',
                             xaxis: { lines: { show: false } },
-                            yaxis: { lines: { show: true } }
+                            yaxis: { 
+                              lines: { 
+                                show: true
+                              }
+                            },
+                            strokeDashArray: 4
                           },
                           fill: {
                             colors: ['#5955D1'],
                             opacity: 1
                           },
-                          dataLabels: { enabled: false }
+                          dataLabels: { 
+                            enabled: false 
+                          },
+                          tooltip: {
+                            enabled: true,
+                            y: {
+                              formatter: (val: number) => {
+                                return chartLabel === 'Reviews' ? val.toString() : `${val.toFixed(1)}%`;
+                              }
+                            }
+                          }
                         }}
                       />
                     </div>
