@@ -292,7 +292,7 @@ export default function Warehouses() {
   const [isDeleteModalShowing, setIsDeleteModalShowing] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const itemsPerPage = 10; // Fixed limit of 10 items per page
   const queryClient = useQueryClient();
 
   // Handle body scroll lock when modal is open
@@ -523,21 +523,6 @@ export default function Warehouses() {
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Items per page selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-white">Show:</span>
-                <ItemsPerPageSelector
-                  value={itemsPerPage}
-                  onChange={(newValue) => {
-                    setItemsPerPage(newValue);
-                    // Reset to page 1 when changing items per page
-                    setCurrentPage(1);
-                    // Force refetch by invalidating the query
-                    queryClient.invalidateQueries({ queryKey: ['warehouses'] });
-                  }}
-                />
-              </div>
-              
               {/* Pagination buttons */}
               <div className="flex items-center gap-1">
                 <button
