@@ -1267,20 +1267,21 @@ export default function Dashboard() {
                           </span>
                         )}
                       </div>
-                      {reviewsStats && (
-                        <div className="grid grid-cols-3 gap-3 mb-3 dark:border-gray-700">
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Total Reviews</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{totalReviews.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Avg Rating</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{avgRating.toFixed(1)} / 5</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Positive</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{positiveRatio.toFixed(0)}%</p>
-                          </div>
+                      {reviewsStats && reviewsStats.ratingDistribution && (
+                        <div className="space-y-2 mb-3">
+                          {[5, 4, 3, 2, 1].map((rating) => {
+                            const count = reviewsStats.ratingDistribution[rating] || 0;
+                            return (
+                              <div key={rating} className="flex items-center justify-between">
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                  {count.toLocaleString()} reviews with {rating} {rating === 1 ? 'point' : 'points'}
+                                </span>
+                                <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                  {totalReviews > 0 ? ((count / totalReviews) * 100).toFixed(1) : 0}%
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </>
@@ -1289,58 +1290,148 @@ export default function Dashboard() {
               </div>
               <div className="p-4 pt-1 pb-0">
                 {(() => {
-                  // Use review trends data for the chart
-                  const reviewTrends = reviewsStats?.reviewTrends || [];
-                  const retentionData = dashboardStats?.customerRetention || [];
+                  // Get monthly rating distribution from API
+                  const monthlyRatingDistribution = reviewsStats?.monthlyRatingDistribution || [];
+                  const ratingDistribution = reviewsStats?.ratingDistribution || {};
                   
-                  // Use review trends if available, otherwise fall back to retention data
-                  let chartData: number[];
-                  let chartLabel: string;
-                  
-                  if (reviewTrends.length > 0) {
-                    // Use last 6 months of review trends
-                    chartData = reviewTrends.slice(-6);
-                    chartLabel = 'Reviews';
-                  } else if (retentionData.length > 0) {
-                    chartData = retentionData.slice(-6);
-                    chartLabel = 'Retention Rate';
-                  } else {
-                    // Default empty data
-                    chartData = [0, 0, 0, 0, 0, 0];
-                    chartLabel = 'Retention Rate';
-                  }
-
-                  // Ensure we have exactly 6 data points
-                  while (chartData.length < 6) {
-                    chartData.unshift(0);
-                  }
-                  chartData = chartData.slice(-6);
-
-                  // Get month labels for the last 6 months
-                  const now = new Date();
-                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  // Get month labels and data
                   const monthLabels: string[] = [];
-                  for (let i = 5; i >= 0; i--) {
-                    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    monthLabels.push(monthNames[monthDate.getMonth()]);
+                  const seriesData = {
+                    5: [] as number[],
+                    4: [] as number[],
+                    3: [] as number[],
+                    2: [] as number[],
+                    1: [] as number[],
+                  };
+
+                  // Process monthly data
+                  if (monthlyRatingDistribution && monthlyRatingDistribution.length > 0) {
+                    monthlyRatingDistribution.forEach((monthData: any) => {
+                      monthLabels.push(monthData.month);
+                      const dist = monthData.distribution || {};
+                      const total = Object.values(dist).reduce((sum: number, val: any) => sum + (typeof val === 'number' ? val : 0), 0);
+                      
+                      // Calculate percentages for each rating
+                      const getPercentage = (count: number) => total > 0 ? (count / total) * 100 : 0;
+                      
+                      seriesData[5].push(getPercentage(dist[5] || 0));
+                      seriesData[4].push(getPercentage(dist[4] || 0));
+                      seriesData[3].push(getPercentage(dist[3] || 0));
+                      seriesData[2].push(getPercentage(dist[2] || 0));
+                      seriesData[1].push(getPercentage(dist[1] || 0));
+                    });
                   }
 
-                  const maxValue = Math.max(...chartData, 1);
+                  // If no monthly data at all, fall back to overall distribution
+                  if (monthLabels.length === 0) {
+                    const now = new Date();
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    for (let i = 5; i >= 0; i--) {
+                      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                      monthLabels.push(monthNames[monthDate.getMonth()]);
+                    }
+                    
+                    const totalReviews = reviewsStats?.totalReviews || 0;
+                    const getPercentage = (count: number) => totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                    
+                    seriesData[5] = Array(6).fill(getPercentage(ratingDistribution[5] || 0));
+                    seriesData[4] = Array(6).fill(getPercentage(ratingDistribution[4] || 0));
+                    seriesData[3] = Array(6).fill(getPercentage(ratingDistribution[3] || 0));
+                    seriesData[2] = Array(6).fill(getPercentage(ratingDistribution[2] || 0));
+                    seriesData[1] = Array(6).fill(getPercentage(ratingDistribution[1] || 0));
+                  } else if (monthLabels.length < 6) {
+                    // If we have some monthly data but less than 6 months, fill missing months with zeros
+                    const now = new Date();
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const expectedMonths: string[] = [];
+                    for (let i = 5; i >= 0; i--) {
+                      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                      expectedMonths.push(monthNames[monthDate.getMonth()]);
+                    }
+                    
+                    // Fill in missing months with zero data
+                    expectedMonths.forEach((monthName, index) => {
+                      if (index >= monthLabels.length || monthLabels[index] !== monthName) {
+                        // Insert missing month at correct position
+                        if (index < monthLabels.length) {
+                          monthLabels.splice(index, 0, monthName);
+                          seriesData[5].splice(index, 0, 0);
+                          seriesData[4].splice(index, 0, 0);
+                          seriesData[3].splice(index, 0, 0);
+                          seriesData[2].splice(index, 0, 0);
+                          seriesData[1].splice(index, 0, 0);
+                        } else {
+                          monthLabels.push(monthName);
+                          seriesData[5].push(0);
+                          seriesData[4].push(0);
+                          seriesData[3].push(0);
+                          seriesData[2].push(0);
+                          seriesData[1].push(0);
+                        }
+                      }
+                    });
+                    
+                    // Ensure we have exactly 6 months
+                    while (monthLabels.length < 6) {
+                      const now = new Date();
+                      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                      const missingIndex = monthLabels.length;
+                      const monthDate = new Date(now.getFullYear(), now.getMonth() - (5 - missingIndex), 1);
+                      monthLabels.push(monthNames[monthDate.getMonth()]);
+                      seriesData[5].push(0);
+                      seriesData[4].push(0);
+                      seriesData[3].push(0);
+                      seriesData[2].push(0);
+                      seriesData[1].push(0);
+                    }
+                    
+                    // Trim to exactly 6 if somehow we have more
+                    monthLabels.length = 6;
+                    seriesData[5].length = 6;
+                    seriesData[4].length = 6;
+                    seriesData[3].length = 6;
+                    seriesData[2].length = 6;
+                    seriesData[1].length = 6;
+                  }
+
+                  const series = [
+                    {
+                      name: '5 Points',
+                      data: seriesData[5]
+                    },
+                    {
+                      name: '4 Points',
+                      data: seriesData[4]
+                    },
+                    {
+                      name: '3 Points',
+                      data: seriesData[3]
+                    },
+                    {
+                      name: '2 Points',
+                      data: seriesData[2]
+                    },
+                    {
+                      name: '1 Point',
+                      data: seriesData[1]
+                    }
+                  ];
+
+                  // Store monthly data for tooltip access
+                  const monthlyData = monthlyRatingDistribution;
 
                   return (
                     <div style={{ height: '295px' }} className="-mt-1">
                       <Chart
                         type="bar"
                         height={295}
-                        series={[{
-                          name: chartLabel,
-                          data: chartData
-                        }]}
+                        series={series}
                         options={{
                           chart: {
                             type: 'bar',
                             height: 295,
-                            stacked: false,
+                            stacked: true,
+                            stackType: '100%',
                             toolbar: { show: false },
                             zoom: { enabled: false }
                           },
@@ -1351,17 +1442,24 @@ export default function Dashboard() {
                               columnWidth: '60%',
                             }
                           },
-                          colors: ['#5955D1'],
+                          colors: [
+                            '#5955D1', // 5 points - darkest purple
+                            '#7C7AE8', // 4 points
+                            '#9D9BFF', // 3 points
+                            '#BEBDFF', // 2 points
+                            '#DEDDF6'  // 1 point - lightest purple
+                          ],
                           yaxis: { 
                             show: true,
                             min: 0,
-                            max: maxValue > 0 ? maxValue * 1.2 : 100,
+                            max: 100,
                             labels: {
                               style: {
                                 colors: '#696981',
                                 fontSize: '12px',
                                 fontWeight: 500
-                              }
+                              },
+                              formatter: (val: number) => `${val.toFixed(0)}%`
                             }
                           },
                           xaxis: {
@@ -1377,7 +1475,18 @@ export default function Dashboard() {
                             }
                           },
                           legend: {
-                            show: false
+                            show: true,
+                            position: 'bottom',
+                            offsetY: 0,
+                            labels: {
+                              colors: '#696981'
+                            },
+                            markers: { 
+                              strokeWidth: 0,
+                              size: 8
+                            },
+                            fontSize: '12px',
+                            fontWeight: 500
                           },
                           grid: {
                             borderColor: 'transparent',
@@ -1390,7 +1499,6 @@ export default function Dashboard() {
                             strokeDashArray: 4
                           },
                           fill: {
-                            colors: ['#5955D1'],
                             opacity: 1
                           },
                           dataLabels: { 
@@ -1399,8 +1507,21 @@ export default function Dashboard() {
                           tooltip: {
                             enabled: true,
                             y: {
-                              formatter: (val: number) => {
-                                return chartLabel === 'Reviews' ? val.toString() : `${val.toFixed(1)}%`;
+                              formatter: (val: number, { seriesIndex, dataPointIndex }: any) => {
+                                const ratingLabels = ['1 Point', '2 Points', '3 Points', '4 Points', '5 Points'];
+                                const rating = 5 - seriesIndex;
+                                
+                                // Get the actual count for this month and rating
+                                let count = 0;
+                                if (monthlyData && monthlyData.length > dataPointIndex && monthlyData[dataPointIndex]) {
+                                  const monthDist = monthlyData[dataPointIndex].distribution || {};
+                                  count = monthDist[rating] || 0;
+                                } else {
+                                  // Fallback to overall distribution
+                                  count = ratingDistribution[rating] || 0;
+                                }
+                                
+                                return `${ratingLabels[seriesIndex]}: ${val.toFixed(1)}% (${count.toLocaleString()} reviews)`;
                               }
                             }
                           }
