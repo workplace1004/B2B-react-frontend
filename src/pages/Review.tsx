@@ -464,9 +464,6 @@ export default function Review() {
         <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex items-center justify-between">
             <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Review Sources Breakdown</h6>
-            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-              <MoreVertical className="w-4 h-4 text-gray-500" />
-            </button>
           </div>
           <div className="p-4 pt-0">
             {reviewsData?.sourceBreakdown && Object.keys(reviewsData.sourceBreakdown).length > 0 ? (
@@ -656,9 +653,7 @@ export default function Review() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <strong className="text-gray-900 dark:text-white">
-                        {product.rating} <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 inline" />
-                      </strong>
+                      {renderStars(product.rating)}
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{product.totalReviews.toLocaleString()}</td>
                   </tr>
