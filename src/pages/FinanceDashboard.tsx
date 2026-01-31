@@ -3,53 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import api from '../lib/api';
 import { Coins, CreditCard, TrendingUp, Calendar, Search, MoreVertical, ChevronDown, Inbox } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import { Doughnut } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 import { SkeletonStatsCard } from '../components/Skeleton';
-
-ChartJS.register(ArcElement, Tooltip, Legend);
-
-// Custom plugin to add center text to doughnut chart
-const centerTextPlugin = {
-  id: 'centerText',
-  afterDraw(chart: any) {
-    const { ctx, chartArea } = chart;
-    if (!chartArea) return;
-
-    const centerX = (chartArea.left + chartArea.right) / 2;
-    const centerY = (chartArea.top + chartArea.bottom) / 2;
-
-    // Calculate total
-    const dataset = chart.data.datasets[0];
-    const total = dataset.data.reduce((acc: number, val: number) => acc + val, 0);
-
-    // Check if dark mode
-    const isDark = document.documentElement.classList.contains('dark');
-
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Total value
-    ctx.font = 'bold 26px sans-serif';
-    ctx.fillStyle = isDark ? '#fff' : '#000';
-    ctx.fillText(total.toString(), centerX, centerY - 5);
-
-    // Label below
-    ctx.font = '14px sans-serif';
-    ctx.fillStyle = isDark ? '#9ca3af' : '#999';
-    ctx.fillText('Sources', centerX, centerY + 18);
-
-    ctx.restore();
-  },
-};
-
-ChartJS.register(centerTextPlugin);
 
 export default function FinanceDashboard() {
   const [selectedYear, setSelectedYear] = useState('This Year');
@@ -237,37 +191,6 @@ export default function FinanceDashboard() {
         fontSize: '12px',
         fontWeight: '600',
         fontFamily: 'var(--bs-body-font-family)',
-      },
-    },
-  };
-
-  // Expense Breakdown Chart (Doughnut) - Using placeholder data since expenses endpoint doesn't exist
-  const expenseChartData = {
-    labels: ['Salaries', 'Rent', 'Software', 'Marketing'],
-    datasets: [
-      {
-        data: [0, 0, 0, 0], // Would need expenses data from API
-        backgroundColor: ['#5955D1', '#ACAAE8', '#d1d0f7', '#DEDDF6'],
-        borderRadius: 3,
-        spacing: 0,
-        hoverOffset: 5,
-        borderWidth: 3,
-        borderColor: '#fff',
-        hoverBorderColor: '#fff',
-      },
-    ],
-  };
-
-  const expenseChartOptions = {
-    cutout: '65%',
-    devicePixelRatio: 2,
-    layout: { padding: 0 },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => `${context.label}: ${context.formattedValue}`,
-        },
       },
     },
   };
@@ -530,26 +453,6 @@ export default function FinanceDashboard() {
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            {!salesReport && isLoading ? (
-              <div className="flex flex-col items-center justify-center py-4">
-                <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
-              </div>
-            ) : (
-              // Expenses endpoint doesn't exist, so we show 0 or placeholder
-              <div className="flex gap-3 items-center">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-red-600 dark:text-red-400" />
-                </div>
-                <div>
-                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Expenses</span>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalExpenses)}</h2>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-4">
                 <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
@@ -651,42 +554,46 @@ export default function FinanceDashboard() {
               )}
             </div>
 
-            {/* Expense Breakdown */}
+            {/* Revenue Summary */}
             <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="border-b border-gray-200 dark:border-gray-700 mb-4 pb-4">
-                <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Expense Breakdown</h6>
+                <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Revenue Summary</h6>
               </div>
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
                   <span className="text-sm text-gray-500 dark:text-gray-400">No Data Available</span>
                 </div>
-              ) : expenseChartData.datasets[0].data.every((val: number) => val === 0) ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
-                  <span className="text-sm text-gray-500 dark:text-gray-400">No Data Available</span>
-                </div>
               ) : (
-                <div className="flex flex-col items-center gap-4">
-                  <div className="max-w-[175px] w-full aspect-square">
-                    <Doughnut data={expenseChartData} options={expenseChartOptions} />
-                  </div>
-                <div className="w-full space-y-2">
-                  {[
-                    { label: 'Salaries', value: '40%', opacity: 'opacity-10' },
-                    { label: 'Rent', value: '30%', opacity: 'opacity-25' },
-                    { label: 'Software', value: '20%', opacity: 'opacity-50' },
-                    { label: 'Marketing', value: '10%', opacity: 'opacity-75' },
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 bg-primary ${item.opacity} rounded`}></div>
-                        <span className="text-sm text-gray-900 dark:text-white">{item.label}</span>
-                      </div>
-                      <strong className="text-gray-900 dark:text-white font-semibold text-sm">{item.value}</strong>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-gray-900 dark:text-white">Today</span>
                     </div>
-                  ))}
-                </div>
+                    <strong className="text-gray-900 dark:text-white font-semibold text-sm">{formatCurrency(todayRevenue)}</strong>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-sm text-gray-900 dark:text-white">This Month</span>
+                    </div>
+                    <strong className="text-gray-900 dark:text-white font-semibold text-sm">{formatCurrency(currentMonthRevenue)}</strong>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      <span className="text-sm text-gray-900 dark:text-white">Total Revenue</span>
+                    </div>
+                    <strong className="text-gray-900 dark:text-white font-semibold text-sm">{formatCurrency(totalRevenue)}</strong>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-primary rounded-full"></div>
+                      <span className="text-sm text-gray-900 dark:text-white">Net Profit</span>
+                    </div>
+                    <strong className="text-gray-900 dark:text-white font-semibold text-sm">{formatCurrency(netProfit)}</strong>
+                  </div>
                 </div>
               )}
             </div>
