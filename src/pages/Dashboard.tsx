@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { Package, ShoppingCart, AlertTriangle, ArrowRight, TrendingUp, Calendar, Search, Plus, Trash2, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { Package, ShoppingCart, AlertTriangle, ArrowRight, TrendingUp, Calendar, Search, Plus, Trash2, ChevronLeft, ChevronRight, Inbox, Download } from 'lucide-react';
 import { SkeletonTable } from '../components/Skeleton';
 import Chart from 'react-apexcharts';
 import { Doughnut } from 'react-chartjs-2';
@@ -1338,9 +1338,9 @@ export default function Dashboard() {
               </div>
               <div className="p-3 bg-primary/5 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Annual report</h6>
-                <button className="text-sm text-primary font-semibold hover:text-primary-dark transition-colors flex items-center gap-1">
+                <button className="px-3 py-1.5 text-sm font-semibold text-primary bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5">
+                  <Download className="w-4 h-4" />
                   <span>Download</span>
-                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>

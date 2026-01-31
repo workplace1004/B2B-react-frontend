@@ -210,14 +210,18 @@ export default function Review() {
   const recentReviews = reviewsData?.recentReviews || [];
   const topRatedProducts = reviewsData?.topRatedProducts || [];
 
-  const filteredRecentReviews = recentReviews.filter((review) =>
-    review.customer.toLowerCase().includes(recentReviewSearch.toLowerCase()) ||
-    review.review.toLowerCase().includes(recentReviewSearch.toLowerCase())
-  );
+  const filteredRecentReviews = recentReviews
+    .filter((review) =>
+      review.customer.toLowerCase().includes(recentReviewSearch.toLowerCase()) ||
+      review.review.toLowerCase().includes(recentReviewSearch.toLowerCase())
+    )
+    .slice(0, 10);
 
-  const filteredTopRated = topRatedProducts.filter((product) =>
-    product.product.toLowerCase().includes(topRatedSearch.toLowerCase())
-  );
+  const filteredTopRated = topRatedProducts
+    .filter((product) =>
+      product.product.toLowerCase().includes(topRatedSearch.toLowerCase())
+    )
+    .slice(0, 10);
 
   const renderStars = (rating: number) => {
     return (
