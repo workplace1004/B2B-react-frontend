@@ -515,16 +515,15 @@ export default function Analytics() {
                     itemStyle={{
                       color: isDarkMode ? '#ffffff' : '#1f2937',
                     }}
-                  />
-                  <Legend
-                    wrapperStyle={{
-                      paddingTop: '20px',
+                    formatter={(_value: any, _name: any, props: any) => {
+                      return [props.payload.count, 'Orders'];
                     }}
-                    formatter={(value: string) => (
-                      <span style={{ color: isDarkMode ? '#ffffff' : '#1f2937', fontSize: '12px' }}>
-                        {value}
-                      </span>
-                    )}
+                    labelFormatter={(label: any, payload: any) => {
+                      if (payload && payload.length > 0 && payload[0].payload) {
+                        return payload[0].payload.status || '';
+                      }
+                      return label || '';
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
