@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { Package, ShoppingCart, AlertTriangle, ArrowRight, TrendingUp, MoreVertical, Calendar, Search, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, ShoppingCart, AlertTriangle, ArrowRight, TrendingUp, Calendar, Search, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SkeletonStatsCard, SkeletonTable } from '../components/Skeleton';
 import Chart from 'react-apexcharts';
 import { Doughnut } from 'react-chartjs-2';
@@ -489,11 +489,8 @@ export default function Dashboard() {
             
             {/* Card 1: Total Customers */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Total Customers</h6>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                </button>
               </div>
               <div className="p-4 pb-0 flex items-start justify-between">
                 <div className="flex items-center gap-2">
@@ -577,11 +574,8 @@ export default function Dashboard() {
 
             {/* Card 2: Order Analytics */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Order Analytics</h6>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                </button>
               </div>
               <div className="p-4 pt-0">
                 <div className="flex items-center gap-2 mb-3">
@@ -714,11 +708,8 @@ export default function Dashboard() {
 
             {/* Card 4: Active Orders */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Active Orders</h6>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                </button>
               </div>
               <div className="p-4 pt-0">
                 <div className="flex items-center gap-2">
@@ -948,11 +939,8 @@ export default function Dashboard() {
             
             {/* Card 6: Order Sources */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Order Sources</h6>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                </button>
               </div>
               <div className="p-4 pt-0">
                 <div style={{ height: '95px' }} className="my-1">
@@ -1041,11 +1029,8 @@ export default function Dashboard() {
 
             {/* Card 7: Customer Retention Rate */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Customer Retention Rate</h6>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                </button>
               </div>
               <div className="p-4 pb-0 pt-0">
                 <div className="flex items-center gap-2 mb-3">
@@ -1132,11 +1117,8 @@ export default function Dashboard() {
               backgroundPosition: 'center',
               backgroundSize: 'cover'
             }}>
-              <div className="p-4 border-b border-white/10 flex items-center justify-between relative z-10">
+              <div className="p-4 border-b border-white/10 relative z-10">
                 <h6 className="text-sm font-semibold text-white mb-0">Total Revenue</h6>
-                <button className="p-1 hover:bg-white/20 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-white" />
-                </button>
               </div>
               <div className="p-4 pt-0 border-b border-white/10 relative z-10">
                 <div className="mb-5 -mt-3 relative" style={{ height: '350px' }}>
@@ -1244,11 +1226,8 @@ export default function Dashboard() {
 
             {/* Card 9: Orders By Time */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Orders By Time</h6>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                </button>
               </div>
               <div className="p-4 p-0">
                 <div style={{ height: '250px' }} className="-mt-3 -mb-1">
@@ -1401,11 +1380,6 @@ export default function Dashboard() {
                           </span>
                         </td>
                         <td className="px-3 py-3">
-                          <div className="relative">
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
-                              <MoreVertical className="w-4 h-4 text-gray-500" />
-                            </button>
-                          </div>
                         </td>
                       </tr>
                     ))}
