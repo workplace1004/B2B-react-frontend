@@ -486,6 +486,14 @@ export default function Dashboard() {
     },
   });
 
+  // Helper function to format date as YYYY-MM-DD in local time
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Get date range for Revenue card based on revenueTimeRange
   const getRevenueDateRange = () => {
     const endDate = new Date();
@@ -498,15 +506,21 @@ export default function Dashboard() {
         break;
       case 'week':
         startDate.setDate(endDate.getDate() - 7);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
         break;
       case 'month':
-        startDate.setDate(endDate.getDate() - 30);
+        // Go back 12 months from endDate
+        startDate.setMonth(endDate.getMonth() - 11);
+        startDate.setDate(1); // First day of the month
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
         break;
     }
 
     return {
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0]
+      startDate: formatDateLocal(startDate),
+      endDate: formatDateLocal(endDate)
     };
   };
 
@@ -657,7 +671,7 @@ export default function Dashboard() {
         });
         return `Week ${weekNumber} ${monthYear}`;
       case 'month':
-        // Display: "2024"
+        // Display: "2026" (just the year)
         return now.getFullYear().toString();
       default:
         return '';
