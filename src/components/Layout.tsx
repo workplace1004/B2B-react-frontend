@@ -72,7 +72,7 @@ export default function Layout({ children }: LayoutProps) {
   const menuItems: MenuItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, useFlaticon: true, flaticonClass: 'fi fi-rr-house-blank' },
     { path: '/sales', label: 'Sales Dashboard', icon: TrendingUp, useFlaticon: true, flaticonClass: 'fi fi-rr-percent-100' },
-    { path: '/finance', label: 'Finance Dashboard', icon: DollarSign },
+    { path: '/finance', label: 'Finance Dashboard', icon: DollarSign, useFlaticon: true, flaticonClass: 'fi fi-rr-growth-chart-invest' },
     { path: '/review', label: 'Reviews', icon: Star },
     { path: '/products', label: 'Products', icon: Package },
     { path: '/collections', label: 'Collections', icon: Layers },
