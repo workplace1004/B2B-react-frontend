@@ -96,7 +96,7 @@ const CustomSelect = ({
             top: '100%',
             left: 0,
             right: 0,
-            minWidth: '100%',
+            minWidth: '200px',
             maxHeight: '400px', // Limit to 10 items (10 * ~40px per item)
           }}
         >
@@ -355,6 +355,7 @@ export default function Inventory() {
                 setPage(0);
               }}
               placeholder="Filter by warehouse"
+              className="min-w-[200px]"
             />
           )}
           {(!filteredData || filteredData.length === 0) ? null : (

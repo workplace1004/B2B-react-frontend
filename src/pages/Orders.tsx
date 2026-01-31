@@ -14,6 +14,7 @@ const CustomSelect = ({
   placeholder = 'Select...',
   className = '',
   error = false,
+  noOverflow = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -21,6 +22,7 @@ const CustomSelect = ({
   placeholder?: string;
   className?: string;
   error?: boolean;
+  noOverflow?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
@@ -90,14 +92,14 @@ const CustomSelect = ({
 
       {isOpen && (
         <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
+          className={`absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl custom-dropdown-menu ${noOverflow ? '' : 'overflow-auto'}`}
           style={{
             zIndex: 10000,
             top: '100%',
             left: 0,
             right: 0,
             minWidth: '100%',
-            maxHeight: '400px', // Limit to 10 items (10 * ~40px per item)
+            ...(noOverflow ? {} : { maxHeight: '400px' }), // Limit to 10 items (10 * ~40px per item) only if overflow is enabled
           }}
         >
           {options.map((option, index) => {
@@ -781,6 +783,7 @@ function AddOrderModal({
                       value={formData.status}
                       onChange={(value) => handleChange('status', value)}
                       placeholder="Select status"
+                      noOverflow={true}
                     />
                   </div>
 
@@ -789,7 +792,7 @@ function AddOrderModal({
                     {formData.orderLines.map((line: any, index: number) => (
                       <div key={index} className="mb-4">
                         <div className="grid grid-cols-12 gap-2 mb-1">
-                          <div className="col-span-5">
+                          <div className="col-span-6">
                             <CustomSelect
                               options={productOptions}
                               value={line.productId}
@@ -1162,6 +1165,7 @@ function EditOrderModal({
                       value={formData.status}
                       onChange={(value) => handleChange('status', value)}
                       placeholder="Select status"
+                      noOverflow={true}
                     />
                   </div>
 
