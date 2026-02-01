@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-// Use environment variable if set, otherwise use production URL for production builds, or localhost for development
-const API_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD 
-    ? 'https://b2b-nest-backend-production.up.railway.app/api'
-    : 'http://localhost:3000/api');
+// Use environment variable if set, otherwise use localhost for development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const api = axios.create({
   baseURL: API_URL,
