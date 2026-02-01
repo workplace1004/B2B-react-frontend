@@ -85,7 +85,7 @@ export default function Layout({ children }: LayoutProps) {
     dashboard: [
       { path: '/dashboard', label: 'Overview', useFlaticon: true, flaticonClass: 'fi fi-rr-house-blank' },
       { path: '/alerts', label: 'Alerts', useFlaticon: true, flaticonClass: 'fi fi-rr-bell' },
-      { path: '/exceptions', label: 'Exceptions', useFlaticon: true, flaticonClass: 'fi fi-rr-exclamation-triangle' },
+      { path: '/exceptions', label: 'Exceptions', useFlaticon: true, flaticonClass: 'fi fi-rr-exclamation' },
       { path: '/tasks', label: 'My Tasks', useFlaticon: true, flaticonClass: 'fi fi-rr-clipboard-list' },
       { path: '/kpi-reports', label: 'KPI Reports', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-histogram' },
     ],
@@ -95,13 +95,13 @@ export default function Layout({ children }: LayoutProps) {
       { path: '/costing', label: 'Costing', useFlaticon: true, flaticonClass: 'fi fi-rr-dollar' },
       { path: '/collections', label: 'Collections', useFlaticon: true, flaticonClass: 'fi fi-rr-layers' },
       { path: '/drops', label: 'Drops', useFlaticon: true, flaticonClass: 'fi fi-rr-calendar' },
-      { path: '/pricing', label: 'Pricing', useFlaticon: true, flaticonClass: 'fi fi-rr-tag' },
+      { path: '/pricing', label: 'Pricing', useFlaticon: true, flaticonClass: 'fi fi-rr-tags' },
       { path: '/documents', label: 'Assets (DAM)', useFlaticon: true, flaticonClass: 'fi fi-rr-file' },
     ],
     sales: [
       { path: '/orders', label: 'Orders', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart' },
       { path: '/customers', label: 'Customers', useFlaticon: true, flaticonClass: 'fi fi-rr-users' },
-      { path: '/retailers', label: 'Retailers', useFlaticon: true, flaticonClass: 'fi fi-rr-store' },
+      { path: '/retailers', label: 'Retailers', useFlaticon: true, flaticonClass: 'fi fi-rr-shop' },
       { path: '/returns', label: 'Returns (RMA)', useFlaticon: true, flaticonClass: 'fi fi-rr-arrow-left' },
       { path: '/wholesale', label: 'Wholesale (B2B)', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-bag' },
     ],
@@ -112,7 +112,7 @@ export default function Layout({ children }: LayoutProps) {
     ],
     operations: [
       { path: '/inventory', label: 'Inventory', useFlaticon: true, flaticonClass: 'fi fi-rr-warehouse-alt' },
-      { path: '/fulfillment', label: 'Fulfillment', useFlaticon: true, flaticonClass: 'fi fi-rr-truck' },
+      { path: '/fulfillment', label: 'Fulfillment', useFlaticon: true, flaticonClass: 'fi fi-rr-shipping-fast' },
       { path: '/warehouses', label: 'Warehouses', useFlaticon: true, flaticonClass: 'fi fi-rr-building' },
       { path: '/receiving', label: 'Receiving', useFlaticon: true, flaticonClass: 'fi fi-rr-inbox' },
       { path: '/purchasing', label: 'Purchasing', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-bag' },
@@ -121,10 +121,10 @@ export default function Layout({ children }: LayoutProps) {
     ],
     admin: [
       { path: '/users', label: 'Users', useFlaticon: true, flaticonClass: 'fi fi-rr-users' },
-      { path: '/roles', label: 'Roles', useFlaticon: true, flaticonClass: 'fi fi-rr-user-shield' },
-      { path: '/integrations', label: 'Integrations', useFlaticon: true, flaticonClass: 'fi fi-rr-link' },
-      { path: '/audit-log', label: 'Audit Log', useFlaticon: true, flaticonClass: 'fi fi-rr-file-text' },
-      { path: '/rules', label: 'Rules', useFlaticon: true, flaticonClass: 'fi fi-rr-list-check' },
+      { path: '/roles', label: 'Roles', useFlaticon: true, flaticonClass: 'fi fi-rr-user' },
+      { path: '/integrations', label: 'Integrations', useFlaticon: true, flaticonClass: 'fi fi-rr-link-alt' },
+      { path: '/audit-log', label: 'Audit Log', useFlaticon: true, flaticonClass: 'fi fi-rr-clipboard-list' },
+      { path: '/rules', label: 'Rules', useFlaticon: true, flaticonClass: 'fi fi-rr-list' },
       { path: '/settings', label: 'Settings', useFlaticon: true, flaticonClass: 'fi fi-rr-settings' },
     ],
   };
@@ -481,7 +481,7 @@ export default function Layout({ children }: LayoutProps) {
                           }`}
                       >
                         {item.useFlaticon && item.flaticonClass ? (
-                          <i className={item.flaticonClass} style={{ fontSize: '18px', width: '18px', height: '18px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
+                          <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
                         ) : item.icon ? (
                           <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                         ) : null}
