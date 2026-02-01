@@ -22,7 +22,6 @@ export default function PhoneInput({
   disabled = false,
 }: PhoneInputProps) {
   const [isValid, setIsValid] = useState<boolean>(true);
-  const [country, setCountry] = useState<Country>('US');
 
   useEffect(() => {
     if (value && value.trim()) {
@@ -59,7 +58,9 @@ export default function PhoneInput({
         defaultCountry="US"
         value={value || undefined}
         onChange={handleChange}
-        onCountryChange={setCountry}
+        onCountryChange={(_country?: Country) => {
+          // Handle country change if needed in the future
+        }}
         placeholder={placeholder}
         disabled={disabled}
         className={`phone-input ${error || (value && !isValid) ? 'phone-input-error' : ''}`}

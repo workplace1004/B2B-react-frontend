@@ -16,7 +16,6 @@ interface CalendarEvent {
 
 export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
 
   // Fetch orders to use as calendar events
   const { data: ordersData, isLoading } = useQuery({

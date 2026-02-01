@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
-import { Star, MessageSquare, TrendingUp, Users, MessageCircle, BarChart3, Search, MoreVertical } from 'lucide-react';
+import { Star, Search } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { SkeletonStatsCard } from '../components/Skeleton';
 
@@ -160,7 +160,7 @@ export default function Review() {
   // Review Sources Chart (Horizontal Stacked Bar)
   const getReviewSourcesChartConfig = () => {
     const sourceBreakdown = reviewsData?.sourceBreakdown || {};
-    const total = Object.values(sourceBreakdown).reduce((sum: number, val: number) => sum + val, 0) as number;
+    const total = Object.values(sourceBreakdown).reduce((sum: number, val: unknown) => sum + (typeof val === 'number' ? val : 0), 0);
     
     // Convert to percentages
     const sources = Object.entries(sourceBreakdown).map(([name, count]) => ({
@@ -236,14 +236,14 @@ export default function Review() {
   const topRatedProducts = reviewsData?.topRatedProducts || [];
 
   const filteredRecentReviews = recentReviews
-    .filter((review) =>
+    .filter((review: { customer: string; review: string; status?: string }) =>
       review.customer.toLowerCase().includes(recentReviewSearch.toLowerCase()) ||
       review.review.toLowerCase().includes(recentReviewSearch.toLowerCase())
     )
     .slice(0, 10);
 
   const filteredTopRated = topRatedProducts
-    .filter((product) =>
+    .filter((product: { product: string; totalReviews?: number }) =>
       product.product.toLowerCase().includes(topRatedSearch.toLowerCase())
     )
     .slice(0, 10);
@@ -482,7 +482,7 @@ export default function Review() {
                 <div className="space-y-1 mt-4">
                   {Object.entries(reviewsData.sourceBreakdown)
                     .map(([name, count]) => {
-                      const total = Object.values(reviewsData.sourceBreakdown).reduce((sum: number, val: number) => sum + val, 0) as number;
+                      const total = Object.values(reviewsData.sourceBreakdown).reduce((sum: number, val: unknown) => sum + (typeof val === 'number' ? val : 0), 0);
                       const percentage = total > 0 ? ((count as number) / total) * 100 : 0;
                       return { name, percentage, count: count as number };
                     })
@@ -598,7 +598,7 @@ export default function Review() {
                 </tr>
               </thead>
               <tbody>
-                {filteredRecentReviews.map((review, idx) => (
+                {filteredRecentReviews.map((review: { customer: string; review: string; rating: number; date: string; status?: string }, idx: number) => (
                   <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -611,7 +611,7 @@ export default function Review() {
                     <td className="px-4 py-3">{renderStars(review.rating)}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">"{review.review}"</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{review.date}</td>
-                    <td className="px-4 py-3">{getStatusBadge(review.status)}</td>
+                    <td className="px-4 py-3">{getStatusBadge(review.status || 'pending')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -650,7 +650,7 @@ export default function Review() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTopRated.map((product, idx) => (
+                {filteredTopRated.map((product: { product: string; rating: number; reviews: number; totalReviews?: number }, idx: number) => (
                   <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -663,7 +663,7 @@ export default function Review() {
                     <td className="px-4 py-3">
                       {renderStars(product.rating)}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{product.totalReviews.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{(product.totalReviews || product.reviews || 0).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

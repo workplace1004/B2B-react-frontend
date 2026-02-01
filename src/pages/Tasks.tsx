@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
-import { CheckCircle2, Circle, Clock, AlertCircle, Plus, Filter } from 'lucide-react';
-import { SkeletonPage } from '../components/Skeleton';
+import { CheckCircle2, Circle, Clock, Plus, Filter } from 'lucide-react';
 
 interface Task {
   id: number;
@@ -18,7 +17,7 @@ export default function Tasks() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
 
   // Fetch orders to use as tasks
-  const { data: ordersData, isLoading } = useQuery({
+  const { data: ordersData } = useQuery({
     queryKey: ['orders', 'tasks'],
     queryFn: async () => {
       const response = await api.get('/orders?skip=0&take=10000');

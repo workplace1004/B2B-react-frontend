@@ -59,7 +59,7 @@ export default function Documents() {
     
     const matchesSearch =
       searchQuery === '' ||
-      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.description?.toLowerCase().includes(searchQuery.toLowerCase());
 

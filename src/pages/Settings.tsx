@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { User, Mail, Lock, Bell, Globe, Moon, Sun, Save, Shield, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { User, Mail, Lock, Bell, Globe, Moon, Sun, Save, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { useCheckUserEmail, useDebounce } from '../utils/emailDuplicateCheck';
 

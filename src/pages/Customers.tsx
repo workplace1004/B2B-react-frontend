@@ -8,11 +8,13 @@ import { SkeletonPage } from '../components/Skeleton';
 import { useCheckCustomerEmail, useDebounce } from '../utils/emailDuplicateCheck';
 import PhoneInput from '../components/PhoneInput';
 
-enum CustomerType {
-  RETAILER = 'RETAILER',
-  B2B = 'B2B',
-  WHOLESALE = 'WHOLESALE',
-}
+const CustomerType = {
+  RETAILER: 'RETAILER',
+  B2B: 'B2B',
+  WHOLESALE: 'WHOLESALE',
+} as const;
+
+type CustomerType = typeof CustomerType[keyof typeof CustomerType];
 
 // Custom Select Component
 const CustomSelect = ({
