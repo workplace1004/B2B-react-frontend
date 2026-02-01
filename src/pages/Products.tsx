@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
-import { Package, Plus, X, ChevronDown, ChevronsLeft, ChevronsRight, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { Package, Plus, X, ChevronDown, ChevronsLeft, ChevronsRight, Pencil, Trash2, AlertTriangle, Upload } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 
@@ -70,9 +70,8 @@ const CustomSelect = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
+        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${error ? 'border-red-500' : 'border-gray-300'
+          } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
         style={{
           padding: '0.532rem 0.8rem 0.532rem 1.2rem',
           fontSize: '0.875rem',
@@ -89,7 +88,7 @@ const CustomSelect = ({
       </button>
 
       {isOpen && (
-        <div 
+        <div
           className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl custom-dropdown-menu"
           style={{
             zIndex: 10000,
@@ -105,18 +104,17 @@ const CustomSelect = ({
           {options.map((option, index) => {
             const isSelected = option.value === value;
             const isHighlighted = index === highlightedIndex;
-            
+
             return (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected || isHighlighted
+                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${isSelected || isHighlighted
                     ? 'bg-primary-500 text-white'
                     : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
+                  } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                 style={{
                   fontSize: '0.875rem',
                   fontWeight: 500,
@@ -135,13 +133,13 @@ const CustomSelect = ({
 };
 
 // Waves effect button component matching sample
-const ButtonWithWaves = ({ 
-  children, 
-  onClick, 
+const ButtonWithWaves = ({
+  children,
+  onClick,
   className = '',
-  disabled = false 
-}: { 
-  children: React.ReactNode; 
+  disabled = false
+}: {
+  children: React.ReactNode;
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
@@ -243,7 +241,29 @@ export default function Products() {
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
-      const response = await api.post('/products', productData);
+      // Convert images to base64 if they exist
+      let imageUrls: string[] = [];
+      if (productData.images && productData.images.length > 0) {
+        const imagePromises = productData.images.map(async (file: File) => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+        imageUrls = await Promise.all(imagePromises);
+      }
+
+      // Include images in product data
+      const { images, ...restProductData } = productData;
+      const productPayload = {
+        ...restProductData,
+        images: imageUrls,
+      };
+
+      const response = await api.post('/products', productPayload);
       return response.data;
     },
     onSuccess: () => {
@@ -259,11 +279,47 @@ export default function Products() {
 
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, productData }: { id: number; productData: any }) => {
-      const response = await api.patch(`/products/${id}`, productData);
+      // Get current product to merge existing images
+      const currentProduct = await api.get(`/products/${id}`);
+      const currentImages = currentProduct.data.images || [];
+
+      // Convert new images to base64
+      let newImageUrls: string[] = [];
+      if (productData.images && productData.images.length > 0) {
+        const imagePromises = productData.images.map(async (file: File) => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+        newImageUrls = await Promise.all(imagePromises);
+      }
+
+      // Merge existing images (excluding deleted ones) with new images
+      const imagesToKeep = currentImages.filter((_img: string, index: number) => {
+        // If imagesToDelete contains indices, filter them out
+        // Otherwise, keep all existing images
+        return !productData.imagesToDelete || !productData.imagesToDelete.includes(index);
+      });
+
+      const allImages = [...imagesToKeep, ...newImageUrls];
+
+      // Remove image-related fields and add merged images
+      const { images, imagesToDelete, ...restProductData } = productData;
+      const productPayload = {
+        ...restProductData,
+        images: allImages,
+      };
+
+      const response = await api.patch(`/products/${id}`, productPayload);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['dam'] });
       toast.success('Product updated successfully!');
       closeEditModal();
     },
@@ -331,7 +387,7 @@ export default function Products() {
           {(!data?.data || data.data.length === 0) ? null : (
             <ButtonWithWaves onClick={openModal}>
               <Plus className="w-5 h-5" />
-          Add Product
+              Add Product
             </ButtonWithWaves>
           )}
         </div>
@@ -362,27 +418,27 @@ export default function Products() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Sizes</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Colors</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
+              </tr>
+            </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {data.data.map((product: any) => (
                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                  {product.sku}
-                </td>
+                    {product.sku}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-white">
-                  {product.name}
-                </td>
+                    {product.name}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-white">
-                  {product.collection?.name || '-'}
-                </td>
+                    {product.collection?.name || '-'}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-white">
-                  {product.sizes?.join(', ') || '-'}
-                </td>
+                    {product.sizes?.join(', ') || '-'}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-white">
-                  {product.colors?.join(', ') || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {product.colors?.join(', ') || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
@@ -405,11 +461,11 @@ export default function Products() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
@@ -425,15 +481,15 @@ export default function Products() {
           <nav aria-label="Page navigation">
             <ul className="pagination pagination-rounded pagination-primary">
               <li className="page-item">
-        <button
+                <button
                   type="button"
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
-          disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
                   className="page-link"
                   aria-label="Previous"
-        >
+                >
                   <ChevronsLeft className="w-3.5 h-3.5" />
-        </button>
+                </button>
               </li>
               {(() => {
                 const totalPages = Math.max(1, Math.ceil((data?.total || 0) / 10));
@@ -479,7 +535,7 @@ export default function Products() {
                       <li key={`ellipsis-${idx}`} className="page-item">
                         <span className="page-link" style={{ cursor: 'default', pointerEvents: 'none' }}>
                           ...
-        </span>
+                        </span>
                       </li>
                     );
                   }
@@ -497,9 +553,9 @@ export default function Products() {
                 });
               })()}
               <li className="page-item">
-        <button
+                <button
                   type="button"
-          onClick={() => setPage((p) => p + 1)}
+                  onClick={() => setPage((p) => p + 1)}
                   disabled={!data?.data || data.data.length < 10 || page + 1 >= Math.ceil((data?.total || 0) / 10)}
                   className="page-link"
                   aria-label="Next"
@@ -579,6 +635,20 @@ function AddProductModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset images when modal closes
+  useEffect(() => {
+    if (!isShowing) {
+      setSelectedImages([]);
+      setImagePreviews([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [isShowing]);
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading) return;
@@ -601,7 +671,7 @@ function AddProductModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const newErrors: Record<string, string> = {};
 
     // Validation
@@ -650,8 +720,8 @@ function AddProductModal({
       toast.error(`Validation Error: ${firstErrorMessage}`);
       // Scroll to first error
       const firstErrorField = Object.keys(newErrors)[0];
-      const errorElement = document.querySelector(`[name="${firstErrorField}"]`) || 
-                          document.querySelector(`#${firstErrorField}`);
+      const errorElement = document.querySelector(`[name="${firstErrorField}"]`) ||
+        document.querySelector(`#${firstErrorField}`);
       if (errorElement) {
         errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         (errorElement as HTMLElement).focus();
@@ -671,6 +741,7 @@ function AddProductModal({
       description: formData.description.trim() || undefined,
       basePrice: formData.basePrice ? parseFloat(formData.basePrice) : undefined,
       collectionId: parseInt(formData.collectionId),
+      images: selectedImages, // Include images for upload
     };
 
     onSubmit(productData);
@@ -684,6 +755,43 @@ function AddProductModal({
         delete newErrors[field];
         return newErrors;
       });
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      toast.error('Please select valid image files');
+      return;
+    }
+
+    // Limit to 10 images
+    const newImages = [...selectedImages, ...imageFiles].slice(0, 10);
+    setSelectedImages(newImages);
+
+    // Create previews
+    const newPreviews: string[] = [];
+    newImages.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews[index] = reader.result as string;
+        if (newPreviews.filter(Boolean).length === newImages.length) {
+          setImagePreviews([...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = selectedImages.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setSelectedImages(newImages);
+    setImagePreviews(newPreviews);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -709,7 +817,7 @@ function AddProductModal({
           onClick={(e) => e.stopPropagation()}
           style={{ maxWidth: '42rem' }}
         >
-          <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
+          <div className="modal-content w-full flex flex-col" style={{ overflow: 'visible' }}>
             {/* Modal Header */}
             <div className="modal-header">
               <h5 id="addProductModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
@@ -729,160 +837,220 @@ function AddProductModal({
             <form id="addProductForm" onSubmit={handleSubmit} className="flex flex-col h-full">
               <div className="modal-body flex-1 overflow-y-auto" style={{ overflowX: 'visible', position: 'relative' }}>
                 <div className="space-y-4">
-            {/* Name and SKU */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Product Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter product name"
-                />
-                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
-              </div>
+                  {/* Name and SKU */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Product Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => handleChange('name', e.target.value)}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.name ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        placeholder="Enter product name"
+                      />
+                      {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  SKU <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) => handleChange('sku', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.sku ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter SKU"
-                />
-                {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku}</p>}
-              </div>
-            </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        SKU <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.sku}
+                        onChange={(e) => handleChange('sku', e.target.value)}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sku ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        placeholder="Enter SKU"
+                      />
+                      {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku}</p>}
+                    </div>
+                  </div>
 
-            {/* Collection and Style */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Collection <span className="text-red-500">*</span>
-                </label>
-                <CustomSelect
-                  value={formData.collectionId}
-                  onChange={(value) => handleChange('collectionId', value)}
-                  options={collections.map((collection: any) => ({
-                    value: collection.id.toString(),
-                    label: collection.name,
-                  }))}
-                  placeholder="Select collection"
-                  error={!!errors.collectionId}
-                />
-                {errors.collectionId && <p className="mt-1 text-sm text-red-500">{errors.collectionId}</p>}
-              </div>
+                  {/* Collection and Style */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Collection <span className="text-red-500">*</span>
+                      </label>
+                      <CustomSelect
+                        value={formData.collectionId}
+                        onChange={(value) => handleChange('collectionId', value)}
+                        options={collections.map((collection: any) => ({
+                          value: collection.id.toString(),
+                          label: collection.name,
+                        }))}
+                        placeholder="Select collection"
+                        error={!!errors.collectionId}
+                      />
+                      {errors.collectionId && <p className="mt-1 text-sm text-red-500">{errors.collectionId}</p>}
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Style</label>
-                <input
-                  type="text"
-                  value={formData.style}
-                  onChange={(e) => handleChange('style', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter style"
-                />
-              </div>
-            </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Style</label>
+                      <input
+                        type="text"
+                        value={formData.style}
+                        onChange={(e) => handleChange('style', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter style"
+                      />
+                    </div>
+                  </div>
 
-            {/* Sizes, Colors, Materials */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Sizes <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.sizes}
-                  onChange={(e) => handleChange('sizes', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.sizes ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="S, M, L, XL"
-                />
-                {errors.sizes && <p className="mt-1 text-sm text-red-500">{errors.sizes}</p>}
-              </div>
+                  {/* Sizes, Colors, Materials */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Sizes <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.sizes}
+                        onChange={(e) => handleChange('sizes', e.target.value)}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sizes ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        placeholder="S, M, L, XL"
+                      />
+                      {errors.sizes && <p className="mt-1 text-sm text-red-500">{errors.sizes}</p>}
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Colors <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.colors}
-                  onChange={(e) => handleChange('colors', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.colors ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Red, Blue, Green"
-                />
-                {errors.colors && <p className="mt-1 text-sm text-red-500">{errors.colors}</p>}
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Colors <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.colors}
+                        onChange={(e) => handleChange('colors', e.target.value)}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.colors ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        placeholder="Red, Blue, Green"
+                      />
+                      {errors.colors && <p className="mt-1 text-sm text-red-500">{errors.colors}</p>}
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Materials <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.materials}
-                  onChange={(e) => handleChange('materials', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.materials ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Cotton, Polyester"
-                />
-                {errors.materials && <p className="mt-1 text-sm text-red-500">{errors.materials}</p>}
-              </div>
-            </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Materials <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.materials}
+                        onChange={(e) => handleChange('materials', e.target.value)}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.materials ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        placeholder="Cotton, Polyester"
+                      />
+                      {errors.materials && <p className="mt-1 text-sm text-red-500">{errors.materials}</p>}
+                    </div>
+                  </div>
 
-            {/* EAN and Base Price */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">EAN</label>
-                <input
-                  type="text"
-                  value={formData.ean}
-                  onChange={(e) => handleChange('ean', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter EAN"
-                />
-              </div>
+                  {/* EAN and Base Price */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">EAN</label>
+                      <input
+                        type="text"
+                        value={formData.ean}
+                        onChange={(e) => handleChange('ean', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter EAN"
+                      />
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Price</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.basePrice}
-                  onChange={(e) => handleChange('basePrice', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Price</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.basePrice}
+                        onChange={(e) => handleChange('basePrice', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                rows={3}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Enter product description"
-              />
-            </div>
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => handleChange('description', e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter product description"
+                    />
+                  </div>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Product Images
+                    </label>
+                    <div className="space-y-3">
+                      {/* File Input */}
+                      <div className="relative">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageSelect}
+                          className="hidden"
+                          id="product-images-input"
+                        />
+                        <label
+                          htmlFor="product-images-input"
+                          className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50"
+                        >
+                          <Upload className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Click to upload images or drag and drop
+                          </span>
+                        </label>
+                      </div>
+
+                      {/* Image Previews */}
+                      {imagePreviews.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {imagePreviews.map((preview, index) => (
+                            <div key={index} className="relative group">
+                              <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                                <img
+                                  src={preview}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Remove image"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 px-2 py-0.5 bg-black/50 text-white text-xs rounded truncate max-w-[calc(100%-0.5rem)]">
+                                {selectedImages[index]?.name || `Image ${index + 1}`}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {selectedImages.length > 0 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected
+                          {selectedImages.length >= 10 && ' (maximum 10 images)'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -959,6 +1127,124 @@ function EditProductModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<number[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Autocomplete for sizes
+  const [sizesInputValue, setSizesInputValue] = useState('');
+  const [sizesSuggestions, setSizesSuggestions] = useState<string[]>([]);
+  const [showSizesSuggestions, setShowSizesSuggestions] = useState(false);
+  const sizesInputRef = useRef<HTMLInputElement>(null);
+  const sizesDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Common sizes list
+  const commonSizes = [
+    'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL',
+    '28', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50',
+    '0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24',
+    'One Size', 'OS', 'Free Size',
+  ];
+
+  // Fetch existing product images from product data
+  useEffect(() => {
+    if (product && product.images && Array.isArray(product.images)) {
+      setExistingImages(product.images);
+    } else {
+      setExistingImages([]);
+    }
+  }, [product]);
+
+  // Initialize sizes input value
+  useEffect(() => {
+    setSizesInputValue(formData.sizes);
+  }, [formData.sizes]);
+
+  // Reset images when modal closes
+  useEffect(() => {
+    if (!isShowing) {
+      setSelectedImages([]);
+      setImagePreviews([]);
+      setImagesToDelete([]);
+      setShowSizesSuggestions(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [isShowing]);
+
+  // Handle sizes input change with autocomplete
+  const handleSizesInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSizesInputValue(value);
+
+    // Get the last part after the last comma (what user is currently typing)
+    const lastCommaIndex = value.lastIndexOf(',');
+    const currentInput = lastCommaIndex === -1 ? value.trim() : value.substring(lastCommaIndex + 1).trim();
+
+    if (currentInput.length > 0) {
+      // Filter suggestions based on current input
+      const filtered = commonSizes.filter(size =>
+        size.toLowerCase().includes(currentInput.toLowerCase()) &&
+        !value.toLowerCase().includes(size.toLowerCase()) // Don't suggest already added sizes
+      );
+      setSizesSuggestions(filtered);
+      setShowSizesSuggestions(filtered.length > 0);
+    } else {
+      setSizesSuggestions([]);
+      setShowSizesSuggestions(false);
+    }
+
+    // Update form data
+    handleChange('sizes', value);
+  };
+
+  // Handle size suggestion selection
+  const handleSizeSelect = (size: string) => {
+    const currentValue = sizesInputValue.trim();
+    const lastCommaIndex = currentValue.lastIndexOf(',');
+
+    let newValue: string;
+    if (lastCommaIndex === -1) {
+      // No comma, replace entire value
+      newValue = size;
+    } else {
+      // Replace the part after the last comma
+      const beforeComma = currentValue.substring(0, lastCommaIndex + 1).trim();
+      newValue = beforeComma ? `${beforeComma} ${size}` : size;
+    }
+
+    setSizesInputValue(newValue);
+    handleChange('sizes', newValue);
+    setShowSizesSuggestions(false);
+    setSizesSuggestions([]);
+
+    // Focus back on input
+    if (sizesInputRef.current) {
+      sizesInputRef.current.focus();
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sizesDropdownRef.current &&
+        !sizesDropdownRef.current.contains(event.target as Node) &&
+        sizesInputRef.current &&
+        !sizesInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSizesSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading) return;
@@ -976,6 +1262,54 @@ function EditProductModal({
     setTimeout(() => {
       setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
     }, 600);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      toast.error('Please select valid image files');
+      return;
+    }
+
+    // Limit to 10 images total (existing + new)
+    const totalImages = existingImages.length - imagesToDelete.length + selectedImages.length + imageFiles.length;
+    if (totalImages > 10) {
+      toast.error('Maximum 10 images allowed');
+      return;
+    }
+
+    const newImages = [...selectedImages, ...imageFiles];
+    setSelectedImages(newImages);
+
+    // Create previews
+    const newPreviews: string[] = [];
+    newImages.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews[index] = reader.result as string;
+        if (newPreviews.filter(Boolean).length === newImages.length) {
+          setImagePreviews([...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeExistingImage = (index: number) => {
+    setImagesToDelete((prev) => [...prev, index]);
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    const newImages = selectedImages.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setSelectedImages(newImages);
+    setImagePreviews(newPreviews);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1041,6 +1375,8 @@ function EditProductModal({
       description: formData.description.trim() || undefined,
       basePrice: formData.basePrice ? parseFloat(formData.basePrice) : undefined,
       collectionId: parseInt(formData.collectionId),
+      images: selectedImages, // New images to upload
+      imagesToDelete: imagesToDelete, // Images to delete
     };
 
     onSubmit(productData);
@@ -1097,190 +1433,315 @@ function EditProductModal({
 
             {/* Modal Body */}
             <form id="editProductForm" onSubmit={handleSubmit} className="modal-body flex-1 overflow-y-auto" style={{ overflowX: 'visible', position: 'relative' }}>
-          <div className="space-y-4">
-            {/* Name and SKU */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Product Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter product name"
-                />
-                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  SKU <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) => handleChange('sku', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.sku ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter SKU"
-                />
-                {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku}</p>}
-              </div>
-            </div>
+              <div className="space-y-4">
+                {/* Name and SKU */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Product Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.name ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      placeholder="Enter product name"
+                    />
+                    {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      SKU <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sku}
+                      onChange={(e) => handleChange('sku', e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sku ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      placeholder="Enter SKU"
+                    />
+                    {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku}</p>}
+                  </div>
+                </div>
 
-            {/* Collection and Style */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Collection <span className="text-red-500">*</span>
-                </label>
-                <CustomSelect
-                  value={formData.collectionId}
-                  onChange={(value) => handleChange('collectionId', value)}
-                  options={collections.map((collection: any) => ({
-                    value: collection.id.toString(),
-                    label: collection.name,
-                  }))}
-                  placeholder="Select collection"
-                  error={!!errors.collectionId}
-                />
-                {errors.collectionId && <p className="mt-1 text-sm text-red-500">{errors.collectionId}</p>}
-              </div>
+                {/* Collection and Style */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Collection <span className="text-red-500">*</span>
+                    </label>
+                    <CustomSelect
+                      value={formData.collectionId}
+                      onChange={(value) => handleChange('collectionId', value)}
+                      options={collections.map((collection: any) => ({
+                        value: collection.id.toString(),
+                        label: collection.name,
+                      }))}
+                      placeholder="Select collection"
+                      error={!!errors.collectionId}
+                    />
+                    {errors.collectionId && <p className="mt-1 text-sm text-red-500">{errors.collectionId}</p>}
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Style</label>
-                <input
-                  type="text"
-                  value={formData.style}
-                  onChange={(e) => handleChange('style', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter style"
-                />
-              </div>
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Style</label>
+                    <input
+                      type="text"
+                      value={formData.style}
+                      onChange={(e) => handleChange('style', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter style"
+                    />
+                  </div>
+                </div>
 
-            {/* Sizes, Colors, Materials */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Sizes <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.sizes}
-                  onChange={(e) => handleChange('sizes', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.sizes ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="S, M, L, XL"
-                />
-                {errors.sizes && <p className="mt-1 text-sm text-red-500">{errors.sizes}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Colors <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.colors}
-                  onChange={(e) => handleChange('colors', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.colors ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Red, Blue, Green"
-                />
-                {errors.colors && <p className="mt-1 text-sm text-red-500">{errors.colors}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Materials <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.materials}
-                  onChange={(e) => handleChange('materials', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.materials ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Cotton, Polyester"
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Comma-separated</p>
-                {errors.materials && <p className="mt-1 text-sm text-red-500">{errors.materials}</p>}
-              </div>
-            </div>
+                {/* Sizes, Colors, Materials */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Sizes <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      ref={sizesInputRef}
+                      type="text"
+                      value={sizesInputValue}
+                      onChange={handleSizesInputChange}
+                      onFocus={() => {
+                        const currentInput = sizesInputValue.split(',').pop()?.trim() || '';
+                        if (currentInput.length > 0) {
+                          const filtered = commonSizes.filter(size =>
+                            size.toLowerCase().includes(currentInput.toLowerCase()) &&
+                            !sizesInputValue.toLowerCase().includes(size.toLowerCase())
+                          );
+                          setSizesSuggestions(filtered);
+                          setShowSizesSuggestions(filtered.length > 0);
+                        }
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sizes ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      placeholder="S, M, L, XL"
+                    />
+                    {errors.sizes && <p className="mt-1 text-sm text-red-500">{errors.sizes}</p>}
 
-            {/* EAN and Base Price */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">EAN</label>
-                <input
-                  type="text"
-                  value={formData.ean}
-                  onChange={(e) => handleChange('ean', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter EAN"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Price</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.basePrice}
-                  onChange={(e) => handleChange('basePrice', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
+                    {/* Autocomplete Dropdown */}
+                    {showSizesSuggestions && sizesSuggestions.length > 0 && (
+                      <div
+                        ref={sizesDropdownRef}
+                        className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                      >
+                        {sizesSuggestions.map((size, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => handleSizeSelect(size)}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                            onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Colors <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.colors}
+                      onChange={(e) => handleChange('colors', e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.colors ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      placeholder="Red, Blue, Green"
+                    />
+                    {errors.colors && <p className="mt-1 text-sm text-red-500">{errors.colors}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Materials <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.materials}
+                      onChange={(e) => handleChange('materials', e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.materials ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      placeholder="Cotton, Polyester"
+                    />
+                    {errors.materials && <p className="mt-1 text-sm text-red-500">{errors.materials}</p>}
+                  </div>
+                </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                rows={3}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Enter product description"
-              />
-            </div>
-          </div>
+                {/* EAN and Base Price */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">EAN</label>
+                    <input
+                      type="text"
+                      value={formData.ean}
+                      onChange={(e) => handleChange('ean', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter EAN"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base Price</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.basePrice}
+                      onChange={(e) => handleChange('basePrice', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
 
-            {/* Modal Footer */}
-            <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                ref={submitButtonRef}
-                type="submit"
-                onClick={handleButtonClick}
-                disabled={isLoading}
-                className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
-              >
-                {isLoading ? 'Updating...' : 'Update Product'}
-                {ripples.map((ripple) => (
-                  <span
-                    key={ripple.id}
-                    className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-                    style={{
-                      left: `${ripple.x}px`,
-                      top: `${ripple.y}px`,
-                      transform: 'translate(-50%, -50%)',
-                    }}
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => handleChange('description', e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter product description"
                   />
-                ))}
-              </button>
-            </div>
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Product Images
+                  </label>
+                  <div className="space-y-3">
+                    {/* File Input */}
+                    <div className="relative">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="edit-product-images-input"
+                      />
+                      <label
+                        htmlFor="edit-product-images-input"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 transition-colors bg-gray-50 dark:bg-gray-800/50"
+                      >
+                        <Upload className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Click to upload images or drag and drop
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Existing Images */}
+                    {existingImages.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Existing Images</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {existingImages.map((imageUrl, index) => (
+                            <div key={index} className="relative group">
+                              <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Product image ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeExistingImage(index)}
+                                className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Remove image"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 px-2 py-0.5 bg-black/50 text-white text-xs rounded truncate max-w-[calc(100%-0.5rem)]">
+                                Image {index + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* New Image Previews */}
+                    {imagePreviews.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Images</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {imagePreviews.map((preview, index) => (
+                            <div key={index} className="relative group">
+                              <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                                <img
+                                  src={preview}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeNewImage(index)}
+                                className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Remove image"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <div className="absolute bottom-1 left-1 px-2 py-0.5 bg-black/50 text-white text-xs rounded truncate max-w-[calc(100%-0.5rem)]">
+                                {selectedImages[index]?.name || `Image ${index + 1}`}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(existingImages.length > 0 || selectedImages.length > 0) && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {existingImages.length + selectedImages.length} image{(existingImages.length + selectedImages.length) !== 1 ? 's' : ''} total
+                        {(existingImages.length + selectedImages.length) >= 10 && ' (maximum 10 images)'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  ref={submitButtonRef}
+                  type="submit"
+                  onClick={handleButtonClick}
+                  disabled={isLoading}
+                  className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
+                >
+                  {isLoading ? 'Updating...' : 'Update Product'}
+                  {ripples.map((ripple) => (
+                    <span
+                      key={ripple.id}
+                      className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
+                      style={{
+                        left: `${ripple.x}px`,
+                        top: `${ripple.y}px`,
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                    />
+                  ))}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -1370,9 +1831,9 @@ function DeleteProductModal({
               >
                 <Trash2 className="w-4 h-4" />
                 {isLoading ? 'Deleting...' : 'Delete Product'}
-        </button>
-      </div>
-    </div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </>
