@@ -604,7 +604,7 @@ export default function AlertsExceptionsDashboard() {
                         <RotateCcw className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">No stuck RMAs</p>
-                    </div>
+          </div>
                   </td>
                 </tr>
               )}

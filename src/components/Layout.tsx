@@ -100,7 +100,7 @@ export default function Layout({ children }: LayoutProps) {
       { path: '/product-collection-dashboard', label: 'Product Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-percent-100', section: 'overview' },
       { path: '/sales-dashboard', label: 'Sales Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart', section: 'overview' },
       { path: '/inventory-fulfillment-dashboard', label: 'Retail Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-package', section: 'overview' },
-      { path: '/finance-dashboard', label: 'Marketing Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-credit-card', section: 'overview' },
+      { path: '/finance-dashboard', label: 'Marketing Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-growth-chart-invest', section: 'overview' },
       { path: '/alerts-exceptions-dashboard', label: 'Operational Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-bell', section: 'overview' },
       { path: '/my-tasks', label: 'My Tasks', useFlaticon: false, icon: CheckSquare, section: 'todos' },
       { path: '/kpi-reports', label: 'KPI Reports', useFlaticon: false, icon: BarChart3, section: 'todos' },

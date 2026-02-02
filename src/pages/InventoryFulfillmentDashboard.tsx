@@ -392,9 +392,9 @@ export default function InventoryFulfillmentDashboard() {
             <Chart type="bar" height={300} series={stockByWarehouseChartConfig.series} options={stockByWarehouseChartConfig} />
           ) : (
             <div className="flex flex-col items-center justify-center h-[300px]">
-              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                <Warehouse className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-              </div>
+          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            <Warehouse className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+          </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">No warehouse data available</p>
             </div>
           )}
