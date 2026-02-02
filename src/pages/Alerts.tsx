@@ -39,6 +39,10 @@ export default function Alerts() {
   return (
     <div>
       <Breadcrumb currentPage="Alerts" />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Alerts</h1>
+        <p className="text-gray-600 dark:text-gray-400">View and manage system alerts and notifications</p>
+      </div>
 
       <div className="space-y-4">
         {alerts.map((alert) => (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { CheckCircle2, Circle, Clock, Plus, Filter } from 'lucide-react';
+import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
 interface Task {
@@ -18,7 +19,7 @@ export default function Tasks() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
 
   // Fetch orders to use as tasks
-  const { data: ordersData } = useQuery({
+  const { data: ordersData, isLoading } = useQuery({
     queryKey: ['orders', 'tasks'],
     queryFn: async () => {
       const response = await api.get('/orders?skip=0&take=10000');
@@ -54,6 +55,10 @@ export default function Tasks() {
   });
 
   const filteredTasks = filter === 'all' ? tasks : tasks.filter(task => task.status === filter);
+
+  if (isLoading) {
+    return <SkeletonPage />;
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -91,6 +96,10 @@ export default function Tasks() {
   return (
     <div>
       <Breadcrumb currentPage="My Tasks" />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">My Tasks</h1>
+        <p className="text-gray-600 dark:text-gray-400">View and manage your assigned tasks</p>
+      </div>
       <div className='flex justify-between items-center mb-6'>
         {/* Filter Tabs */}
         <div className="flex items-center gap-2">

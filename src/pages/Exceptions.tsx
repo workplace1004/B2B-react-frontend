@@ -12,6 +12,10 @@ export default function Exceptions() {
   return (
     <div>
       <Breadcrumb currentPage="Exceptions" />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Exceptions</h1>
+        <p className="text-gray-600 dark:text-gray-400">View and manage system exceptions and errors</p>
+      </div>
 
       <div className="space-y-4">
         {exceptions.map((exception) => (

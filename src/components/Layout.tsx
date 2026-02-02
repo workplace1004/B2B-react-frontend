@@ -395,7 +395,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Icon-only Navbar (Left Side) */}
       <aside className="fixed left-0 top-0 bottom-0 w-[368px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 flex">
         {/* Logo at top */}
-        <div className='w-[88px] border-r h-full flex flex-col'>
+        <div className='w-[88px] border-r h-full flex flex-col border-gray-200 dark:border-gray-700'>
           <div className='h-full flex flex-col'>
             <div className="h-20 flex items-center justify-center border-gray-200 dark:border-gray-700">
               <div className="w-10 h-10 rounded-lg bg-primary-600 dark:bg-primary-500 flex items-center justify-center">

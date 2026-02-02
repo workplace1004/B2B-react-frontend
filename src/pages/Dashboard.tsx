@@ -877,6 +877,10 @@ export default function Dashboard() {
   return (
     <div>
       <Breadcrumb currentPage="Dashboard" />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400">Overview of your business metrics and activities</p>
+      </div>
       {/* Dashboard Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-6">
         {/* Left Column - Main Cards (Cards 1-5) */}
@@ -986,12 +990,12 @@ export default function Dashboard() {
             </div>
 
             {/* Card 2: Order Analytics */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border w-full border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Order Analytics</h6>
+                <h6 className="text-lg font-semibold text-gray-900 dark:text-white">Order Analytics</h6>
               </div>
               {(dashboardStats?.thisMonthOrders || 0) === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8">
+                <div className="flex flex-col items-center justify-center py-8 h-full">
                   <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
                   <span className="text-sm text-gray-500 dark:text-gray-400">No Data</span>
                 </div>

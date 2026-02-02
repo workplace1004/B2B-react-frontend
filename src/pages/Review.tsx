@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { Star, Search } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import { SkeletonStatsCard } from '../components/Skeleton';
+import { SkeletonStatsCard, SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
 export default function Review() {
@@ -277,6 +277,10 @@ export default function Review() {
       </span>
     );
   };
+
+  if (isLoading) {
+    return <SkeletonPage />;
+  }
 
   return (
     <div>
