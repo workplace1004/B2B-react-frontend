@@ -1,14 +1,156 @@
-import { useState } from 'react';
-import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertTriangle, CheckCircle2, Info, X, Inbox } from 'lucide-react';
+import api from '../lib/api';
+import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
+interface Alert {
+  id: number | string;
+  type: 'warning' | 'error' | 'success' | 'info';
+  title: string;
+  message: string;
+  time: string;
+}
+
 export default function Alerts() {
-  const [alerts] = useState([
-    { id: 1, type: 'warning', title: 'Low Stock Alert', message: 'Product XYZ is running low', time: '2 hours ago' },
-    { id: 2, type: 'error', title: 'Order Failed', message: 'Order #1234 failed to process', time: '5 hours ago' },
-    { id: 3, type: 'success', title: 'Order Completed', message: 'Order #1235 has been completed', time: '1 day ago' },
-    { id: 4, type: 'info', title: 'New Customer', message: 'New customer registered', time: '2 days ago' },
-  ]);
+  // Fetch inventory for low stock alerts
+  const { data: inventoryData, isLoading: inventoryLoading } = useQuery({
+    queryKey: ['inventory', 'alerts'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/inventory');
+        return response.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Fetch orders for order-related alerts
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ['orders', 'alerts'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/orders?skip=0&take=100');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Fetch customers for new customer alerts
+  const { data: customersData, isLoading: customersLoading } = useQuery({
+    queryKey: ['customers', 'alerts'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/customers?skip=0&take=100');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const isLoading = inventoryLoading || ordersLoading || customersLoading;
+
+  // Generate alerts from real data
+  const alerts: Alert[] = [];
+  
+  // Low stock alerts from inventory
+  if (inventoryData && Array.isArray(inventoryData)) {
+    inventoryData.forEach((item: any) => {
+      if (item.quantityOnHand !== undefined && item.quantityOnHand < 10) {
+        const productName = item.product?.name || item.product?.sku || 'Product';
+        const timeAgo = item.updatedAt 
+          ? new Date(item.updatedAt).toLocaleString('en-US', { 
+              hour: 'numeric', 
+              minute: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
+          : 'Recently';
+        alerts.push({
+          id: `low-stock-${item.id}`,
+          type: 'warning',
+          title: 'Low Stock Alert',
+          message: `${productName} is running low (${item.quantityOnHand} units remaining)`,
+          time: timeAgo,
+        });
+      }
+    });
+  }
+
+  // Order status alerts
+  if (ordersData && Array.isArray(ordersData)) {
+    ordersData.forEach((order: any) => {
+      if (order.status === 'CANCELLED' || order.status === 'RETURNED') {
+        const timeAgo = order.updatedAt 
+          ? new Date(order.updatedAt).toLocaleString('en-US', { 
+              hour: 'numeric', 
+              minute: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
+          : 'Recently';
+        alerts.push({
+          id: `order-${order.id}`,
+          type: 'error',
+          title: `Order ${order.status === 'CANCELLED' ? 'Cancelled' : 'Returned'}`,
+          message: `Order #${order.orderNumber || order.id} ${order.status === 'CANCELLED' ? 'was cancelled' : 'was returned'}`,
+          time: timeAgo,
+        });
+      } else if (order.status === 'FULFILLED' || order.status === 'DELIVERED') {
+        const timeAgo = order.updatedAt 
+          ? new Date(order.updatedAt).toLocaleString('en-US', { 
+              hour: 'numeric', 
+              minute: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
+          : 'Recently';
+        alerts.push({
+          id: `order-success-${order.id}`,
+          type: 'success',
+          title: 'Order Completed',
+          message: `Order #${order.orderNumber || order.id} has been ${order.status === 'FULFILLED' ? 'fulfilled' : 'delivered'}`,
+          time: timeAgo,
+        });
+      }
+    });
+  }
+
+  // New customer alerts (customers created in last 7 days)
+  if (customersData && Array.isArray(customersData)) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    customersData.forEach((customer: any) => {
+      const createdAt = new Date(customer.createdAt);
+      if (createdAt > sevenDaysAgo) {
+        const timeAgo = createdAt.toLocaleString('en-US', { 
+          hour: 'numeric', 
+          minute: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        alerts.push({
+          id: `customer-${customer.id}`,
+          type: 'info',
+          title: 'New Customer',
+          message: `${customer.name || 'New customer'} registered`,
+          time: timeAgo,
+        });
+      }
+    });
+  }
+
+  // Sort by time (most recent first)
+  alerts.sort((a, b) => {
+    const timeA = new Date(a.time).getTime();
+    const timeB = new Date(b.time).getTime();
+    return timeB - timeA;
+  });
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -36,6 +178,10 @@ export default function Alerts() {
     }
   };
 
+  if (isLoading) {
+    return <SkeletonPage />;
+  }
+
   return (
     <div>
       <Breadcrumb currentPage="Alerts" />
@@ -44,8 +190,19 @@ export default function Alerts() {
         <p className="text-gray-600 dark:text-gray-400">View and manage system alerts and notifications</p>
       </div>
 
-      <div className="space-y-4">
-        {alerts.map((alert) => (
+      {alerts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No alerts found</h3>
+          <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+            There are no active alerts at this time.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {alerts.map((alert) => (
           <div
             key={alert.id}
             className={`p-4 rounded-lg border ${getBgColor(alert.type)} flex items-start gap-4`}
@@ -63,7 +220,8 @@ export default function Alerts() {
             </button>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import api from '../lib/api';
-import { Search, ChevronDown, Inbox } from 'lucide-react';
+import { Search, ChevronDown, Inbox, CreditCard } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { SkeletonStatsCard } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -850,7 +850,7 @@ export default function FinanceDashboard() {
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <Inbox className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
+                      <CreditCard className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
                       <span className="text-sm text-gray-500 dark:text-gray-400">No Transactions Found</span>
                     </div>
                   </td>

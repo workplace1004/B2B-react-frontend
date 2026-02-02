@@ -6,6 +6,75 @@ interface BreadcrumbProps {
 
 // Sidebar items mapping for each navbar category (same as in Layout.tsx)
 const sidebarItemsMap: Record<string, Array<{ path: string; label: string }>> = {
+  dashboards: [
+    { path: '/executive-overview', label: 'Executive Overview' },
+    { path: '/product-collection-dashboard', label: 'Product & Collection' },
+    { path: '/inventory-fulfillment-dashboard', label: 'Inventory & Fulfillment' },
+    { path: '/sales-dashboard', label: 'Sales' },
+    { path: '/finance-dashboard', label: 'Finance' },
+    { path: '/alerts-exceptions-dashboard', label: 'Alerts & Exceptions' },
+  ],
+  product: [
+    { path: '/products', label: 'Catalog' },
+    { path: '/sku-ean-barcodes', label: 'SKU / EAN / Barcodes' },
+    { path: '/bom', label: 'BOM & Costing' },
+    { path: '/collections', label: 'Collections & Drops' },
+    { path: '/size-fit', label: 'Size & Fit' },
+    { path: '/documents', label: 'Assets (DAM)' },
+    { path: '/sustainability-compliance', label: 'Sustainability & Compliance' },
+  ],
+  sales: [
+    { path: '/b2b-portal', label: 'B2B Portal' },
+    { path: '/quotes-proformas', label: 'Quotes & Proformas' },
+    { path: '/sales-reps', label: 'Sales Reps' },
+    { path: '/sales-analytics', label: 'Sales Analytics' },
+  ],
+  marketing: [
+    { path: '/campaign-planner', label: 'Campaign Planner' },
+    { path: '/assortment-merchandising', label: 'Assortment & Merchandising' },
+    { path: '/marketing-insights', label: 'Insights' },
+    { path: '/marketing-integrations', label: 'Integrations' },
+  ],
+  'customer-experience': [
+    { path: '/customers', label: 'Customers' },
+    { path: '/customer-profile', label: 'Customer Profile' },
+    { path: '/b2b-terms', label: 'B2B Terms' },
+    { path: '/service', label: 'Service' },
+  ],
+  operations: [
+    { path: '/production-mrp', label: 'Production (MRP)' },
+    { path: '/inventory-warehouse', label: 'Inventory & Warehouse (WMS)' },
+    { path: '/orders-fulfillment', label: 'Orders & Fulfillment (OMS)' },
+    { path: '/returns-rma', label: 'Returns (RMA)' },
+    { path: '/omnichannel', label: 'Omnichannel' },
+  ],
+  'planning-intelligence': [
+    { path: '/forecasting-ai', label: 'Forecasting (AI)' },
+    { path: '/replenishment', label: 'Replenishment' },
+    { path: '/auto-po-proposals', label: 'Auto PO Proposals' },
+    { path: '/open-to-buy', label: 'Open-to-Buy (OTB)' },
+    { path: '/dead-stock-markdown', label: 'Dead Stock & Markdown' },
+    { path: '/allocation-intelligence', label: 'Allocation Intelligence' },
+    { path: '/next-best-actions', label: 'Next Best Actions' },
+  ],
+  finance: [
+    { path: '/invoicing', label: 'Invoicing' },
+    { path: '/ar-ap', label: 'AR / AP' },
+    { path: '/taxes-vat', label: 'Taxes & VAT' },
+    { path: '/multi-currency-fx', label: 'Multi-Currency & FX' },
+    { path: '/accounting-integrations', label: 'Accounting Integrations' },
+    { path: '/audit-trail', label: 'Audit Trail' },
+  ],
+  admin: [
+    { path: '/users', label: 'Users & Roles' },
+    { path: '/organization-settings', label: 'Organization Settings' },
+    { path: '/integrations', label: 'Integrations' },
+    { path: '/system-settings', label: 'System Settings' },
+    { path: '/security', label: 'Security' },
+    { path: '/data-exports', label: 'Data & Exports' },
+    { path: '/audit-log', label: 'Logs' },
+  ],
+  // Legacy routes for backward compatibility
   dashboard: [
     { path: '/dashboard', label: 'Overview' },
     { path: '/alerts', label: 'Alerts' },
@@ -13,54 +82,21 @@ const sidebarItemsMap: Record<string, Array<{ path: string; label: string }>> = 
     { path: '/tasks', label: 'My Tasks' },
     { path: '/kpi-reports', label: 'KPI Reports' },
   ],
-  product: [
-    { path: '/products', label: 'Catalog' },
-    { path: '/bom', label: 'BOM' },
-    { path: '/costing', label: 'Costing' },
-    { path: '/collections', label: 'Collections' },
-    { path: '/drops', label: 'Drops' },
-    { path: '/pricing', label: 'Pricing' },
-    { path: '/documents', label: 'Assets (DAM)' },
-  ],
-  sales: [
-    { path: '/orders', label: 'Orders' },
-    { path: '/customers', label: 'Customers' },
-    { path: '/retailers', label: 'Retailers' },
-    { path: '/returns', label: 'Returns (RMA)' },
-    { path: '/wholesale', label: 'Wholesale (B2B)' },
-  ],
-  marketing: [
-    { path: '/launch-planning', label: 'Launch Planning' },
-    { path: '/retailer-enablement', label: 'Retailer Enablement' },
-    { path: '/content-readiness', label: 'Content Readiness' },
-  ],
-  operations: [
-    { path: '/inventory', label: 'Inventory' },
-    { path: '/fulfillment', label: 'Fulfillment' },
-    { path: '/warehouses', label: 'Warehouses' },
-    { path: '/receiving', label: 'Receiving' },
-    { path: '/purchasing', label: 'Purchasing' },
-    { path: '/replenishment', label: 'Replenishment' },
-    { path: '/forecast', label: 'Forecast' },
-  ],
-  admin: [
-    { path: '/users', label: 'Users' },
-    { path: '/roles', label: 'Roles' },
-    { path: '/integrations', label: 'Integrations' },
-    { path: '/audit-log', label: 'Audit Log' },
-    { path: '/rules', label: 'Rules' },
-    { path: '/settings', label: 'Settings' },
-  ],
 };
 
 // Navbar category labels
 const navbarLabels: Record<string, string> = {
-  dashboard: 'DASHBOARD / KPIs',
+  dashboards: 'DASHBOARDS',
   product: 'PRODUCT',
   sales: 'SALES',
   marketing: 'MARKETING',
+  'customer-experience': 'CUSTOMER EXPERIENCE',
   operations: 'OPERATIONS',
+  'planning-intelligence': 'PLANNING & INTELLIGENCE (AI)',
+  finance: 'FINANCE',
   admin: 'ADMIN',
+  // Legacy
+  dashboard: 'DASHBOARDS',
 };
 
 export default function Breadcrumb({ currentPage }: BreadcrumbProps) {

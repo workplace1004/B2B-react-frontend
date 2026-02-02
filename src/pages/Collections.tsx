@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
-import { Plus, Folder, X, ChevronDown, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Layers, X, ChevronDown, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -448,7 +448,7 @@ export default function Collections() {
         {!collections || collections.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">
             <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-              <Folder className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+              <Layers className="w-12 h-12 text-gray-400 dark:text-gray-500" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No collections found</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
@@ -678,6 +678,52 @@ function AddCollectionModal({
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
+  // Fetch existing collections to get unique drops
+  const { data: existingCollections } = useQuery({
+    queryKey: ['collections', 'drops-list'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/collections?skip=0&take=1000');
+        return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Get unique drops from existing collections
+  const existingDrops = existingCollections
+    ? Array.from(new Set(
+        (existingCollections as any[])
+          .filter((c: any) => c.drop)
+          .map((c: any) => c.drop)
+      )).sort()
+    : [];
+
+  // Common drop options
+  const commonDrops = [
+    'Drop 1',
+    'Drop 2',
+    'Drop 3',
+    'Spring 2024',
+    'Summer 2024',
+    'Fall 2024',
+    'Winter 2024',
+    'Holiday 2024',
+    'New Arrivals',
+    'Limited Edition',
+  ];
+
+  // Combine existing drops with common drops, removing duplicates
+  const dropOptions = [
+    { value: '', label: 'None' },
+    ...Array.from(
+      new Set([...commonDrops, ...existingDrops])
+    )
+      .sort()
+      .map((drop) => ({ value: drop, label: drop }))
+  ];
+
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading) return;
 
@@ -822,12 +868,11 @@ function AddCollectionModal({
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Drop</label>
-                      <input
-                        type="text"
+                      <CustomSelect
                         value={formData.drop}
-                        onChange={(e) => handleChange('drop', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                        placeholder="e.g., Drop 1"
+                        onChange={(value) => handleChange('drop', value)}
+                        options={dropOptions}
+                        placeholder="Select drop"
                       />
                     </div>
                   </div>
@@ -922,6 +967,52 @@ function EditCollectionModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
+
+  // Fetch existing collections to get unique drops
+  const { data: existingCollections } = useQuery({
+    queryKey: ['collections', 'drops-list'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/collections?skip=0&take=1000');
+        return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Get unique drops from existing collections
+  const existingDrops = existingCollections
+    ? Array.from(new Set(
+        (existingCollections as any[])
+          .filter((c: any) => c.drop)
+          .map((c: any) => c.drop)
+      )).sort()
+    : [];
+
+  // Common drop options
+  const commonDrops = [
+    'Drop 1',
+    'Drop 2',
+    'Drop 3',
+    'Spring 2024',
+    'Summer 2024',
+    'Fall 2024',
+    'Winter 2024',
+    'Holiday 2024',
+    'New Arrivals',
+    'Limited Edition',
+  ];
+
+  // Combine existing drops with common drops, removing duplicates
+  const dropOptions = [
+    { value: '', label: 'None' },
+    ...Array.from(
+      new Set([...commonDrops, ...existingDrops])
+    )
+      .sort()
+      .map((drop) => ({ value: drop, label: drop }))
+  ];
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading) return;
@@ -1041,12 +1132,11 @@ function EditCollectionModal({
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Drop</label>
-                      <input
-                        type="text"
+                      <CustomSelect
                         value={formData.drop}
-                        onChange={(e) => handleChange('drop', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                        placeholder="e.g., Drop 1"
+                        onChange={(value) => handleChange('drop', value)}
+                        options={dropOptions}
+                        placeholder="Select drop"
                       />
                     </div>
                   </div>

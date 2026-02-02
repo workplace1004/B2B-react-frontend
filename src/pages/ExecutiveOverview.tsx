@@ -73,7 +73,7 @@ interface Task {
   color?: string;
 }
 
-export default function Dashboard() {
+export default function ExecutiveOverview() {
   const navigate = useNavigate();
   const [dateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
   const [revenueTimeRange, setRevenueTimeRange] = useState<'today' | 'week' | 'month'>('week');
@@ -876,9 +876,9 @@ export default function Dashboard() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Dashboard" />
+      <Breadcrumb currentPage="ExecutiveOverview" />
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">ExecutiveOverview</h1>
         <p className="text-gray-600 dark:text-gray-400">Overview of your business metrics and activities</p>
       </div>
       {/* Dashboard Cards Grid */}

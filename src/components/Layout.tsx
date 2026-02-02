@@ -22,6 +22,7 @@ import {
   AlertCircle,
   Info,
   TrendingUp,
+  Ruler,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -50,7 +51,7 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuthStore();
   const [sidebarOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [selectedNavbarItem, setSelectedNavbarItem] = useState<string>('dashboard');
+  const [selectedNavbarItem, setSelectedNavbarItem] = useState<string>('dashboards');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [documentsDropdownOpen, setDocumentsDropdownOpen] = useState(false);
   const [notificationsDropdownOpen, setNotificationsDropdownOpen] = useState(false);
@@ -72,77 +73,128 @@ export default function Layout({ children }: LayoutProps) {
 
   // Navbar items (main categories)
   const navbarItems: NavbarItem[] = [
-    { id: 'dashboard', label: 'DASHBOARD / KPIs', icon: LayoutDashboard, useFlaticon: true, flaticonClass: 'fi fi-rr-house-blank' },
+    { id: 'dashboards', label: 'DASHBOARDS', icon: LayoutDashboard, useFlaticon: true, flaticonClass: 'fi fi-rr-house-blank' },
     { id: 'product', label: 'PRODUCT', icon: Package, useFlaticon: true, flaticonClass: 'fi fi-rr-box' },
     { id: 'sales', label: 'SALES', icon: ShoppingCart, useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart' },
     { id: 'marketing', label: 'MARKETING', icon: TrendingUp, useFlaticon: true, flaticonClass: 'fi fi-rr-chart-histogram' },
+    { id: 'customer-experience', label: 'CUSTOMER EXPERIENCE', icon: User, useFlaticon: true, flaticonClass: 'fi fi-rr-users' },
     { id: 'operations', label: 'OPERATIONS', icon: Warehouse, useFlaticon: true, flaticonClass: 'fi fi-rr-warehouse-alt' },
+    { id: 'planning-intelligence', label: 'PLANNING & INTELLIGENCE (AI)', icon: TrendingUp, useFlaticon: true, flaticonClass: 'fi fi-rr-brain' },
+    { id: 'finance', label: 'FINANCE', icon: FileText, useFlaticon: true, flaticonClass: 'fi fi-rr-dollar' },
     { id: 'admin', label: 'ADMIN', icon: Settings, useFlaticon: true, flaticonClass: 'fi fi-rr-settings' },
   ];
 
   // Sidebar items mapping for each navbar category
   const sidebarItemsMap: Record<string, SidebarItem[]> = {
-    dashboard: [
-      { path: '/dashboard', label: 'Overview', useFlaticon: true, flaticonClass: 'fi fi-rr-house-blank' },
-      { path: '/alerts', label: 'Alerts', useFlaticon: true, flaticonClass: 'fi fi-rr-bell' },
-      { path: '/exceptions', label: 'Exceptions', useFlaticon: true, flaticonClass: 'fi fi-rr-exclamation' },
-      { path: '/tasks', label: 'My Tasks', useFlaticon: true, flaticonClass: 'fi fi-rr-clipboard-list' },
-      { path: '/kpi-reports', label: 'KPI Reports', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-histogram' },
+    dashboards: [
+      { path: '/executive-overview', label: 'Executive Overview', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-line-up' },
+      { path: '/product-collection-dashboard', label: 'Product & Collection', useFlaticon: true, flaticonClass: 'fi fi-rr-grid' },
+      { path: '/inventory-fulfillment-dashboard', label: 'Inventory & Fulfillment', useFlaticon: true, flaticonClass: 'fi fi-rr-package' },
+      { path: '/sales-dashboard', label: 'Sales', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart' },
+      { path: '/finance-dashboard', label: 'Finance', useFlaticon: true, flaticonClass: 'fi fi-rr-credit-card' },
+      { path: '/alerts-exceptions-dashboard', label: 'Alerts & Exceptions', useFlaticon: true, flaticonClass: 'fi fi-rr-bell' },
     ],
     product: [
       { path: '/products', label: 'Catalog', useFlaticon: true, flaticonClass: 'fi fi-rr-box' },
-      { path: '/bom', label: 'BOM', useFlaticon: true, flaticonClass: 'fi fi-rr-list' },
-      { path: '/costing', label: 'Costing', useFlaticon: true, flaticonClass: 'fi fi-rr-dollar' },
-      { path: '/collections', label: 'Collections', useFlaticon: true, flaticonClass: 'fi fi-rr-layers' },
-      { path: '/drops', label: 'Drops', useFlaticon: true, flaticonClass: 'fi fi-rr-calendar' },
-      { path: '/pricing', label: 'Pricing', useFlaticon: true, flaticonClass: 'fi fi-rr-tags' },
+      { path: '/sku-ean-barcodes', label: 'SKU / EAN / Barcodes', useFlaticon: true, flaticonClass: 'fi fi-rr-barcode' },
+      { path: '/bom', label: 'BOM & Costing', useFlaticon: true, flaticonClass: 'fi fi-rr-list' },
+      { path: '/collections', label: 'Collections & Drops', useFlaticon: true, flaticonClass: 'fi fi-rr-layers' },
+      { path: '/size-fit', label: 'Size & Fit', useFlaticon: false, icon: Ruler },
       { path: '/documents', label: 'Assets (DAM)', useFlaticon: true, flaticonClass: 'fi fi-rr-file' },
+      { path: '/sustainability-compliance', label: 'Sustainability & Compliance', useFlaticon: true, flaticonClass: 'fi fi-rr-leaf' },
     ],
     sales: [
-      { path: '/orders', label: 'Orders', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart' },
-      { path: '/customers', label: 'Customers', useFlaticon: true, flaticonClass: 'fi fi-rr-users' },
-      { path: '/retailers', label: 'Retailers', useFlaticon: true, flaticonClass: 'fi fi-rr-shop' },
-      { path: '/returns', label: 'Returns (RMA)', useFlaticon: true, flaticonClass: 'fi fi-rr-arrow-left' },
-      { path: '/wholesale', label: 'Wholesale (B2B)', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-bag' },
+      { path: '/b2b-portal', label: 'B2B Portal', useFlaticon: true, flaticonClass: 'fi fi-rr-globe' },
+      { path: '/quotes-proformas', label: 'Quotes & Proformas', useFlaticon: true, flaticonClass: 'fi fi-rr-file-invoice' },
+      { path: '/sales-reps', label: 'Sales Reps', useFlaticon: true, flaticonClass: 'fi fi-rr-user' },
+      { path: '/sales-analytics', label: 'Sales Analytics', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-histogram' },
     ],
     marketing: [
-      { path: '/launch-planning', label: 'Launch Planning', useFlaticon: true, flaticonClass: 'fi fi-rr-rocket' },
-      { path: '/retailer-enablement', label: 'Retailer Enablement', useFlaticon: true, flaticonClass: 'fi fi-rr-handshake' },
-      { path: '/content-readiness', label: 'Content Readiness', useFlaticon: true, flaticonClass: 'fi fi-rr-check-circle' },
+      { path: '/campaign-planner', label: 'Campaign Planner', useFlaticon: true, flaticonClass: 'fi fi-rr-calendar' },
+      { path: '/assortment-merchandising', label: 'Assortment & Merchandising', useFlaticon: true, flaticonClass: 'fi fi-rr-apps' },
+      { path: '/marketing-insights', label: 'Insights', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-line-up' },
+      { path: '/marketing-integrations', label: 'Integrations', useFlaticon: true, flaticonClass: 'fi fi-rr-link-alt' },
+    ],
+    'customer-experience': [
+      { path: '/customers', label: 'Customers', useFlaticon: true, flaticonClass: 'fi fi-rr-users' },
+      { path: '/customer-profile', label: 'Customer Profile', useFlaticon: true, flaticonClass: 'fi fi-rr-id-badge' },
+      { path: '/b2b-terms', label: 'B2B Terms', useFlaticon: false, icon: FileText },
+      { path: '/service', label: 'Service', useFlaticon: true, flaticonClass: 'fi fi-rr-headset' },
     ],
     operations: [
-      { path: '/inventory', label: 'Inventory', useFlaticon: true, flaticonClass: 'fi fi-rr-warehouse-alt' },
-      { path: '/fulfillment', label: 'Fulfillment', useFlaticon: true, flaticonClass: 'fi fi-rr-shipping-fast' },
-      { path: '/warehouses', label: 'Warehouses', useFlaticon: true, flaticonClass: 'fi fi-rr-building' },
-      { path: '/receiving', label: 'Receiving', useFlaticon: true, flaticonClass: 'fi fi-rr-inbox' },
-      { path: '/purchasing', label: 'Purchasing', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-bag' },
+      { path: '/production-mrp', label: 'Production (MRP)', useFlaticon: true, flaticonClass: 'fi fi-rr-factory' },
+      { path: '/inventory-warehouse', label: 'Inventory & Warehouse (WMS)', useFlaticon: true, flaticonClass: 'fi fi-rr-warehouse-alt' },
+      { path: '/orders-fulfillment', label: 'Orders & Fulfillment (OMS)', useFlaticon: true, flaticonClass: 'fi fi-rr-shipping-fast' },
+      { path: '/returns-rma', label: 'Returns (RMA)', useFlaticon: true, flaticonClass: 'fi fi-rr-arrow-left' },
+      { path: '/omnichannel', label: 'Omnichannel', useFlaticon: true, flaticonClass: 'fi fi-rr-store' },
+    ],
+    'planning-intelligence': [
+      { path: '/forecasting-ai', label: 'Forecasting (AI)', useFlaticon: true, flaticonClass: 'fi fi-rr-brain' },
       { path: '/replenishment', label: 'Replenishment', useFlaticon: true, flaticonClass: 'fi fi-rr-refresh' },
-      { path: '/forecast', label: 'Forecast', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-line-up' },
+      { path: '/auto-po-proposals', label: 'Auto PO Proposals', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-bag' },
+      { path: '/open-to-buy', label: 'Open-to-Buy (OTB)', useFlaticon: true, flaticonClass: 'fi fi-rr-wallet' },
+      { path: '/dead-stock-markdown', label: 'Dead Stock & Markdown', useFlaticon: true, flaticonClass: 'fi fi-rr-tags' },
+      { path: '/allocation-intelligence', label: 'Allocation Intelligence', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-pie' },
+      { path: '/next-best-actions', label: 'Next Best Actions', useFlaticon: true, flaticonClass: 'fi fi-rr-lightbulb' },
+    ],
+    finance: [
+      { path: '/invoicing', label: 'Invoicing', useFlaticon: true, flaticonClass: 'fi fi-rr-file-invoice' },
+      { path: '/ar-ap', label: 'AR / AP', useFlaticon: true, flaticonClass: 'fi fi-rr-money-bill' },
+      { path: '/taxes-vat', label: 'Taxes & VAT', useFlaticon: true, flaticonClass: 'fi fi-rr-receipt' },
+      { path: '/multi-currency-fx', label: 'Multi-Currency & FX', useFlaticon: true, flaticonClass: 'fi fi-rr-coins' },
+      { path: '/accounting-integrations', label: 'Accounting Integrations', useFlaticon: true, flaticonClass: 'fi fi-rr-plug' },
+      { path: '/audit-trail', label: 'Audit Trail', useFlaticon: true, flaticonClass: 'fi fi-rr-clipboard-list' },
     ],
     admin: [
-      { path: '/users', label: 'Users', useFlaticon: true, flaticonClass: 'fi fi-rr-users' },
-      { path: '/roles', label: 'Roles', useFlaticon: true, flaticonClass: 'fi fi-rr-user' },
+      { path: '/users', label: 'Users & Roles', useFlaticon: true, flaticonClass: 'fi fi-rr-users' },
+      { path: '/organization-settings', label: 'Organization Settings', useFlaticon: true, flaticonClass: 'fi fi-rr-building' },
       { path: '/integrations', label: 'Integrations', useFlaticon: true, flaticonClass: 'fi fi-rr-link-alt' },
-      { path: '/audit-log', label: 'Audit Log', useFlaticon: true, flaticonClass: 'fi fi-rr-clipboard-list' },
-      { path: '/rules', label: 'Rules', useFlaticon: true, flaticonClass: 'fi fi-rr-list' },
-      { path: '/settings', label: 'Settings', useFlaticon: true, flaticonClass: 'fi fi-rr-settings' },
+      { path: '/system-settings', label: 'System Settings', useFlaticon: true, flaticonClass: 'fi fi-rr-settings' },
+      { path: '/security', label: 'Security', useFlaticon: true, flaticonClass: 'fi fi-rr-shield' },
+      { path: '/data-exports', label: 'Data & Exports', useFlaticon: true, flaticonClass: 'fi fi-rr-file-export' },
+      { path: '/audit-log', label: 'Logs', useFlaticon: true, flaticonClass: 'fi fi-rr-document' },
     ],
   };
 
   // Determine active navbar item based on current route
   useEffect(() => {
     const path = location.pathname;
-    if (path.startsWith('/dashboard') || path.startsWith('/alerts') || path.startsWith('/exceptions') || path.startsWith('/tasks') || path.startsWith('/kpi-reports')) {
-      setSelectedNavbarItem('dashboard');
-    } else if (path.startsWith('/products') || path.startsWith('/bom') || path.startsWith('/costing') || path.startsWith('/collections') || path.startsWith('/drops') || path.startsWith('/pricing') || path.startsWith('/documents')) {
+    if (path.startsWith('/executive-overview') || path.startsWith('/product-collection-dashboard') || path.startsWith('/inventory-fulfillment-dashboard') || path.startsWith('/sales-dashboard') || path.startsWith('/finance-dashboard') || path.startsWith('/alerts-exceptions-dashboard')) {
+      setSelectedNavbarItem('dashboards');
+    } else if (path.startsWith('/products') || path.startsWith('/sku-ean-barcodes') || path.startsWith('/bom') || path.startsWith('/collections') || path.startsWith('/size-fit') || path.startsWith('/documents') || path.startsWith('/sustainability-compliance')) {
       setSelectedNavbarItem('product');
-    } else if (path.startsWith('/orders') || path.startsWith('/customers') || path.startsWith('/retailers') || path.startsWith('/returns') || path.startsWith('/wholesale')) {
+    } else if (path.startsWith('/b2b-portal') || path.startsWith('/quotes-proformas') || path.startsWith('/sales-reps') || path.startsWith('/sales-analytics')) {
       setSelectedNavbarItem('sales');
-    } else if (path.startsWith('/launch-planning') || path.startsWith('/retailer-enablement') || path.startsWith('/content-readiness')) {
+    } else if (path.startsWith('/campaign-planner') || path.startsWith('/assortment-merchandising') || path.startsWith('/marketing-insights') || path.startsWith('/marketing-integrations')) {
       setSelectedNavbarItem('marketing');
-    } else if (path.startsWith('/inventory') || path.startsWith('/fulfillment') || path.startsWith('/warehouses') || path.startsWith('/receiving') || path.startsWith('/purchasing') || path.startsWith('/replenishment') || path.startsWith('/forecast')) {
+    } else if (path.startsWith('/customers') || path.startsWith('/customer-profile') || path.startsWith('/b2b-terms') || path.startsWith('/service')) {
+      setSelectedNavbarItem('customer-experience');
+    } else if (path.startsWith('/production-mrp') || path.startsWith('/inventory-warehouse') || path.startsWith('/orders-fulfillment') || path.startsWith('/returns-rma') || path.startsWith('/omnichannel')) {
       setSelectedNavbarItem('operations');
-    } else if (path.startsWith('/users') || path.startsWith('/roles') || path.startsWith('/integrations') || path.startsWith('/audit-log') || path.startsWith('/rules') || path.startsWith('/settings')) {
+    } else if (path.startsWith('/forecasting-ai') || path.startsWith('/replenishment') || path.startsWith('/auto-po-proposals') || path.startsWith('/open-to-buy') || path.startsWith('/dead-stock-markdown') || path.startsWith('/allocation-intelligence') || path.startsWith('/next-best-actions')) {
+      setSelectedNavbarItem('planning-intelligence');
+    } else if (path.startsWith('/invoicing') || path.startsWith('/ar-ap') || path.startsWith('/taxes-vat') || path.startsWith('/multi-currency-fx') || path.startsWith('/accounting-integrations') || path.startsWith('/audit-trail')) {
+      setSelectedNavbarItem('finance');
+    } else if (path.startsWith('/users') || path.startsWith('/organization-settings') || path.startsWith('/integrations') || path.startsWith('/system-settings') || path.startsWith('/security') || path.startsWith('/data-exports') || path.startsWith('/audit-log')) {
+      setSelectedNavbarItem('admin');
+    } else if (path.startsWith('/dashboard') || path.startsWith('/alerts') || path.startsWith('/exceptions') || path.startsWith('/tasks') || path.startsWith('/kpi-reports')) {
+      // Legacy routes - redirect to dashboards
+      setSelectedNavbarItem('dashboards');
+    } else if (path.startsWith('/orders') || path.startsWith('/retailers') || path.startsWith('/returns') || path.startsWith('/wholesale')) {
+      // Legacy routes - redirect to operations or sales
+      if (path.startsWith('/orders') || path.startsWith('/returns')) {
+        setSelectedNavbarItem('operations');
+      } else {
+        setSelectedNavbarItem('sales');
+      }
+    } else if (path.startsWith('/inventory') || path.startsWith('/fulfillment') || path.startsWith('/warehouses') || path.startsWith('/receiving') || path.startsWith('/purchasing')) {
+      // Legacy routes - redirect to operations
+      setSelectedNavbarItem('operations');
+    } else if (path.startsWith('/forecast')) {
+      // Legacy route - redirect to planning-intelligence
+      setSelectedNavbarItem('planning-intelligence');
+    } else if (path.startsWith('/roles') || path.startsWith('/rules') || path.startsWith('/settings')) {
+      // Legacy routes - redirect to admin
       setSelectedNavbarItem('admin');
     }
   }, [location.pathname]);

@@ -1,79 +1,130 @@
 import { useState } from 'react';
-import { RefreshCw, Plus, Search } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { RefreshCw, Plus } from 'lucide-react';
+import api from '../lib/api';
+import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
 export default function Replenishment() {
-  const [replenishments] = useState([
-    { id: 1, product: 'Product A', warehouse: 'Warehouse 1', quantity: 100, status: 'Pending' },
-    { id: 2, product: 'Product B', warehouse: 'Warehouse 2', quantity: 150, status: 'In Progress' },
-    { id: 3, product: 'Product C', warehouse: 'Warehouse 1', quantity: 75, status: 'Completed' },
-  ]);
+  const [searchQuery, _setSearchQuery] = useState('');
+
+  const { data: inventoryData, isLoading } = useQuery({
+    queryKey: ['inventory', 'replenishment'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/inventory');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const inventory = inventoryData || [];
+
+  // Transform inventory into replenishment format (items below reorder point)
+  const replenishments = inventory
+    .filter((item: any) => item.quantity <= item.reorderPoint)
+    .map((item: any) => {
+      const productName = item.product?.name || item.product?.sku || 'Product';
+      const warehouseName = item.warehouse?.name || 'Warehouse';
+      const reorderQty = item.reorderPoint - item.quantity + (item.safetyStock || 0);
+      let status = 'Pending';
+      if (item.quantity > item.reorderPoint) {
+        status = 'Completed';
+      } else if (item.quantity === item.reorderPoint) {
+        status = 'In Progress';
+      }
+      
+      return {
+        id: item.id,
+        product: productName,
+        warehouse: warehouseName,
+        quantity: Math.max(reorderQty, 0),
+        status,
+      };
+    });
+
+  // Filter by search query
+  const filteredReplenishments = replenishments.filter((replenishment: any) => 
+    replenishment.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    replenishment.warehouse.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (isLoading) {
+    return <SkeletonPage />;
+  }
 
   return (
     <div>
       <Breadcrumb currentPage="Replenishment" />
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Replenishment</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage inventory replenishment orders</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-          <Plus className="w-5 h-5" />
-          New Replenishment
-        </button>
-      </div>
-
-      <div className="mb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search replenishments..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Replenishment</h1>
+          </div>
+          {(!filteredReplenishments || filteredReplenishments.length === 0) ? null : (
+            <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <Plus className="w-5 h-5" />
+              New Replenishment
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Product</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Warehouse</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Quantity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {replenishments.map((replenishment) => (
-              <tr key={replenishment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-3">
-                    <RefreshCw className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{replenishment.product}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{replenishment.warehouse}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{replenishment.quantity}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    replenishment.status === 'Completed' 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-                      : replenishment.status === 'In Progress'
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  }`}>
-                    {replenishment.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  <button className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">View</button>
-                </td>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {filteredReplenishments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+              <RefreshCw className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No replenishments needed</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
+              Get started by adding your first replenishment to the inventory.
+            </p>
+            <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <Plus className="w-5 h-5" />
+              New Replenishment
+            </button>
+          </div>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Product</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Warehouse</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Quantity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {filteredReplenishments.map((replenishment: any) => (
+                <tr key={replenishment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    {replenishment.product}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-white">{replenishment.warehouse}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-white">{replenishment.quantity}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      replenishment.status === 'Completed' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                        : replenishment.status === 'In Progress'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    }`}>
+                      {replenishment.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">View</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
