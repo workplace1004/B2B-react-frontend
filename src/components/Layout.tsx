@@ -23,6 +23,7 @@ import {
   Info,
   TrendingUp,
   Ruler,
+  Lightbulb,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -135,7 +136,7 @@ export default function Layout({ children }: LayoutProps) {
       { path: '/open-to-buy', label: 'Open-to-Buy (OTB)', useFlaticon: true, flaticonClass: 'fi fi-rr-wallet' },
       { path: '/dead-stock-markdown', label: 'Dead Stock & Markdown', useFlaticon: true, flaticonClass: 'fi fi-rr-tags' },
       { path: '/allocation-intelligence', label: 'Allocation Intelligence', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-pie' },
-      { path: '/next-best-actions', label: 'Next Best Actions', useFlaticon: true, flaticonClass: 'fi fi-rr-lightbulb' },
+      { path: '/next-best-actions', label: 'Next Best Actions', useFlaticon: false, icon: Lightbulb },
     ],
     finance: [
       { path: '/invoicing', label: 'Invoicing', useFlaticon: true, flaticonClass: 'fi fi-rr-file-invoice' },
@@ -445,7 +446,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       {/* Icon-only Navbar (Left Side) */}
-      <aside className="fixed left-0 top-0 bottom-0 w-[368px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 flex">
+      <aside className="fixed left-0 top-0 bottom-0 w-[380px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 flex">
         {/* Logo at top */}
         <div className='w-[88px] border-r h-full flex flex-col border-gray-200 dark:border-gray-700'>
           <div className='h-full flex flex-col'>

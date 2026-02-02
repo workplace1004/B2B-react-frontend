@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { Search, Edit, Trash2, X, AlertTriangle, Inbox } from 'lucide-react';
 import Chart from 'react-apexcharts';
@@ -87,6 +87,172 @@ export default function SalesDashboard() {
       }
     },
   });
+
+  // Fetch customers for country data
+  const { data: customersData } = useQuery({
+    queryKey: ['customers', 'sales-dashboard'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/customers?skip=0&take=10000');
+        return response.data?.data || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  // Calculate sales by country from real data
+  const calculateSalesByCountry = () => {
+    const orders = salesReport?.orders || [];
+    const customers = customersData || [];
+    
+    // Create a map of customer ID to country
+    const customerCountryMap: Record<number, string> = {};
+    customers.forEach((customer: any) => {
+      if (customer.id && customer.country) {
+        customerCountryMap[customer.id] = customer.country;
+      } else if (customer.id && customer.address) {
+        // Try to extract country from address if it's a string
+        const address = customer.address;
+        if (typeof address === 'string') {
+          // Simple extraction - look for common country patterns
+          const countryMatch = address.match(/\b(USA|United States|America|US|China|Germany|Japan|UK|United Kingdom|France|Italy|Spain|Canada|Australia|India|Brazil|Mexico|Netherlands|Belgium|Switzerland|Sweden|Norway|Denmark|Finland|Poland|Russia|South Korea|Singapore|Thailand|Vietnam|Indonesia|Philippines|Malaysia|Argentina|Chile|Colombia|Peru|South Africa|Egypt|Turkey|Saudi Arabia|UAE|United Arab Emirates|Israel|New Zealand)\b/i);
+          if (countryMatch) {
+            customerCountryMap[customer.id] = countryMatch[0];
+          }
+        }
+      }
+    });
+
+    // Group orders by country and calculate totals
+    const countrySales: Record<string, { revenue: number; products: number }> = {};
+    
+    orders.forEach((order: any) => {
+      const customerId = order.customerId || order.customer?.id;
+      const country = customerCountryMap[customerId] || 'Unknown';
+      
+      if (!countrySales[country]) {
+        countrySales[country] = { revenue: 0, products: 0 };
+      }
+      
+      countrySales[country].revenue += Number(order.totalAmount || 0);
+      // Count products from order lines
+      const orderLines = order.orderLines || [];
+      countrySales[country].products += orderLines.reduce((sum: number, line: any) => sum + (line.quantity || 0), 0);
+    });
+
+    // Convert to array and sort by revenue
+    const sortedCountries = Object.entries(countrySales)
+      .map(([country, data]) => ({
+        country: country === 'USA' || country === 'United States' ? 'America' : country,
+        code: getCountryCode(country),
+        revenue: data.revenue,
+        products: data.products,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 4); // Top 4 countries
+
+    return sortedCountries;
+  };
+
+  // Helper function to get country code
+  const getCountryCode = (country: string): string => {
+    const countryCodeMap: Record<string, string> = {
+      'America': 'US',
+      'USA': 'US',
+      'United States': 'US',
+      'US': 'US',
+      'China': 'CN',
+      'Germany': 'DE',
+      'Japan': 'JP',
+      'UK': 'GB',
+      'United Kingdom': 'GB',
+      'France': 'FR',
+      'Italy': 'IT',
+      'Spain': 'ES',
+      'Canada': 'CA',
+      'Australia': 'AU',
+      'India': 'IN',
+      'Brazil': 'BR',
+      'Mexico': 'MX',
+      'Netherlands': 'NL',
+      'Belgium': 'BE',
+      'Switzerland': 'CH',
+      'Sweden': 'SE',
+      'Norway': 'NO',
+      'Denmark': 'DK',
+      'Finland': 'FI',
+      'Poland': 'PL',
+      'Russia': 'RU',
+      'South Korea': 'KR',
+      'Singapore': 'SG',
+      'Thailand': 'TH',
+      'Vietnam': 'VN',
+      'Indonesia': 'ID',
+      'Philippines': 'PH',
+      'Malaysia': 'MY',
+      'Argentina': 'AR',
+      'Chile': 'CL',
+      'Colombia': 'CO',
+      'Peru': 'PE',
+      'South Africa': 'ZA',
+      'Egypt': 'EG',
+      'Turkey': 'TR',
+      'Saudi Arabia': 'SA',
+      'UAE': 'AE',
+      'United Arab Emirates': 'AE',
+      'Israel': 'IL',
+      'New Zealand': 'NZ',
+    };
+    return countryCodeMap[country] || 'US';
+  };
+
+  const salesByCountry = calculateSalesByCountry();
+  
+  // Calculate total sales and percentage change
+  const totalSalesByCountry = salesByCountry.reduce((sum, item) => sum + item.revenue, 0);
+  
+  // Calculate previous period for comparison using useMemo
+  const previousPeriodRange = useMemo(() => {
+    const end = new Date(endDate);
+    const start = new Date(startDate);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    
+    const prevEnd = new Date(start);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+    const prevStart = new Date(prevEnd);
+    prevStart.setDate(prevStart.getDate() - diffDays);
+    
+    return {
+      startDate: prevStart.toISOString().split('T')[0],
+      endDate: prevEnd.toISOString().split('T')[0],
+    };
+  }, [startDate, endDate]);
+
+  const { data: previousSalesReport } = useQuery({
+    queryKey: ['analytics', 'sales', 'previous', previousPeriodRange.startDate, previousPeriodRange.endDate],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams();
+        if (previousPeriodRange.startDate) params.append('startDate', previousPeriodRange.startDate);
+        if (previousPeriodRange.endDate) params.append('endDate', previousPeriodRange.endDate);
+        const queryString = params.toString();
+        const response = await api.get(`/analytics/sales${queryString ? `?${queryString}` : ''}`);
+        return response.data;
+      } catch (error) {
+        return { orders: [], totalRevenue: 0, orderCount: 0 };
+      }
+    },
+    enabled: !!salesReport && !!startDate && !!endDate,
+  });
+
+  const previousTotalSales = previousSalesReport?.orders?.reduce((sum: number, order: any) => 
+    sum + Number(order.totalAmount || 0), 0) || 0;
+  
+  const salesChangePercent = previousTotalSales > 0 
+    ? ((totalSalesByCountry - previousTotalSales) / previousTotalSales) * 100 
+    : 0;
 
   const isLoading = dashboardLoading || salesLoading;
 
@@ -339,12 +505,49 @@ export default function SalesDashboard() {
     },
   });
 
+  // Calculate sales growth percentage and chart data from real data
+  const salesGrowthData = useMemo(() => {
+    const orders = salesReport?.orders || [];
+    if (orders.length === 0) {
+      return { percentage: 0, chartData: [0, 0, 0, 0, 0, 0, 0] };
+    }
+
+    // Calculate growth percentage (current period vs previous period)
+    const currentTotal = orders.reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0);
+    const previousTotal = previousTotalSales || 0;
+    const growthPercent = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
+
+    // Calculate weekly sales for the last 7 weeks (or available data)
+    const weeklyData: number[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(weekStart.getDate() - (i * 7 + 7));
+      const weekEnd = new Date(now);
+      weekEnd.setDate(weekEnd.getDate() - (i * 7));
+      
+      const weekSales = orders
+        .filter((order: any) => {
+          const orderDate = new Date(order.orderDate || order.createdAt);
+          return orderDate >= weekStart && orderDate < weekEnd;
+        })
+        .reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0);
+      
+      weeklyData.push(weekSales);
+    }
+
+    return {
+      percentage: growthPercent,
+      chartData: weeklyData.length > 0 ? weeklyData : [0, 0, 0, 0, 0, 0, 0],
+    };
+  }, [salesReport, previousTotalSales]);
+
   // Sales Growth Chart
   const getSalesGrowthChartConfig = () => ({
     series: [
       {
         name: '',
-        data: [1000, 2050, 3100, 4800, 4800, 1800, 4500],
+        data: salesGrowthData.chartData,
       },
     ],
     chart: {
@@ -417,11 +620,58 @@ export default function SalesDashboard() {
     },
   });
 
+  // Calculate visitors chart data from real data
+  const visitorsChartData = useMemo(() => {
+    const orders = salesReport?.orders || [];
+    const previousOrders = previousSalesReport?.orders || [];
+    
+    // Group by month for last 6 months
+    const now = new Date();
+    const currentData: number[] = [];
+    const previousData: number[] = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      
+      // Current period unique customers
+      const currentMonthCustomers = new Set(
+        orders
+          .filter((order: any) => {
+            const orderDate = new Date(order.orderDate || order.createdAt);
+            return orderDate >= monthStart && orderDate <= monthEnd;
+          })
+          .map((order: any) => order.customerId || order.customer?.id)
+          .filter(Boolean)
+      );
+      currentData.push(currentMonthCustomers.size);
+      
+      // Previous period unique customers (6 months before)
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - i - 6, 1);
+      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth() - i - 5, 0);
+      const previousMonthCustomers = new Set(
+        previousOrders
+          .filter((order: any) => {
+            const orderDate = new Date(order.orderDate || order.createdAt);
+            return orderDate >= prevMonthStart && orderDate <= prevMonthEnd;
+          })
+          .map((order: any) => order.customerId || order.customer?.id)
+          .filter(Boolean)
+      );
+      previousData.push(previousMonthCustomers.size);
+    }
+    
+    return {
+      current: currentData.length > 0 ? currentData : [0, 0, 0, 0, 0, 0],
+      previous: previousData.length > 0 ? previousData : [0, 0, 0, 0, 0, 0],
+    };
+  }, [salesReport, previousSalesReport]);
+
   // Visitors Chart
   const visitorsChartConfig = {
     series: [
-      { name: 'Current', data: [4500, 2050, 3100, 4800, 1800, 2500] },
-      { name: 'Last Month', data: [4040, 2050, 4200, 2800, 1800, 2050] },
+      { name: 'Current', data: visitorsChartData.current },
+      { name: 'Last Month', data: visitorsChartData.previous },
     ],
     chart: {
       height: 295,
@@ -985,16 +1235,15 @@ export default function SalesDashboard() {
           </div>
           <div className="p-4 pt-2">
             <div className="flex gap-2 mb-3 items-center">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">$45,314</h2>
-              <span className="text-sm text-gray-600 dark:text-gray-400">+8.2% vs last month</span>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                ${totalSalesByCountry.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
+              <span className={`text-sm ${salesChangePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {salesChangePercent >= 0 ? '+' : ''}{salesChangePercent.toFixed(1)}% vs last {salesTimeRange === 'today' ? 'day' : salesTimeRange === 'week' ? 'week' : 'month'}
+              </span>
             </div>
             <div className="grid grid-cols-1 gap-1">
-              {[
-                { country: 'America', code: 'US', products: '4,265', label: 'PRODUCTS' },
-                { country: 'China', code: 'CN', products: '3,740', label: 'Products' },
-                { country: 'Germany', code: 'DE', products: '2,980', label: 'Products' },
-                { country: 'Japan', code: 'JP', products: '1,640', label: 'Products' },
-              ].map((item, idx) => (
+              {salesByCountry.length > 0 ? salesByCountry.map((item, idx) => (
                 <div key={idx} className="p-3 border border-gray-200 dark:border-gray-700 rounded">
                   <div className="flex items-center mb-1">
                     <div className="w-6 h-6 rounded mr-2 flex items-center justify-center overflow-hidden shrink-0" style={{ aspectRatio: '1' }}>
@@ -1021,10 +1270,25 @@ export default function SalesDashboard() {
                     <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">{item.country}</h5>
                   </div>
                   <h5 className="text-lg font-bold text-gray-900 dark:text-white mb-0">
-                    {item.products} <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">{item.label}</span>
+                    {item.products.toLocaleString()} <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">{idx === 0 ? 'PRODUCTS' : 'Products'}</span>
                   </h5>
                 </div>
-              ))}
+              )) : (
+                // Show empty state with structure
+                Array.from({ length: 4 }, (_, idx) => (
+                  <div key={idx} className="p-3 border border-gray-200 dark:border-gray-700 rounded">
+                    <div className="flex items-center mb-1">
+                      <div className="w-6 h-6 rounded mr-2 flex items-center justify-center overflow-hidden shrink-0 bg-gray-200 dark:bg-gray-700" style={{ aspectRatio: '1' }}>
+                        <span style={{ fontSize: '12px' }}>🏳️</span>
+                      </div>
+                      <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">No Country</h5>
+                    </div>
+                    <h5 className="text-lg font-bold text-gray-900 dark:text-white mb-0">
+                      0 <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">Products</span>
+                    </h5>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -1039,7 +1303,23 @@ export default function SalesDashboard() {
           </div>
           <div className="p-4 pt-2 pb-0">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
-              <span className="text-gray-600 dark:text-gray-400">$</span>12,552.<span className="text-primary">50</span>
+              <span className="text-gray-600 dark:text-gray-400">$</span>
+              {(() => {
+                // Calculate unique customers (visitors) from orders
+                const orders = salesReport?.orders || [];
+                const uniqueCustomers = new Set(orders.map((order: any) => order.customerId || order.customer?.id).filter(Boolean));
+                const visitorCount = uniqueCustomers.size;
+                // Calculate average order value per customer
+                const totalRevenue = orders.reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0);
+                const avgOrderValue = visitorCount > 0 ? totalRevenue / visitorCount : 0;
+                const wholePart = Math.floor(avgOrderValue);
+                const decimalPart = Math.floor((avgOrderValue - wholePart) * 100);
+                return (
+                  <>
+                    {wholePart.toLocaleString()}.<span className="text-primary">{decimalPart.toString().padStart(2, '0')}</span>
+                  </>
+                );
+              })()}
             </h2>
             <div className="-mx-3 -mt-2">
               <Chart type="bar" height={295} series={visitorsChartConfig.series} options={visitorsChartConfig} />
@@ -1258,7 +1538,9 @@ export default function SalesDashboard() {
             <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales Growth</h6>
           </div>
           <div className="p-4 pt-2 pb-0">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">78.50%</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
+              {salesGrowthData.percentage.toFixed(2)}%
+            </h2>
             <div className="-mx-3">
               <Chart type="area" height={280} series={getSalesGrowthChartConfig().series} options={getSalesGrowthChartConfig()} />
             </div>
