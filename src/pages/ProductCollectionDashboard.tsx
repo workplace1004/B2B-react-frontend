@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
-import { Grid, Package, Layers, TrendingUp, TrendingDown, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Grid, Package, Layers, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -23,7 +23,7 @@ export default function ProductCollectionDashboard() {
     return () => observer.disconnect();
   }, []);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ['product-collection-dashboard'],
     queryFn: async () => {
       try {
@@ -91,10 +91,10 @@ export default function ProductCollectionDashboard() {
         totalSold,
         revenue: collectionOrders.reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0),
       };
-    }).sort((a, b) => b.totalSold - a.totalSold);
+    }).sort((a: any, b: any) => b.totalSold - a.totalSold);
     
     // Calculate style performance
-    const stylePerformance = Array.from(uniqueStyles).map((style: string) => {
+    const stylePerformance = Array.from(uniqueStyles as Set<string>).map((style: string) => {
       const styleProducts = products.filter((p: any) => p.style === style);
       const styleOrders = orders.filter((order: any) =>
         order.orderLines?.some((line: any) =>
@@ -116,7 +116,7 @@ export default function ProductCollectionDashboard() {
         totalSold,
         revenue: styleOrders.reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0),
       };
-    }).sort((a, b) => b.totalSold - a.totalSold);
+    }).sort((a: any, b: any) => b.totalSold - a.totalSold);
     
     // Calculate products by collection for chart
     const productsByCollection = collections.map((collection: any) => {
@@ -125,7 +125,7 @@ export default function ProductCollectionDashboard() {
         name: collection.name,
         count: collectionProducts.length,
       };
-    }).sort((a, b) => b.count - a.count).slice(0, 8);
+    }).sort((a: any, b: any) => b.count - a.count).slice(0, 8);
     
     // Calculate monthly product creation trend
     const monthlyProductTrend = (() => {
@@ -171,7 +171,8 @@ export default function ProductCollectionDashboard() {
     };
   }, [products, collections, orders]);
 
-  if (isLoading) {
+  // Show skeleton until all data is loaded and metrics are calculated
+  if (isLoading || isFetching || !data) {
     return <SkeletonPage />;
   }
 
@@ -179,7 +180,7 @@ export default function ProductCollectionDashboard() {
   const productsByCollectionChartConfig = {
     series: [{
       name: 'Products',
-      data: metrics.productsByCollection.map(item => item.count),
+      data: metrics.productsByCollection.map((item: any) => item.count),
     }],
     chart: {
       height: 300,
@@ -197,7 +198,7 @@ export default function ProductCollectionDashboard() {
       },
     },
     xaxis: {
-      categories: metrics.productsByCollection.map(item => item.name),
+      categories: metrics.productsByCollection.map((item: any) => item.name),
       labels: {
         style: {
           colors: isDarkMode ? '#ffffff' : '#1C274C',
