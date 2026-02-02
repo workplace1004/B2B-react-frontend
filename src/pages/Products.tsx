@@ -2704,12 +2704,27 @@ function BundleModal({ bundle, products, onClose, onSave }: {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SKU</label>
+              <button
+                type="button"
+                onClick={() => {
+                  // Auto-generate SKU based on bundle name and timestamp
+                  const nameSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 10);
+                  const timestamp = Date.now().toString().slice(-6);
+                  setSku(`BUNDLE-${nameSlug || 'bundle'}-${timestamp}`);
+                }}
+                className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+              >
+                Auto-generate
+              </button>
+            </div>
             <input
               type="text"
               value={sku}
               onChange={(e) => setSku(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="e.g., BUNDLE-001 or leave empty to auto-generate"
             />
           </div>
           <div>
