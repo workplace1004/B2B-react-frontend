@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { Barcode, Plus, Search, Pencil, Trash2, Download, Upload, X, Check, AlertCircle } from 'lucide-react';
+import { Barcode, Plus, Search, Pencil, Download, X, Check, AlertCircle } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -157,7 +157,7 @@ export default function SkuEanBarcodes() {
     });
 
     // Update products (in a real scenario, you'd batch these)
-    toast.info(`Generating SKUs for ${updates.length} products...`);
+    toast(`Generating SKUs for ${updates.length} products...`, { icon: 'ℹ️' });
     // For now, just show a message - in production, you'd make API calls
     toast.success(`Would generate SKUs for ${updates.length} products`);
   };
@@ -170,9 +170,9 @@ export default function SkuEanBarcodes() {
       return;
     }
     
-    toast.info(`Generating EANs for ${productsToUpdate.length} products...`);
+    toast(`Generating EANs for ${productsToUpdate.length} products...`, { icon: 'ℹ️' });
     // Generate EAN-13 format (13 digits)
-    const updates = productsToUpdate.map((variant) => {
+    const updates = productsToUpdate.map((variant: any) => {
       // Generate a valid EAN-13 (simplified - in production, use proper EAN generation)
       const baseNumber = variant.id.toString().padStart(6, '0');
       const variantNumber = variant.variantKey.split('-').slice(-2).join('').substring(0, 6).padStart(6, '0');

@@ -1,9 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { CheckSquare, Plus, X, Pencil, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Circle, Search } from 'lucide-react';
-import api from '../lib/api';
-import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
 interface Task {
@@ -84,9 +81,15 @@ export default function MyTasks() {
     }, 300);
   };
 
-  const handleCreateTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleCreateTask = (taskData: Partial<Task> & { title: string }) => {
     const newTask: Task = {
-      ...taskData,
+      title: taskData.title,
+      description: taskData.description,
+      status: taskData.status || 'pending',
+      priority: taskData.priority || 'medium',
+      dueDate: taskData.dueDate,
+      category: taskData.category,
+      assignedTo: taskData.assignedTo,
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -141,7 +144,7 @@ export default function MyTasks() {
     inProgress: tasks.filter(t => t.status === 'in-progress').length,
     completed: tasks.filter(t => t.status === 'completed').length,
     overdue: tasks.filter(t => {
-      if (!t.dueDate || t.status === 'completed') return false;
+      if (!t.dueDate) return false;
       return new Date(t.dueDate) < new Date() && t.status !== 'completed';
     }).length,
   };
@@ -405,7 +408,7 @@ function TaskModal({
 }: {
   task?: Task;
   onClose: () => void;
-  onSave: (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> | Partial<Task>) => void;
+  onSave: (taskData: Partial<Task> & { title: string }) => void;
   isShowing: boolean;
 }) {
   const [title, setTitle] = useState(task?.title || '');
@@ -423,9 +426,9 @@ function TaskModal({
     }
 
     if (task) {
-      onSave({ title, description, status, priority, dueDate, category });
+      onSave({ title, description, status, priority, dueDate, category } as Partial<Task> & { title: string });
     } else {
-      onSave({ title, description, status, priority, dueDate, category, assignedTo: undefined });
+      onSave({ title, description, status, priority, dueDate, category, assignedTo: undefined } as Partial<Task> & { title: string });
     }
   };
 

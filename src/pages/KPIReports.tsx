@@ -26,7 +26,7 @@ export default function KPIReports() {
   }, []);
 
   // Fetch data for KPI reports
-  const { data: dashboardStats, isLoading: dashboardLoading } = useQuery({
+  const { isLoading: dashboardLoading } = useQuery({
     queryKey: ['dashboard', 'stats'],
     queryFn: async () => {
       const response = await api.get('/analytics/dashboard');
@@ -100,7 +100,6 @@ export default function KPIReports() {
   // Calculate KPIs
   const kpis = useMemo(() => {
     const orders = salesReport?.orders || [];
-    const allOrders = ordersData || [];
     
     // Revenue KPI
     const totalRevenue = orders.reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0);
@@ -125,7 +124,6 @@ export default function KPIReports() {
 
     // Conversion Rate (would need visitor data)
     const conversionRate = 0;
-    const previousConversion = 0;
     const conversionGrowth = 0;
 
     // Profit (would need cost data)
@@ -135,7 +133,6 @@ export default function KPIReports() {
 
     // Customer Lifetime Value (simplified)
     const clv = avgOrderValue * 2.5; // Simplified calculation
-    const previousCLV = 0;
     const clvGrowth = 0;
 
     return {

@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { Search, Edit, Trash2, X, AlertTriangle, Inbox } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import { SkeletonPage, SkeletonStatsCard } from '../components/Skeleton';
+import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
 export default function SalesDashboard() {
