@@ -8,11 +8,11 @@ interface BreadcrumbProps {
 const sidebarItemsMap: Record<string, Array<{ path: string; label: string }>> = {
   dashboards: [
     { path: '/executive-overview', label: 'Executive Overview' },
-    { path: '/product-collection-dashboard', label: 'Product & Collection' },
-    { path: '/inventory-fulfillment-dashboard', label: 'Inventory & Fulfillment' },
-    { path: '/sales-dashboard', label: 'Sales' },
-    { path: '/finance-dashboard', label: 'Finance' },
-    { path: '/alerts-exceptions-dashboard', label: 'Alerts & Exceptions' },
+    { path: '/product-collection-dashboard', label: 'Product Dashboard' },
+    { path: '/sales-dashboard', label: 'Sales Dashboard' },
+    { path: '/inventory-fulfillment-dashboard', label: 'Retail Dashboard' },
+    { path: '/finance-dashboard', label: 'Marketing Dashboard' },
+    { path: '/alerts-exceptions-dashboard', label: 'Operational Dashboard' },
   ],
   product: [
     { path: '/products', label: 'Catalog' },

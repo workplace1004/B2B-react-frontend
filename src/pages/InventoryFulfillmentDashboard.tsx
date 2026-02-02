@@ -29,11 +29,12 @@ export default function InventoryFulfillmentDashboard() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Inventory & Fulfillment" />
+      <Breadcrumb currentPage="Retail Dashboard" />
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Inventory & Fulfillment</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Retail Dashboard</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Stock by warehouse, inbound/outbound, exceptions</p>
           </div>
         </div>
       </div>
@@ -43,7 +44,7 @@ export default function InventoryFulfillmentDashboard() {
           <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
             <i className='fi fi-rr-package text-gray-400 dark:text-gray-500' style={{ fontSize: '30px' }}></i>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Inventory & Fulfillment Dashboard</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Retail Dashboard</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
             Stock by warehouse, inbound/outbound, exceptions
           </p>

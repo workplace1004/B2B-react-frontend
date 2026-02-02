@@ -29,11 +29,12 @@ export default function AlertsExceptionsDashboard() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Alerts & Exceptions" />
+      <Breadcrumb currentPage="Operational Dashboard" />
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Alerts & Exceptions</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Operational Dashboard</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Low stock, overstock, delayed POs, demand spikes, stuck RMAs</p>
           </div>
         </div>
       </div>
@@ -43,7 +44,7 @@ export default function AlertsExceptionsDashboard() {
           <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
             <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Alerts & Exceptions Dashboard</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Operational Dashboard</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
             Low stock, overstock, delayed POs, demand spikes, stuck RMAs
           </p>

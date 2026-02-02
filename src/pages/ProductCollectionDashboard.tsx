@@ -294,11 +294,11 @@ export default function ProductCollectionDashboard() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Product & Collection" />
+      <Breadcrumb currentPage="Product Dashboard" />
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Product & Collection</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Product Dashboard</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">Style performance, drop performance, DPP/compliance overview</p>
           </div>
         </div>

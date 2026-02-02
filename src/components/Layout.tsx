@@ -28,6 +28,8 @@ import {
   Factory,
   Store,
   RotateCcw,
+  CheckSquare,
+  BarChart3,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -48,6 +50,7 @@ interface SidebarItem {
   useFlaticon?: boolean;
   flaticonClass?: string;
   icon?: React.ComponentType<{ className?: string }>;
+  section?: string;
 }
 
 export default function Layout({ children }: LayoutProps) {
@@ -78,7 +81,7 @@ export default function Layout({ children }: LayoutProps) {
 
   // Navbar items (main categories)
   const navbarItems: NavbarItem[] = [
-    { id: 'dashboards', label: 'DASHBOARDS', icon: LayoutDashboard, useFlaticon: true, flaticonClass: 'fi fi-rr-house-blank' },
+    { id: 'dashboards', label: 'OVERVIEW', icon: LayoutDashboard, useFlaticon: true, flaticonClass: 'fi fi-rr-house-blank' },
     { id: 'product', label: 'PRODUCT', icon: Package, useFlaticon: true, flaticonClass: 'fi fi-rr-box' },
     { id: 'sales', label: 'SALES', icon: ShoppingCart, useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart' },
     { id: 'marketing', label: 'MARKETING', icon: TrendingUp, useFlaticon: true, flaticonClass: 'fi fi-rr-chart-histogram' },
@@ -90,14 +93,17 @@ export default function Layout({ children }: LayoutProps) {
   ];
 
   // Sidebar items mapping for each navbar category
+  // For dashboards, we split into sections: OVERVIEW and TODOS
   const sidebarItemsMap: Record<string, SidebarItem[]> = {
     dashboards: [
-      { path: '/executive-overview', label: 'Overview', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-line-up' },
-      { path: '/product-collection-dashboard', label: 'Product & Collection', useFlaticon: true, flaticonClass: 'fi fi-rr-grid' },
-      { path: '/inventory-fulfillment-dashboard', label: 'Inventory & Fulfillment', useFlaticon: true, flaticonClass: 'fi fi-rr-package' },
-      { path: '/sales-dashboard', label: 'Sales', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart' },
-      { path: '/finance-dashboard', label: 'Finance', useFlaticon: true, flaticonClass: 'fi fi-rr-credit-card' },
-      { path: '/alerts-exceptions-dashboard', label: 'Alerts & Exceptions', useFlaticon: true, flaticonClass: 'fi fi-rr-bell' },
+      { path: '/executive-overview', label: 'Executive Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-line-up', section: 'overview' },
+      { path: '/product-collection-dashboard', label: 'Product Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-grid', section: 'overview' },
+      { path: '/sales-dashboard', label: 'Sales Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart', section: 'overview' },
+      { path: '/inventory-fulfillment-dashboard', label: 'Retail Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-package', section: 'overview' },
+      { path: '/finance-dashboard', label: 'Marketing Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-credit-card', section: 'overview' },
+      { path: '/alerts-exceptions-dashboard', label: 'Operational Dashboard', useFlaticon: true, flaticonClass: 'fi fi-rr-bell', section: 'overview' },
+      { path: '/my-tasks', label: 'My Tasks', useFlaticon: false, icon: CheckSquare, section: 'todos' },
+      { path: '/kpi-reports', label: 'KPI Reports', useFlaticon: false, icon: BarChart3, section: 'todos' },
     ],
     product: [
       { path: '/products', label: 'Catalog', useFlaticon: true, flaticonClass: 'fi fi-rr-box' },
@@ -164,7 +170,7 @@ export default function Layout({ children }: LayoutProps) {
   // Determine active navbar item based on current route
   useEffect(() => {
     const path = location.pathname;
-    if (path.startsWith('/executive-overview') || path.startsWith('/product-collection-dashboard') || path.startsWith('/inventory-fulfillment-dashboard') || path.startsWith('/sales-dashboard') || path.startsWith('/finance-dashboard') || path.startsWith('/alerts-exceptions-dashboard')) {
+    if (path.startsWith('/executive-overview') || path.startsWith('/product-collection-dashboard') || path.startsWith('/inventory-fulfillment-dashboard') || path.startsWith('/sales-dashboard') || path.startsWith('/finance-dashboard') || path.startsWith('/alerts-exceptions-dashboard') || path.startsWith('/my-tasks') || path.startsWith('/kpi-reports')) {
       setSelectedNavbarItem('dashboards');
     } else if (path.startsWith('/products') || path.startsWith('/sku-ean-barcodes') || path.startsWith('/bom') || path.startsWith('/collections') || path.startsWith('/size-fit') || path.startsWith('/documents') || path.startsWith('/sustainability-compliance')) {
       setSelectedNavbarItem('product');
@@ -516,38 +522,109 @@ export default function Layout({ children }: LayoutProps) {
           >
 
             {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto py-4">
-              {sidebarOpen && (
-                <div className="px-5 mb-4">
-                  <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
-                    {navbarItems.find(item => item.id === selectedNavbarItem)?.label || 'DASHBOARD / KPIs'}
-                  </h2>
-                </div>
-              )}
-              <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
-                {currentSidebarItems.map((item) => {
-                  const active = isActive(item.path);
+            <nav className="flex-1 overflow-y-auto py-6">
+              {(() => {
+                // Group items by section for dashboards
+                if (selectedNavbarItem === 'dashboards') {
+                  const overviewItems = currentSidebarItems.filter(item => !item.section || item.section === 'overview');
+                  const todosItems = currentSidebarItems.filter(item => item.section === 'todos');
+                  
                   return (
-                    <li key={item.path}>
-                      <Link
-                        to={item.path}
-                        className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
-                          } ${active
-                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          }`}
-                      >
-                        {item.useFlaticon && item.flaticonClass ? (
-                          <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
-                        ) : item.icon ? (
-                          <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
-                        ) : null}
-                        {sidebarOpen && <span className="text-lg">{item.label}</span>}
-                      </Link>
-                    </li>
+                    <>
+                      {sidebarOpen && overviewItems.length > 0 && (
+                        <div className="px-5 mb-4">
+                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                            OVERVIEW
+                          </h2>
+                        </div>
+                      )}
+                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'} ${todosItems.length > 0 ? 'mb-4' : ''}`}>
+                        {overviewItems.map((item) => {
+                          const active = isActive(item.path);
+                          return (
+                            <li key={item.path}>
+                              <Link
+                                to={item.path}
+                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                  } ${active
+                                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                              >
+                                {item.useFlaticon && item.flaticonClass ? (
+                                  <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                                ) : item.icon ? (
+                                  <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                                ) : null}
+                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {sidebarOpen && todosItems.length > 0 && (
+                        <div className="px-5 mb-4 mt-10">
+                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                            TODOS
+                          </h2>
+                        </div>
+                      )}
+                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
+                        {todosItems.map((item) => {
+                          const active = isActive(item.path);
+                          return (
+                            <li key={item.path}>
+                              <Link
+                                to={item.path}
+                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                  } ${active
+                                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                              >
+                                {item.useFlaticon && item.flaticonClass ? (
+                                  <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                                ) : item.icon ? (
+                                  <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                                ) : null}
+                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
                   );
-                })}
-              </ul>
+                } else {
+                  // For other navbar items, show without section headers
+                  return (
+                    <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
+                      {currentSidebarItems.map((item) => {
+                        const active = isActive(item.path);
+                        return (
+                          <li key={item.path}>
+                            <Link
+                              to={item.path}
+                              className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                } ${active
+                                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                            >
+                              {item.useFlaticon && item.flaticonClass ? (
+                                <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                              ) : item.icon ? (
+                                <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                              ) : null}
+                              {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  );
+                }
+              })()}
             </nav>
 
           </aside>

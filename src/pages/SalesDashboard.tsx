@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { Search, Edit, Trash2, X, AlertTriangle, Inbox } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import { SkeletonStatsCard } from '../components/Skeleton';
+import { SkeletonPage, SkeletonStatsCard } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
 export default function SalesDashboard() {
@@ -21,14 +21,14 @@ export default function SalesDashboard() {
     const checkDarkMode = () => {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
     };
-    
+
     checkDarkMode();
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class'],
     });
-    
+
     return () => observer.disconnect();
   }, []);
 
@@ -36,7 +36,7 @@ export default function SalesDashboard() {
   const getDateRange = () => {
     const endDate = new Date();
     const startDate = new Date();
-    
+
     switch (salesTimeRange) {
       case 'today':
         startDate.setHours(0, 0, 0, 0);
@@ -53,10 +53,10 @@ export default function SalesDashboard() {
         endDate.setHours(23, 59, 59, 999);
         break;
     }
-    
-    return { 
-      startDate: startDate.toISOString().split('T')[0], 
-      endDate: endDate.toISOString().split('T')[0] 
+
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
     };
   };
 
@@ -105,7 +105,7 @@ export default function SalesDashboard() {
   const calculateSalesByCountry = () => {
     const orders = salesReport?.orders || [];
     const customers = customersData || [];
-    
+
     // Create a map of customer ID to country
     const customerCountryMap: Record<number, string> = {};
     customers.forEach((customer: any) => {
@@ -126,15 +126,15 @@ export default function SalesDashboard() {
 
     // Group orders by country and calculate totals
     const countrySales: Record<string, { revenue: number; products: number }> = {};
-    
+
     orders.forEach((order: any) => {
       const customerId = order.customerId || order.customer?.id;
       const country = customerCountryMap[customerId] || 'Unknown';
-      
+
       if (!countrySales[country]) {
         countrySales[country] = { revenue: 0, products: 0 };
       }
-      
+
       countrySales[country].revenue += Number(order.totalAmount || 0);
       // Count products from order lines
       const orderLines = order.orderLines || [];
@@ -208,22 +208,22 @@ export default function SalesDashboard() {
   };
 
   const salesByCountry = calculateSalesByCountry();
-  
+
   // Calculate total sales and percentage change
   const totalSalesByCountry = salesByCountry.reduce((sum, item) => sum + item.revenue, 0);
-  
+
   // Calculate previous period for comparison using useMemo
   const previousPeriodRange = useMemo(() => {
     const end = new Date(endDate);
     const start = new Date(startDate);
     const diffTime = end.getTime() - start.getTime();
     const diffDays = diffTime / (1000 * 60 * 60 * 24);
-    
+
     const prevEnd = new Date(start);
     prevEnd.setDate(prevEnd.getDate() - 1);
     const prevStart = new Date(prevEnd);
     prevStart.setDate(prevStart.getDate() - diffDays);
-    
+
     return {
       startDate: prevStart.toISOString().split('T')[0],
       endDate: prevEnd.toISOString().split('T')[0],
@@ -247,11 +247,11 @@ export default function SalesDashboard() {
     enabled: !!salesReport && !!startDate && !!endDate,
   });
 
-  const previousTotalSales = previousSalesReport?.orders?.reduce((sum: number, order: any) => 
+  const previousTotalSales = previousSalesReport?.orders?.reduce((sum: number, order: any) =>
     sum + Number(order.totalAmount || 0), 0) || 0;
-  
-  const salesChangePercent = previousTotalSales > 0 
-    ? ((totalSalesByCountry - previousTotalSales) / previousTotalSales) * 100 
+
+  const salesChangePercent = previousTotalSales > 0
+    ? ((totalSalesByCountry - previousTotalSales) / previousTotalSales) * 100
     : 0;
 
   const isLoading = dashboardLoading || salesLoading;
@@ -259,7 +259,7 @@ export default function SalesDashboard() {
   // Process orders data for charts based on time range
   const processOrdersForChart = () => {
     const orders = salesReport?.orders || [];
-    
+
     if (salesTimeRange === 'today') {
       // Group by hour
       const hourlyData: Record<number, number> = {};
@@ -269,7 +269,7 @@ export default function SalesDashboard() {
         if (!hourlyData[hour]) hourlyData[hour] = 0;
         hourlyData[hour] += Number(order.totalAmount || 0);
       });
-      
+
       const hours = Array.from({ length: 12 }, (_, i) => i * 2);
       const incomeData = hours.map(h => hourlyData[h] || 0);
       const categories = hours.map(h => {
@@ -278,7 +278,7 @@ export default function SalesDashboard() {
         if (h === 12) return '12 PM';
         return `${h - 12} PM`;
       });
-      
+
       return { incomeData, expensesData: new Array(12).fill(0), categories, maxValue: Math.max(...incomeData, 0) };
     } else if (salesTimeRange === 'week') {
       // Group by day
@@ -290,7 +290,7 @@ export default function SalesDashboard() {
         if (!dailyData[dayName]) dailyData[dayName] = 0;
         dailyData[dayName] += Number(order.totalAmount || 0);
       });
-      
+
       const incomeData = dayNames.map(day => dailyData[day] || 0);
       return { incomeData, expensesData: new Array(7).fill(0), categories: dayNames, maxValue: Math.max(...incomeData, 0) };
     } else {
@@ -299,11 +299,11 @@ export default function SalesDashboard() {
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
-      
+
       // Create a map of year-month to array index (last 12 months)
       const monthMap: Record<string, number> = {};
       const labels: string[] = [];
-      
+
       for (let i = 0; i < 12; i++) {
         const monthDate = new Date(currentYear, currentMonth - (11 - i), 1);
         const year = monthDate.getFullYear();
@@ -312,19 +312,19 @@ export default function SalesDashboard() {
         monthMap[key] = i;
         labels.push(monthNames[month]);
       }
-      
+
       const monthlyData: number[] = Array(12).fill(0);
       orders.forEach((order: any) => {
         const orderDate = new Date(order.orderDate || order.createdAt);
         const year = orderDate.getFullYear();
         const month = orderDate.getMonth();
         const key = `${year}-${month}`;
-        
+
         if (monthMap[key] !== undefined) {
           monthlyData[monthMap[key]] += Number(order.totalAmount || 0);
         }
       });
-      
+
       return { incomeData: monthlyData, expensesData: new Array(12).fill(0), categories: labels, maxValue: Math.max(...monthlyData, 0) };
     }
   };
@@ -525,14 +525,14 @@ export default function SalesDashboard() {
       weekStart.setDate(weekStart.getDate() - (i * 7 + 7));
       const weekEnd = new Date(now);
       weekEnd.setDate(weekEnd.getDate() - (i * 7));
-      
+
       const weekSales = orders
         .filter((order: any) => {
           const orderDate = new Date(order.orderDate || order.createdAt);
           return orderDate >= weekStart && orderDate < weekEnd;
         })
         .reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0);
-      
+
       weeklyData.push(weekSales);
     }
 
@@ -624,16 +624,16 @@ export default function SalesDashboard() {
   const visitorsChartData = useMemo(() => {
     const orders = salesReport?.orders || [];
     const previousOrders = previousSalesReport?.orders || [];
-    
+
     // Group by month for last 6 months
     const now = new Date();
     const currentData: number[] = [];
     const previousData: number[] = [];
-    
+
     for (let i = 5; i >= 0; i--) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-      
+
       // Current period unique customers
       const currentMonthCustomers = new Set(
         orders
@@ -645,7 +645,7 @@ export default function SalesDashboard() {
           .filter(Boolean)
       );
       currentData.push(currentMonthCustomers.size);
-      
+
       // Previous period unique customers (6 months before)
       const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - i - 6, 1);
       const prevMonthEnd = new Date(now.getFullYear(), now.getMonth() - i - 5, 0);
@@ -660,7 +660,7 @@ export default function SalesDashboard() {
       );
       previousData.push(previousMonthCustomers.size);
     }
-    
+
     return {
       current: currentData.length > 0 ? currentData : [0, 0, 0, 0, 0, 0],
       previous: previousData.length > 0 ? previousData : [0, 0, 0, 0, 0, 0],
@@ -752,12 +752,12 @@ export default function SalesDashboard() {
   const processTopSellingItems = () => {
     const orders = salesReport?.orders || [];
     const productSales: Record<string, { product: any; quantity: number; totalSale: number; price: number }> = {};
-    
+
     orders.forEach((order: any) => {
       order.orderLines?.forEach((line: any) => {
         const productId = line.productId;
         const product = line.product;
-        
+
         if (!productSales[productId]) {
           productSales[productId] = {
             product,
@@ -766,7 +766,7 @@ export default function SalesDashboard() {
             price: Number(line.unitPrice || 0),
           };
         }
-        
+
         productSales[productId].quantity += Number(line.quantity || 0);
         productSales[productId].totalSale += Number(line.totalPrice || line.unitPrice * line.quantity || 0);
       });
@@ -904,15 +904,15 @@ export default function SalesDashboard() {
       return sum + (Number(order.totalAmount || 0));
     }, 0);
   };
-  
+
   const totalEarning = calculateTotalEarning();
   const totalOrders = salesReport?.orderCount || dashboardStats?.totalOrders || 0;
-  
+
   // Calculate Revenue Growth (compare current period with previous period)
   const calculateRevenueGrowth = () => {
     // If data hasn't loaded yet, return null
     if (!salesReport && isLoading) return null;
-    
+
     // If we have orders, calculate growth
     if (totalOrders > 0 && totalEarning > 0) {
       // Estimate previous period revenue (assuming some growth)
@@ -921,30 +921,30 @@ export default function SalesDashboard() {
       const growth = estimatedPrevRevenue > 0 ? ((totalEarning - estimatedPrevRevenue) / estimatedPrevRevenue) * 100 : 0;
       return growth;
     }
-    
+
     // If we have data loaded but no orders/revenue, return 0 (no growth)
     if (!isLoading) return 0;
-    
+
     return null;
   };
-  
+
   const revenueGrowth = calculateRevenueGrowth();
-  
+
   // Calculate Conversion Rate (orders / visitors or orders / customers)
   // Since we don't have visitor data, we'll use a calculation based on customers
   const calculateConversionRate = () => {
     if (!dashboardStats || totalOrders === 0) return null;
-    
+
     // Conversion rate = (Orders / Total Customers) * 100
     // Or we can use a simpler metric: (Completed Orders / Total Orders) * 100
-    const completedOrders = (salesReport?.orders || []).filter((o: any) => 
+    const completedOrders = (salesReport?.orders || []).filter((o: any) =>
       ['completed', 'delivered'].includes((o.status || '').toLowerCase())
     ).length;
-    
+
     const conversionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
     return conversionRate;
   };
-  
+
   const conversionRate = calculateConversionRate();
 
   // Calculate monthly target progress
@@ -1007,38 +1007,17 @@ export default function SalesDashboard() {
   const salesStatus = calculateSalesStatus();
 
   if (isLoading) {
-    return (
-      <div>
-        <Breadcrumb currentPage="Sales Dashboard" />
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sales Dashboard</h1>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => <SkeletonStatsCard key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-5">
-          <div className="lg:col-span-8 xl:col-span-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-          </div>
-          <div className="lg:col-span-4 xl:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-          </div>
-          <div className="lg:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <SkeletonPage />;
   }
 
   return (
     <div>
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Breadcrumb currentPage="Sales Dashboard" />
+      <div className="mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sales Dashboard</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Sales performance, order status, revenue growth, conversion rate</p>
         </div>
       </div>
 
@@ -1119,37 +1098,34 @@ export default function SalesDashboard() {
         <div className="lg:col-span-8 xl:col-span-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between">
             <div>
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales Report</h6>
+              <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales Report</h6>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-0">{getSalesDateDisplay()}</p>
             </div>
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
               <button
                 onClick={() => setSalesTimeRange('today')}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                  salesTimeRange === 'today'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${salesTimeRange === 'today'
+                  ? 'bg-primary text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
               >
                 Today
               </button>
               <button
                 onClick={() => setSalesTimeRange('week')}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                  salesTimeRange === 'week'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${salesTimeRange === 'week'
+                  ? 'bg-primary text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
               >
                 Week
               </button>
               <button
                 onClick={() => setSalesTimeRange('month')}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                  salesTimeRange === 'month'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${salesTimeRange === 'month'
+                  ? 'bg-primary text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
               >
                 Month
               </button>
@@ -1247,7 +1223,7 @@ export default function SalesDashboard() {
                 <div key={idx} className="p-3 border border-gray-200 dark:border-gray-700 rounded">
                   <div className="flex items-center mb-1">
                     <div className="w-6 h-6 rounded mr-2 flex items-center justify-center overflow-hidden shrink-0" style={{ aspectRatio: '1' }}>
-                      <img 
+                      <img
                         src={`https://flagcdn.com/w20/${item.code.toLowerCase()}.png`}
                         alt={`${item.country} flag`}
                         className="w-full h-full object-cover"
@@ -1418,7 +1394,7 @@ export default function SalesDashboard() {
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     setTopSellingSearch(e.currentTarget.value);
-                  setTopSellingPage(1);
+                    setTopSellingPage(1);
                   }
                 }}
                 className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -1503,11 +1479,10 @@ export default function SalesDashboard() {
                     <button
                       key={pageNum}
                       onClick={() => setTopSellingPage(pageNum)}
-                      className={`px-3 py-1 text-sm border rounded ${
-                        topSellingPage === pageNum
-                          ? 'bg-primary text-white border-primary'
-                          : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                      }`}
+                      className={`px-3 py-1 text-sm border rounded ${topSellingPage === pageNum
+                        ? 'bg-primary text-white border-primary'
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        }`}
                     >
                       {pageNum}
                     </button>

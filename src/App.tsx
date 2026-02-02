@@ -23,6 +23,7 @@ import Documents from './pages/Documents';
 import Alerts from './pages/Alerts';
 import Exceptions from './pages/Exceptions';
 import KPIReports from './pages/KPIReports';
+import MyTasks from './pages/MyTasks';
 import BOM from './pages/BOM';
 import Costing from './pages/Costing';
 import Drops from './pages/Drops';
@@ -307,6 +308,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Exceptions />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-tasks"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <MyTasks />
                 </Layout>
               </ProtectedRoute>
             }
