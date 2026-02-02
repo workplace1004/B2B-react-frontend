@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect, useMemo } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Download, Calendar, Filter } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { BarChart3, TrendingUp, TrendingDown, Download, Calendar, Filter, ChevronDown } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -10,6 +10,8 @@ export default function KPIReports() {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y' | 'all'>('30d');
   const [selectedKPIs, setSelectedKPIs] = useState<string[]>(['revenue', 'orders', 'customers', 'profit']);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
+  const dateRangeRef = useRef<HTMLDivElement>(null);
 
   // Check for dark mode
   useEffect(() => {
@@ -24,6 +26,23 @@ export default function KPIReports() {
     });
     return () => observer.disconnect();
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target as Node)) {
+        setIsDateRangeOpen(false);
+      }
+    };
+
+    if (isDateRangeOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDateRangeOpen]);
 
   // Fetch data for KPI reports
   const { isLoading: dashboardLoading } = useQuery({
@@ -311,17 +330,91 @@ export default function KPIReports() {
             <p className="text-gray-500 dark:text-gray-400 mt-1">Track and analyze key performance indicators</p>
           </div>
           <div className="flex items-center gap-2">
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-              <option value="1y">Last Year</option>
-              <option value="all">All Time</option>
-            </select>
+            <div className="relative" ref={dateRangeRef}>
+              <button
+                onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}
+                className="flex items-center justify-between gap-2 px-4 py-2.5 min-w-[160px] border border-primary-500 dark:border-primary-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              >
+                <span className="text-sm font-medium">
+                  {dateRange === '7d' ? 'Last 7 Days' :
+                   dateRange === '30d' ? 'Last 30 Days' :
+                   dateRange === '90d' ? 'Last 90 Days' :
+                   dateRange === '1y' ? 'Last Year' :
+                   'All Time'}
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${isDateRangeOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isDateRangeOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setDateRange('7d');
+                      setIsDateRangeOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
+                      dateRange === '7d'
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Last 7 Days
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDateRange('30d');
+                      setIsDateRangeOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
+                      dateRange === '30d'
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Last 30 Days
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDateRange('90d');
+                      setIsDateRangeOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
+                      dateRange === '90d'
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Last 90 Days
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDateRange('1y');
+                      setIsDateRangeOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
+                      dateRange === '1y'
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Last Year
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDateRange('all');
+                      setIsDateRangeOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
+                      dateRange === 'all'
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    All Time
+                  </button>
+                </div>
+              )}
+            </div>
             <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
               <Download className="w-5 h-5" />
               Export Report
