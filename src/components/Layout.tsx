@@ -92,7 +92,7 @@ export default function Layout({ children }: LayoutProps) {
   // Sidebar items mapping for each navbar category
   const sidebarItemsMap: Record<string, SidebarItem[]> = {
     dashboards: [
-      { path: '/executive-overview', label: 'Executive Overview', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-line-up' },
+      { path: '/executive-overview', label: 'Overview', useFlaticon: true, flaticonClass: 'fi fi-rr-chart-line-up' },
       { path: '/product-collection-dashboard', label: 'Product & Collection', useFlaticon: true, flaticonClass: 'fi fi-rr-grid' },
       { path: '/inventory-fulfillment-dashboard', label: 'Inventory & Fulfillment', useFlaticon: true, flaticonClass: 'fi fi-rr-package' },
       { path: '/sales-dashboard', label: 'Sales', useFlaticon: true, flaticonClass: 'fi fi-rr-shopping-cart' },

@@ -464,7 +464,7 @@ export default function ExecutiveOverview() {
         break;
     }
     
-    return { 
+        return {
       startDate: startDate.toISOString().split('T')[0], 
       endDate: endDate.toISOString().split('T')[0] 
     };
@@ -724,18 +724,18 @@ export default function ExecutiveOverview() {
   };
 
   if (isAllDataLoading) {
-    return (
-      <div>
+  return (
+    <div>
         {/* Header Skeleton */}
-        <div className="mb-6">
+      <div className="mb-6">
           <div className="flex items-center justify-between animate-pulse">
             <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-48"></div>
             <div className="flex items-center gap-3">
               <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
               <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+          </div>
         </div>
-        </div>
-        </div>
+      </div>
 
         {/* Main Content Grid Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -767,7 +767,7 @@ export default function ExecutiveOverview() {
                 <div className="p-4">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
                   <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                  <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
                     <div className="space-y-2">
                       <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
                       <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
@@ -875,12 +875,12 @@ export default function ExecutiveOverview() {
   }
 
   return (
-    <div>
+            <div>
       <Breadcrumb currentPage="ExecutiveOverview" />
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">ExecutiveOverview</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Executive Overview</h1>
         <p className="text-gray-600 dark:text-gray-400">Overview of your business metrics and activities</p>
-      </div>
+            </div>
       {/* Dashboard Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-6">
         {/* Left Column - Main Cards (Cards 1-5) */}
@@ -891,7 +891,7 @@ export default function ExecutiveOverview() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Total Customers</h6>
-              </div>
+          </div>
               <div className="px-4 mt-3 pb-0">
                 <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -906,7 +906,7 @@ export default function ExecutiveOverview() {
                         {customerChangePercent > 0 ? '+' : ''}{customerChangePercent.toFixed(2)}%
                   </span>
                     )}
-                </div>
+        </div>
                 </div>
                 <div className="w-full h-[120px] -mt-2">
               <Chart
@@ -966,7 +966,7 @@ export default function ExecutiveOverview() {
                 </div>
               </div>
               <div className="p-4 pt-2 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-0">
                         Vs last month: {dashboardStats?.lastMonthCustomers?.toLocaleString() || '0'}
                       </p>
@@ -976,9 +976,9 @@ export default function ExecutiveOverview() {
                   >
                     <ArrowRight className="w-5 h-5" />
                   </button>
-                </div>
-              </div>
             </div>
+          </div>
+        </div>
 
             {/* Card 2: Order Analytics */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border w-full border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col">
@@ -1078,20 +1078,20 @@ export default function ExecutiveOverview() {
                     ></div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-1 text-xs">
                       <div className="w-3 h-3 bg-primary opacity-10 rounded"></div>
                       <span className="text-gray-600 dark:text-gray-400">Follow-ups</span>
-                    </div>
+            </div>
                     <div className="flex items-center gap-1 text-xs">
                       <div className="w-3 h-3 bg-primary opacity-25 rounded"></div>
                       <span className="text-gray-600 dark:text-gray-400">In Progress</span>
-                    </div>
+          </div>
                     <div className="flex items-center gap-1 text-xs">
                       <div className="w-3 h-3 bg-primary opacity-50 rounded"></div>
                       <span className="text-gray-600 dark:text-gray-400">Pending</span>
-                    </div>
+        </div>
                   </div>
                   <div className="w-24 h-24">
                     {taskStats.total > 0 ? (
@@ -1149,7 +1149,7 @@ export default function ExecutiveOverview() {
                 </div>
               </div>
               <div className="p-4 pt-2 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-0">
                         Vs last month: {(dashboardStats?.lastMonthOrders || 0).toLocaleString()}
                       </p>
@@ -1166,9 +1166,9 @@ export default function ExecutiveOverview() {
             {/* Card 5: Revenue */}
             <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-2 items-center justify-between">
-                <div>
+            <div>
                   <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Revenue</h6>
-                </div>
+            </div>
                 <div className="flex flex-wrap gap-2 items-center">
                   <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
                     {(['Today', 'Week', 'Month'] as const).map((tab) => (
@@ -1185,7 +1185,7 @@ export default function ExecutiveOverview() {
                         {tab}
                       </button>
                     ))}
-                  </div>
+          </div>
                   <div className="relative" ref={calendarRef}>
                     <button 
                       onClick={() => setIsCalendarOpen(!isCalendarOpen)}
@@ -1213,8 +1213,8 @@ export default function ExecutiveOverview() {
                             >
                               <ChevronRight className="w-5 h-5 text-primary dark:text-primary-300" />
                             </button>
-                          </div>
-                        </div>
+        </div>
+      </div>
 
                         {/* Calendar Days */}
                         <div className="p-4">
@@ -1226,7 +1226,7 @@ export default function ExecutiveOverview() {
                                 className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2"
                               >
                                 {day}
-                              </div>
+          </div>
                             ))}
                           </div>
 
@@ -1264,10 +1264,10 @@ export default function ExecutiveOverview() {
                                   day: 'numeric' 
                                 })}
                               </span>
-                            </p>
-                          </div>
+          </p>
+        </div>
                         )}
-                      </div>
+      </div>
                     )}
                   </div>
                 </div>
@@ -1524,8 +1524,8 @@ export default function ExecutiveOverview() {
                               <div className={`w-3 h-3 bg-primary ${opacityMap[idx] || 'opacity-100'} rounded`}></div>
                               <span className="text-gray-600 dark:text-gray-400 flex-1">{item.type}</span>
                               <strong className="text-gray-900 dark:text-white font-semibold">{item.percentage.toFixed(1)}%</strong>
-                    </div>
-                          );
+    </div>
+  );
                         }) : (
                           <div className="flex items-center gap-1 text-xs py-1">
                             <div className="w-3 h-3 bg-primary opacity-10 rounded"></div>

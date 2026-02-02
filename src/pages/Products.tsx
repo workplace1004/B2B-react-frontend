@@ -202,6 +202,8 @@ export default function Products() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteModalShowing, setIsDeleteModalShowing] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'variants'>('variants'); // New: variant view mode
+  const [activeTab, setActiveTab] = useState<'products' | 'attributes' | 'bundles'>('products'); // Tab state for Catalog sections
   const queryClient = useQueryClient();
 
   // Handle body scroll lock when modal is open
@@ -239,6 +241,64 @@ export default function Products() {
       return response.data;
     },
   });
+
+  // Fetch all products for variant organization (without pagination)
+  const { data: allProductsData } = useQuery({
+    queryKey: ['products', 'all'],
+    queryFn: async () => {
+      const response = await api.get('/products?skip=0&take=10000');
+      return response.data;
+    },
+  });
+
+  // Organize products by Style → Color → Size → Variant
+  const organizeProductsByVariants = (products: any[]) => {
+    const variantMap: Record<string, {
+      style: string;
+      colors: Record<string, {
+        color: string;
+        sizes: Record<string, {
+          size: string;
+          variants: any[];
+        }>;
+      }>;
+    }> = {};
+
+    products.forEach((product) => {
+      const style = product.style || 'Uncategorized';
+      const colors = product.colors || [];
+      const sizes = product.sizes || [];
+
+      if (!variantMap[style]) {
+        variantMap[style] = { style, colors: {} };
+      }
+
+      // Create variants for each color-size combination
+      colors.forEach((color: string) => {
+        if (!variantMap[style].colors[color]) {
+          variantMap[style].colors[color] = { color, sizes: {} };
+        }
+
+        sizes.forEach((size: string) => {
+          if (!variantMap[style].colors[color].sizes[size]) {
+            variantMap[style].colors[color].sizes[size] = { size, variants: [] };
+          }
+
+          // Create variant entry
+          variantMap[style].colors[color].sizes[size].variants.push({
+            ...product,
+            variantKey: `${product.id}-${color}-${size}`,
+            variantColor: color,
+            variantSize: size,
+          });
+        });
+      });
+    });
+
+    return Object.values(variantMap);
+  };
+
+  const variantGroups = allProductsData?.data ? organizeProductsByVariants(allProductsData.data) : [];
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
@@ -380,24 +440,174 @@ export default function Products() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Products" />
+      <Breadcrumb currentPage="Catalog" />
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Catalogs</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Catalog</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Products (Style → Color → Size → Variant), Attributes & Taxonomy, Bundles & Kits</p>
           </div>
-          {(!data?.data || data.data.length === 0) ? null : (
-            <ButtonWithWaves onClick={openModal}>
-              <Plus className="w-5 h-5" />
-              Add Catalog
-            </ButtonWithWaves>
-          )}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {!data?.data || data.data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4">
+      {/* Tabs Navigation */}
+      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+        <nav className="flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'products'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+          >
+            Products (Variants)
+          </button>
+          <button
+            onClick={() => setActiveTab('attributes')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'attributes'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+          >
+            Attributes & Taxonomy
+          </button>
+          <button
+            onClick={() => setActiveTab('bundles')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'bundles'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+          >
+            Bundles & Kits
+          </button>
+        </nav>
+      </div>
+
+      {/* Products Tab - Variant Hierarchy View */}
+      {activeTab === 'products' && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          {/* View Mode Toggle */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode('variants')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  viewMode === 'variants'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Variant View (Style → Color → Size)
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  viewMode === 'table'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Table View
+              </button>
+            </div>
+            <ButtonWithWaves onClick={openModal}>
+              <Plus className="w-5 h-5" />
+              Add Product
+            </ButtonWithWaves>
+          </div>
+
+          {/* Variant Hierarchy View */}
+          {viewMode === 'variants' ? (
+            !variantGroups || variantGroups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                  <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No products found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
+                  Get started by adding your first product to the catalog.
+                </p>
+                <ButtonWithWaves onClick={openModal}>
+                  <Plus className="w-5 h-5" />
+                  Add Product
+                </ButtonWithWaves>
+              </div>
+            ) : (
+              <div className="p-6">
+                {variantGroups.map((styleGroup, styleIdx) => (
+                  <div key={styleIdx} className="mb-8 last:mb-0">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      Style: {styleGroup.style}
+                    </h3>
+                    {Object.values(styleGroup.colors).map((colorGroup, colorIdx) => (
+                      <div key={colorIdx} className="ml-4 mb-6">
+                        <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">
+                          Color: {colorGroup.color}
+                        </h4>
+                        {Object.values(colorGroup.sizes).map((sizeGroup, sizeIdx) => (
+                          <div key={sizeIdx} className="ml-4 mb-4">
+                            <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Size: {sizeGroup.size}
+                            </h5>
+                            <div className="ml-4 space-y-2">
+                              {sizeGroup.variants.map((variant: any) => (
+                                <div
+                                  key={variant.variantKey}
+                                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {variant.name}
+                                      </span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        SKU: {variant.sku}
+                                      </span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        Collection: {variant.collection?.name || '-'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedProduct(variant);
+                                        setIsEditModalOpen(true);
+                                      }}
+                                      className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                                      title="Edit"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedProduct(variant);
+                                        setIsDeleteModalOpen(true);
+                                      }}
+                                      className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            /* Table View */
+            !data?.data || data.data.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4">
             <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
               <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
             </div>
@@ -468,8 +678,66 @@ export default function Products() {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        )
+          )}
+          
+          {/* Pagination - Only show in table view */}
+          {viewMode === 'table' && data?.data && data.data.length > 0 && (
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-6 pb-6">
+              <div className="text-sm text-gray-600 dark:text-white">
+                Showing <span className="font-medium text-gray-900 dark:text-white">{page * 10 + 1}</span> to{' '}
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {Math.min((page + 1) * 10, data.total)}
+                </span>{' '}
+                of <span className="font-medium text-gray-900 dark:text-white">{data.total}</span> results
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(0)}
+                  disabled={page === 0}
+                  className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                  Page {page + 1} of {Math.ceil(data.total / 10)}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(Math.ceil(data.total / 10) - 1, p + 1))}
+                  disabled={page >= Math.ceil(data.total / 10) - 1}
+                  className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setPage(Math.ceil(data.total / 10) - 1)}
+                  disabled={page >= Math.ceil(data.total / 10) - 1}
+                  className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Attributes & Taxonomy Tab */}
+      {activeTab === 'attributes' && (
+        <AttributesTaxonomySection />
+      )}
+
+      {/* Bundles & Kits Tab */}
+      {activeTab === 'bundles' && (
+        <BundlesKitsSection />
+      )}
 
       {data?.data && data.data.length > 0 && (
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -1839,6 +2107,741 @@ function DeleteProductModal({
         </div>
       </div>
     </>
+  );
+}
+
+// Attributes & Taxonomy Section Component
+function AttributesTaxonomySection() {
+  const [attributes, setAttributes] = useState<Array<{
+    id: string;
+    name: string;
+    type: 'text' | 'number' | 'select' | 'multiselect' | 'boolean';
+    values?: string[];
+    required: boolean;
+  }>>([]);
+  const [taxonomy, setTaxonomy] = useState<Array<{
+    id: string;
+    category: string;
+    subcategories: string[];
+  }>>([]);
+  const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
+  const [isTaxonomyModalOpen, setIsTaxonomyModalOpen] = useState(false);
+  const [editingAttribute, setEditingAttribute] = useState<any>(null);
+  const [editingTaxonomy, setEditingTaxonomy] = useState<any>(null);
+
+  // Load attributes and taxonomy from localStorage (or API in future)
+  useEffect(() => {
+    const savedAttributes = localStorage.getItem('productAttributes');
+    const savedTaxonomy = localStorage.getItem('productTaxonomy');
+    if (savedAttributes) setAttributes(JSON.parse(savedAttributes));
+    if (savedTaxonomy) setTaxonomy(JSON.parse(savedTaxonomy));
+  }, []);
+
+  const saveAttributes = (newAttributes: typeof attributes) => {
+    setAttributes(newAttributes);
+    localStorage.setItem('productAttributes', JSON.stringify(newAttributes));
+  };
+
+  const saveTaxonomy = (newTaxonomy: typeof taxonomy) => {
+    setTaxonomy(newTaxonomy);
+    localStorage.setItem('productTaxonomy', JSON.stringify(newTaxonomy));
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Attributes Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Product Attributes</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Define custom attributes for products (e.g., Material, Brand, Season)</p>
+          </div>
+          <ButtonWithWaves onClick={() => {
+            setEditingAttribute(null);
+            setIsAttributeModalOpen(true);
+          }}>
+            <Plus className="w-5 h-5" />
+            Add Attribute
+          </ButtonWithWaves>
+        </div>
+
+        {attributes.length === 0 ? (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 mb-4">No attributes defined yet</p>
+            <ButtonWithWaves onClick={() => {
+              setEditingAttribute(null);
+              setIsAttributeModalOpen(true);
+            }}>
+              <Plus className="w-5 h-5" />
+              Create First Attribute
+            </ButtonWithWaves>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Values</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Required</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {attributes.map((attr) => (
+                  <tr key={attr.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{attr.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{attr.type}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      {attr.values ? attr.values.join(', ') : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-full ${attr.required ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                        {attr.required ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingAttribute(attr);
+                            setIsAttributeModalOpen(true);
+                          }}
+                          className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            saveAttributes(attributes.filter(a => a.id !== attr.id));
+                            toast.success('Attribute deleted');
+                          }}
+                          className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Taxonomy Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Product Taxonomy</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Organize products into categories and subcategories</p>
+          </div>
+          <ButtonWithWaves onClick={() => {
+            setEditingTaxonomy(null);
+            setIsTaxonomyModalOpen(true);
+          }}>
+            <Plus className="w-5 h-5" />
+            Add Category
+          </ButtonWithWaves>
+        </div>
+
+        {taxonomy.length === 0 ? (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 mb-4">No taxonomy defined yet</p>
+            <ButtonWithWaves onClick={() => {
+              setEditingTaxonomy(null);
+              setIsTaxonomyModalOpen(true);
+            }}>
+              <Plus className="w-5 h-5" />
+              Create First Category
+            </ButtonWithWaves>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {taxonomy.map((tax) => (
+              <div key={tax.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{tax.category}</h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingTaxonomy(tax);
+                        setIsTaxonomyModalOpen(true);
+                      }}
+                      className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        saveTaxonomy(taxonomy.filter(t => t.id !== tax.id));
+                        toast.success('Category deleted');
+                      }}
+                      className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                {tax.subcategories.length > 0 && (
+                  <div className="ml-4 mt-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Subcategories:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {tax.subcategories.map((sub, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm">
+                          {sub}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Attribute Modal */}
+      {isAttributeModalOpen && (
+        <AttributeModal
+          attribute={editingAttribute}
+          onClose={() => {
+            setIsAttributeModalOpen(false);
+            setEditingAttribute(null);
+          }}
+          onSave={(attr) => {
+            if (editingAttribute) {
+              saveAttributes(attributes.map(a => a.id === editingAttribute.id ? attr : a));
+              toast.success('Attribute updated');
+            } else {
+              saveAttributes([...attributes, attr]);
+              toast.success('Attribute created');
+            }
+            setIsAttributeModalOpen(false);
+            setEditingAttribute(null);
+          }}
+        />
+      )}
+
+      {/* Taxonomy Modal */}
+      {isTaxonomyModalOpen && (
+        <TaxonomyModal
+          taxonomy={editingTaxonomy}
+          onClose={() => {
+            setIsTaxonomyModalOpen(false);
+            setEditingTaxonomy(null);
+          }}
+          onSave={(tax) => {
+            if (editingTaxonomy) {
+              saveTaxonomy(taxonomy.map(t => t.id === editingTaxonomy.id ? tax : t));
+              toast.success('Category updated');
+            } else {
+              saveTaxonomy([...taxonomy, tax]);
+              toast.success('Category created');
+            }
+            setIsTaxonomyModalOpen(false);
+            setEditingTaxonomy(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Attribute Modal Component
+function AttributeModal({ attribute, onClose, onSave }: {
+  attribute: any;
+  onClose: () => void;
+  onSave: (attr: any) => void;
+}) {
+  const [name, setName] = useState(attribute?.name || '');
+  const [type, setType] = useState(attribute?.type || 'text');
+  const [values, setValues] = useState(attribute?.values?.join('\n') || '');
+  const [required, setRequired] = useState(attribute?.required || false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          {attribute ? 'Edit Attribute' : 'Add Attribute'}
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as any)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="text">Text</option>
+              <option value="number">Number</option>
+              <option value="select">Select (Single)</option>
+              <option value="multiselect">Multi-Select</option>
+              <option value="boolean">Boolean (Yes/No)</option>
+            </select>
+          </div>
+          {(type === 'select' || type === 'multiselect') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Values (one per line)</label>
+              <textarea
+                value={values}
+                onChange={(e) => setValues(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Value 1&#10;Value 2&#10;Value 3"
+              />
+            </div>
+          )}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="required"
+              checked={required}
+              onChange={(e) => setRequired(e.target.checked)}
+              className="w-4 h-4 text-primary-600 rounded border-gray-300"
+            />
+            <label htmlFor="required" className="ml-2 text-sm text-gray-700 dark:text-gray-300">Required</label>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (!name) {
+                toast.error('Name is required');
+                return;
+              }
+              onSave({
+                id: attribute?.id || Date.now().toString(),
+                name,
+                type,
+                values: (type === 'select' || type === 'multiselect') ? values.split('\n').filter((v: string) => v.trim()) : undefined,
+                required,
+              });
+            }}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            {attribute ? 'Update' : 'Create'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Taxonomy Modal Component
+function TaxonomyModal({ taxonomy, onClose, onSave }: {
+  taxonomy: any;
+  onClose: () => void;
+  onSave: (tax: any) => void;
+}) {
+  const [category, setCategory] = useState(taxonomy?.category || '');
+  const [subcategories, setSubcategories] = useState(taxonomy?.subcategories?.join('\n') || '');
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          {taxonomy ? 'Edit Category' : 'Add Category'}
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category Name</label>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subcategories (one per line)</label>
+            <textarea
+              value={subcategories}
+              onChange={(e) => setSubcategories(e.target.value)}
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Subcategory 1&#10;Subcategory 2&#10;Subcategory 3"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (!category) {
+                toast.error('Category name is required');
+                return;
+              }
+              onSave({
+                id: taxonomy?.id || Date.now().toString(),
+                category,
+                subcategories: subcategories.split('\n').filter((s: string) => s.trim()),
+              });
+            }}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            {taxonomy ? 'Update' : 'Create'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Bundles & Kits Section Component
+function BundlesKitsSection() {
+  const [bundles, setBundles] = useState<Array<{
+    id: string;
+    name: string;
+    sku: string;
+    type: 'static' | 'dynamic';
+    products: Array<{ productId: number; quantity: number; sku?: string; name?: string }>;
+    rules?: string; // For dynamic bundles
+    price?: number;
+    discount?: number;
+  }>>([]);
+  const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
+  const [editingBundle, setEditingBundle] = useState<any>(null);
+  const { data: allProducts } = useQuery({
+    queryKey: ['products', 'all-for-bundles'],
+    queryFn: async () => {
+      const response = await api.get('/products?skip=0&take=10000');
+      return response.data?.data || [];
+    },
+  });
+
+  // Load bundles from localStorage (or API in future)
+  useEffect(() => {
+    const savedBundles = localStorage.getItem('productBundles');
+    if (savedBundles) setBundles(JSON.parse(savedBundles));
+  }, []);
+
+  const saveBundles = (newBundles: typeof bundles) => {
+    setBundles(newBundles);
+    localStorage.setItem('productBundles', JSON.stringify(newBundles));
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Bundles & Kits</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Create static (fixed products) and dynamic (rule-based) product bundles</p>
+        </div>
+        <ButtonWithWaves onClick={() => {
+          setEditingBundle(null);
+          setIsBundleModalOpen(true);
+        }}>
+          <Plus className="w-5 h-5" />
+          Add Bundle
+        </ButtonWithWaves>
+      </div>
+
+      {bundles.length === 0 ? (
+        <div className="text-center py-12">
+          <Package className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 mb-4">No bundles created yet</p>
+          <ButtonWithWaves onClick={() => {
+            setEditingBundle(null);
+            setIsBundleModalOpen(true);
+          }}>
+            <Plus className="w-5 h-5" />
+            Create First Bundle
+          </ButtonWithWaves>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">SKU</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Products</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {bundles.map((bundle) => (
+                <tr key={bundle.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{bundle.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{bundle.sku}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${bundle.type === 'static' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'}`}>
+                      {bundle.type === 'static' ? 'Static' : 'Dynamic'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {bundle.products.length} product{bundle.products.length !== 1 ? 's' : ''}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    {bundle.price ? `$${bundle.price.toFixed(2)}` : '-'}
+                    {bundle.discount && bundle.discount > 0 && (
+                      <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                        ({bundle.discount}% off)
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingBundle(bundle);
+                          setIsBundleModalOpen(true);
+                        }}
+                        className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          saveBundles(bundles.filter(b => b.id !== bundle.id));
+                          toast.success('Bundle deleted');
+                        }}
+                        className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Bundle Modal */}
+      {isBundleModalOpen && (
+        <BundleModal
+          bundle={editingBundle}
+          products={allProducts || []}
+          onClose={() => {
+            setIsBundleModalOpen(false);
+            setEditingBundle(null);
+          }}
+          onSave={(bundle) => {
+            if (editingBundle) {
+              saveBundles(bundles.map(b => b.id === editingBundle.id ? bundle : b));
+              toast.success('Bundle updated');
+            } else {
+              saveBundles([...bundles, bundle]);
+              toast.success('Bundle created');
+            }
+            setIsBundleModalOpen(false);
+            setEditingBundle(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Bundle Modal Component
+function BundleModal({ bundle, products, onClose, onSave }: {
+  bundle: any;
+  products: any[];
+  onClose: () => void;
+  onSave: (bundle: any) => void;
+}) {
+  const [name, setName] = useState(bundle?.name || '');
+  const [sku, setSku] = useState(bundle?.sku || '');
+  const [type, setType] = useState<'static' | 'dynamic'>(bundle?.type || 'static');
+  const [selectedProducts, setSelectedProducts] = useState<Array<{ productId: number; quantity: number }>>(
+    bundle?.products || []
+  );
+  const [rules, setRules] = useState(bundle?.rules || '');
+  const [price, setPrice] = useState(bundle?.price?.toString() || '');
+  const [discount, setDiscount] = useState(bundle?.discount?.toString() || '');
+
+  const addProduct = () => {
+    setSelectedProducts([...selectedProducts, { productId: 0, quantity: 1 }]);
+  };
+
+  const updateProduct = (index: number, field: 'productId' | 'quantity', value: number) => {
+    const updated = [...selectedProducts];
+    updated[index] = { ...updated[index], [field]: value };
+    setSelectedProducts(updated);
+  };
+
+  const removeProduct = (index: number) => {
+    setSelectedProducts(selectedProducts.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          {bundle ? 'Edit Bundle' : 'Create Bundle'}
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bundle Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU</label>
+            <input
+              type="text"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as 'static' | 'dynamic')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="static">Static (Fixed Products)</option>
+              <option value="dynamic">Dynamic (Rule-based)</option>
+            </select>
+          </div>
+
+          {type === 'static' ? (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Products</label>
+                <button
+                  onClick={addProduct}
+                  className="px-3 py-1 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                >
+                  <Plus className="w-4 h-4 inline mr-1" />
+                  Add Product
+                </button>
+              </div>
+              <div className="space-y-2">
+                {selectedProducts.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <select
+                      value={item.productId}
+                      onChange={(e) => updateProduct(index, 'productId', Number(e.target.value))}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    >
+                      <option value={0}>Select Product</option>
+                      {products.map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => updateProduct(index, 'quantity', Number(e.target.value))}
+                      className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      placeholder="Qty"
+                    />
+                    <button
+                      onClick={() => removeProduct(index)}
+                      className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rules (e.g., "All products from Collection X" or "Products with price &gt; $50")</label>
+              <textarea
+                value={rules}
+                onChange={(e) => setRules(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Enter bundle rules..."
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (optional)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discount % (optional)</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (!name || !sku) {
+                toast.error('Name and SKU are required');
+                return;
+              }
+              if (type === 'static' && selectedProducts.length === 0) {
+                toast.error('At least one product is required for static bundles');
+                return;
+              }
+              if (type === 'dynamic' && !rules) {
+                toast.error('Rules are required for dynamic bundles');
+                return;
+              }
+              onSave({
+                id: bundle?.id || Date.now().toString(),
+                name,
+                sku,
+                type,
+                products: type === 'static' ? selectedProducts : [],
+                rules: type === 'dynamic' ? rules : undefined,
+                price: price ? Number(price) : undefined,
+                discount: discount ? Number(discount) : undefined,
+              });
+            }}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            {bundle ? 'Update' : 'Create'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
