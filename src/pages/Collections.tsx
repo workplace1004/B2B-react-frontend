@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
-import { Plus, Layers, X, ChevronDown, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Layers, X, ChevronDown, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -102,32 +102,41 @@ const CustomSelect = ({
             maxHeight: '400px', // Limit to 10 items (10 * ~40px per item)
           }}
         >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            const isHighlighted = index === highlightedIndex;
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected || isHighlighted
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  display: 'block',
-                  width: '100%',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+          {options.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4">
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
+            </div>
+          ) : (
+            options.map((option, index) => {
+              const isSelected = option.value === value;
+              const isHighlighted = index === highlightedIndex;
+              
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isSelected || isHighlighted
+                      ? 'bg-primary-500 text-white'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                  } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    display: 'block',
+                    width: '100%',
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })
+          )}
         </div>
       )}
     </div>
@@ -691,7 +700,7 @@ function AddCollectionModal({
     },
   });
 
-  // Get unique drops from existing collections
+  // Get unique drops from existing collections (real data only)
   const existingDrops = existingCollections
     ? Array.from(new Set(
         (existingCollections as any[])
@@ -700,29 +709,8 @@ function AddCollectionModal({
       )).sort()
     : [];
 
-  // Common drop options
-  const commonDrops = [
-    'Drop 1',
-    'Drop 2',
-    'Drop 3',
-    'Spring 2024',
-    'Summer 2024',
-    'Fall 2024',
-    'Winter 2024',
-    'Holiday 2024',
-    'New Arrivals',
-    'Limited Edition',
-  ];
-
-  // Combine existing drops with common drops, removing duplicates
-  const dropOptions = [
-    { value: '', label: 'None' },
-    ...Array.from(
-      new Set([...commonDrops, ...existingDrops])
-    )
-      .sort()
-      .map((drop) => ({ value: drop, label: drop }))
-  ];
+  // Use only real drops from existing collections
+  const dropOptions = existingDrops.map((drop) => ({ value: drop, label: drop }));
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading) return;
@@ -981,7 +969,7 @@ function EditCollectionModal({
     },
   });
 
-  // Get unique drops from existing collections
+  // Get unique drops from existing collections (real data only)
   const existingDrops = existingCollections
     ? Array.from(new Set(
         (existingCollections as any[])
@@ -990,29 +978,8 @@ function EditCollectionModal({
       )).sort()
     : [];
 
-  // Common drop options
-  const commonDrops = [
-    'Drop 1',
-    'Drop 2',
-    'Drop 3',
-    'Spring 2024',
-    'Summer 2024',
-    'Fall 2024',
-    'Winter 2024',
-    'Holiday 2024',
-    'New Arrivals',
-    'Limited Edition',
-  ];
-
-  // Combine existing drops with common drops, removing duplicates
-  const dropOptions = [
-    { value: '', label: 'None' },
-    ...Array.from(
-      new Set([...commonDrops, ...existingDrops])
-    )
-      .sort()
-      .map((drop) => ({ value: drop, label: drop }))
-  ];
+  // Use only real drops from existing collections
+  const dropOptions = existingDrops.map((drop) => ({ value: drop, label: drop }));
 
   const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading) return;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
@@ -55,6 +55,17 @@ export default function MyTasks() {
   });
 
   const tasks: Task[] = tasksData?.data || [];
+
+  // Extract unique categories from tasks
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set<string>();
+    tasks.forEach(task => {
+      if (task.category && task.category.trim()) {
+        uniqueCategories.add(task.category.trim());
+      }
+    });
+    return Array.from(uniqueCategories).sort();
+  }, [tasks]);
 
   // Create task mutation
   const createMutation = useMutation({
@@ -756,6 +767,7 @@ export default function MyTasks() {
           onClose={closeModal}
           onSave={handleCreateTask}
           isShowing={isModalShowing}
+          categories={categories}
         />
       )}
 
@@ -766,6 +778,7 @@ export default function MyTasks() {
           onClose={closeEditModal}
           onSave={(taskData) => handleUpdateTask(taskData)}
           isShowing={isEditModalShowing}
+          categories={categories}
         />
       )}
 
@@ -897,11 +910,13 @@ function TaskModal({
   onClose,
   onSave,
   isShowing,
+  categories = [],
 }: {
   task?: Task;
   onClose: () => void;
   onSave: (taskData: Partial<Task> & { title: string }) => void;
   isShowing: boolean;
+  categories?: string[];
 }) {
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
@@ -1383,76 +1398,27 @@ function TaskModal({
                       
                       {isCategoryOpen && (
                         <div className="custom-dropdown-menu absolute top-full left-0 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg" style={{ zIndex: 10001, maxHeight: '200px', overflowY: 'auto' }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCategory('');
-                              setIsCategoryOpen(false);
-                            }}
-                            className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                              category === ''
-                                ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            None
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCategory('Work');
-                              setIsCategoryOpen(false);
-                            }}
-                            className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                              category === 'Work'
-                                ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            Work
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCategory('Personal');
-                              setIsCategoryOpen(false);
-                            }}
-                            className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                              category === 'Personal'
-                                ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            Personal
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCategory('Urgent');
-                              setIsCategoryOpen(false);
-                            }}
-                            className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                              category === 'Urgent'
-                                ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            Urgent
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCategory('Project');
-                              setIsCategoryOpen(false);
-                            }}
-                            className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                              category === 'Project'
-                                ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            Project
-                          </button>
+                          {categories.length > 0 ? categories.map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setCategory(cat);
+                                setIsCategoryOpen(false);
+                              }}
+                              className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
+                                category === cat
+                                  ? 'bg-primary-600 text-white'
+                                  : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          )) : (
+                            <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
+                              No categories available
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
