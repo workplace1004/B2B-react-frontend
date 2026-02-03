@@ -532,8 +532,8 @@ export default function Layout({ children }: LayoutProps) {
                   return (
                     <>
                       {sidebarOpen && overviewItems.length > 0 && (
-                        <div className="px-5 mb-4">
-                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                <div className="px-5 mb-4">
+                  <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
                             OVERVIEW
                           </h2>
                         </div>
@@ -566,9 +566,9 @@ export default function Layout({ children }: LayoutProps) {
                         <div className="px-5 mb-4 mt-10">
                           <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
                             TODOS
-                          </h2>
-                        </div>
-                      )}
+                  </h2>
+                </div>
+              )}
                       <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
                         {todosItems.map((item) => {
                           const active = isActive(item.path);
@@ -598,30 +598,30 @@ export default function Layout({ children }: LayoutProps) {
                 } else {
                   // For other navbar items, show without section headers
                   return (
-                    <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
-                      {currentSidebarItems.map((item) => {
-                        const active = isActive(item.path);
-                        return (
-                          <li key={item.path}>
-                            <Link
-                              to={item.path}
-                              className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
-                                } ${active
-                                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
-                            >
-                              {item.useFlaticon && item.flaticonClass ? (
-                                <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
-                              ) : item.icon ? (
-                                <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
-                              ) : null}
-                              {sidebarOpen && <span className="text-lg">{item.label}</span>}
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
+              <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
+                {currentSidebarItems.map((item) => {
+                  const active = isActive(item.path);
+                  return (
+                    <li key={item.path}>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                          } ${active
+                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                      >
+                        {item.useFlaticon && item.flaticonClass ? (
+                          <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                        ) : item.icon ? (
+                          <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                        ) : null}
+                        {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
                   );
                 }
               })()}

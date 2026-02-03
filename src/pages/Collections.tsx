@@ -111,30 +111,30 @@ const CustomSelect = ({
             </div>
           ) : (
             options.map((option, index) => {
-              const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
-              
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected || isHighlighted
-                      ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                  } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    display: 'block',
-                    width: '100%',
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
+            const isSelected = option.value === value;
+            const isHighlighted = index === highlightedIndex;
+            
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                  isSelected || isHighlighted
+                    ? 'bg-primary-500 text-white'
+                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  display: 'block',
+                  width: '100%',
+                }}
+              >
+                {option.label}
+              </button>
+            );
             })
           )}
         </div>

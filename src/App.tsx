@@ -19,7 +19,7 @@ import Tasks from './pages/Tasks';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import Calendar from './pages/Calendar';
-import Documents from './pages/Documents';
+import AssetsDAM from './pages/AssetsDAM';
 import Alerts from './pages/Alerts';
 import Exceptions from './pages/Exceptions';
 import KPIReports from './pages/KPIReports';
@@ -44,7 +44,7 @@ import Roles from './pages/Roles';
 import Integrations from './pages/Integrations';
 import AuditLog from './pages/AuditLog';
 import Rules from './pages/Rules';
-import ExecutiveOverview from './pages/ExecutiveOverview';
+// import ExecutiveOverview from './pages/ExecutiveOverview'; // File not found
 import ProductCollectionDashboard from './pages/ProductCollectionDashboard';
 import InventoryFulfillmentDashboard from './pages/InventoryFulfillmentDashboard';
 import AlertsExceptionsDashboard from './pages/AlertsExceptionsDashboard';
@@ -286,7 +286,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Documents />
+                  <AssetsDAM />
                 </Layout>
               </ProtectedRoute>
             }
@@ -543,7 +543,11 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <ExecutiveOverview />
+                  {/* <ExecutiveOverview /> */}
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Executive Overview</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mt-2">Page coming soon...</p>
+                  </div>
                 </Layout>
               </ProtectedRoute>
             }

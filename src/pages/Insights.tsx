@@ -6,7 +6,7 @@ import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import Chart from 'react-apexcharts';
 
-export default function MarketingInsights() {
+export default function Insights() {
   const [timeRange, setTimeRange] = useState<string>('30d');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
