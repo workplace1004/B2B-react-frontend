@@ -1,10 +1,148 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Ruler, Plus, X, Pencil, Trash2, Search, ChevronDown } from 'lucide-react';
+import { Ruler, Plus, X, Pencil, Trash2, Search, ChevronDown, Globe, ArrowLeftRight, Inbox, Languages } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+
+// Custom Select Component with beautiful dropdown
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select...',
+  className = '',
+  error = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder?: string;
+  className?: string;
+  error?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelect(options[highlightedIndex].value);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
+  };
+
+  return (
+    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 10001 : 'auto', position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
+        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
+          error ? 'border-red-500' : 'border-gray-300'
+        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
+        style={{
+          padding: '0.532rem 0.6rem 0.532rem 1.2rem',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          lineHeight: 1.6,
+        }}
+      >
+        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div 
+          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
+          style={{
+            zIndex: 10001,
+            top: '100%',
+            left: 0,
+            right: 0,
+            minWidth: '100%',
+            position: 'absolute',
+            maxHeight: '400px',
+          }}
+        >
+          {options.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4">
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
+            </div>
+          ) : (
+            options.map((option, index) => {
+              const isSelected = option.value === value;
+              const isHighlighted = index === highlightedIndex;
+              
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isSelected || isHighlighted
+                      ? 'bg-primary-500 text-white'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                  } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    display: 'block',
+                    width: '100%',
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+type TabType = 'size-charts' | 'localization';
 
 interface SizeChart {
   id: number;
@@ -18,6 +156,7 @@ interface SizeChart {
 }
 
 export default function SizeFit() {
+  const [activeTab, setActiveTab] = useState<TabType>('size-charts');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalShowing, setIsModalShowing] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -32,6 +171,11 @@ export default function SizeFit() {
   const categoryFilterRef = useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
+
+  const tabs = [
+    { id: 'size-charts' as TabType, label: 'Size Charts', icon: Ruler },
+    { id: 'localization' as TabType, label: 'Localization & Conversions', icon: Globe },
+  ];
 
   // Fetch size charts from API
   const { data: chartsData, isLoading } = useQuery({
@@ -189,20 +333,48 @@ export default function SizeFit() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Size & Fit</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage size charts and measurements</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Size charts, Localization & Conversions</p>
           </div>
-          <button
-            onClick={openModal}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Add Size Chart
-          </button>
+          {activeTab === 'size-charts' && (
+            <button
+              onClick={openModal}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Add Size Chart
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+      {/* Tabs Navigation */}
+      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+        <nav className="flex space-x-8" aria-label="Tabs">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Size Charts Tab */}
+      {activeTab === 'size-charts' && (
+        <>
+          {/* Filters */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -388,6 +560,8 @@ export default function SizeFit() {
           isLoading={updateMutation.isPending}
         />
       )}
+        </>
+      )}
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && deleteChart && (
@@ -433,6 +607,250 @@ export default function SizeFit() {
           </div>
         </div>
       )}
+
+      {/* Localization & Conversions Tab */}
+      {activeTab === 'localization' && <LocalizationConversionsSection />}
+    </div>
+  );
+}
+
+// Localization & Conversions Section Component
+function LocalizationConversionsSection() {
+  const [unitFrom, setUnitFrom] = useState<'cm' | 'inches'>('cm');
+  const [unitTo, setUnitTo] = useState<'cm' | 'inches'>('inches');
+  const [conversionValue, setConversionValue] = useState<string>('');
+  const [convertedValue, setConvertedValue] = useState<number | null>(null);
+
+  // Unit conversion
+  const handleUnitConversion = (value: string) => {
+    setConversionValue(value);
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      setConvertedValue(null);
+      return;
+    }
+
+    if (unitFrom === 'cm' && unitTo === 'inches') {
+      setConvertedValue(numValue / 2.54);
+    } else if (unitFrom === 'inches' && unitTo === 'cm') {
+      setConvertedValue(numValue * 2.54);
+    } else {
+      setConvertedValue(numValue);
+    }
+  };
+
+  useEffect(() => {
+    if (conversionValue) {
+      handleUnitConversion(conversionValue);
+    }
+  }, [unitFrom, unitTo]);
+
+  return (
+    <div className="space-y-6">
+      {/* Unit Conversion */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <ArrowLeftRight className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Unit Conversion</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              From
+            </label>
+            <CustomSelect
+              value={unitFrom}
+              onChange={(value) => {
+                setUnitFrom(value as 'cm' | 'inches');
+                // Swap if same as "to"
+                if (value === unitTo) {
+                  setUnitTo(unitFrom);
+                }
+              }}
+              options={[
+                { value: 'cm', label: 'Centimeters (cm)' },
+                { value: 'inches', label: 'Inches (in)' },
+              ]}
+              placeholder="Select unit..."
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Value
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={conversionValue}
+              onChange={(e) => handleUnitConversion(e.target.value)}
+              placeholder="Enter value"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              To
+            </label>
+            <CustomSelect
+              value={unitTo}
+              onChange={(value) => {
+                setUnitTo(value as 'cm' | 'inches');
+                // Swap if same as "from"
+                if (value === unitFrom) {
+                  setUnitFrom(unitTo);
+                }
+              }}
+              options={[
+                { value: 'cm', label: 'Centimeters (cm)' },
+                { value: 'inches', label: 'Inches (in)' },
+              ]}
+              placeholder="Select unit..."
+            />
+          </div>
+        </div>
+
+        {convertedValue !== null && (
+          <div className="mt-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Converted Value:</span>
+              <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                {convertedValue.toFixed(2)} {unitTo}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Language & Localization Settings */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Languages className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Language & Localization Settings</h3>
+        </div>
+        
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Default Language for Size Charts
+            </label>
+            <CustomSelect
+              value={localStorage.getItem('sizeChartLanguage') || 'en'}
+              onChange={(value) => {
+                localStorage.setItem('sizeChartLanguage', value);
+                toast.success('Language preference saved');
+              }}
+              options={[
+                { value: 'en', label: 'English' },
+                { value: 'es', label: 'Spanish (Español)' },
+                { value: 'fr', label: 'French (Français)' },
+                { value: 'de', label: 'German (Deutsch)' },
+                { value: 'it', label: 'Italian (Italiano)' },
+                { value: 'pt', label: 'Portuguese (Português)' },
+                { value: 'zh', label: 'Chinese (中文)' },
+                { value: 'ja', label: 'Japanese (日本語)' },
+                { value: 'ko', label: 'Korean (한국어)' },
+                { value: 'ar', label: 'Arabic (العربية)' },
+              ]}
+              placeholder="Select language..."
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              This language will be used as the default for size chart labels and descriptions
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Default Unit System
+            </label>
+            <CustomSelect
+              value={localStorage.getItem('sizeChartUnitSystem') || 'metric'}
+              onChange={(value) => {
+                localStorage.setItem('sizeChartUnitSystem', value);
+                toast.success('Unit system preference saved');
+              }}
+              options={[
+                { value: 'metric', label: 'Metric (cm, kg)' },
+                { value: 'imperial', label: 'Imperial (inches, lbs)' },
+              ]}
+              placeholder="Select unit system..."
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              Default measurement units for size charts
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Default Regional Size System
+            </label>
+            <CustomSelect
+              value={localStorage.getItem('sizeChartRegionalSystem') || 'us'}
+              onChange={(value) => {
+                localStorage.setItem('sizeChartRegionalSystem', value);
+                toast.success('Regional size system preference saved');
+              }}
+              options={[
+                { value: 'us', label: 'US Sizes' },
+                { value: 'eu', label: 'EU Sizes' },
+                { value: 'uk', label: 'UK Sizes' },
+                { value: 'jp', label: 'JP Sizes' },
+                { value: 'au', label: 'AU Sizes' },
+              ]}
+              placeholder="Select regional system..."
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              Default regional sizing system for new size charts
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Regional Size Conversions */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Globe className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Regional Size Conversions</h3>
+        </div>
+        
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Common size conversions between different regional sizing systems
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">US</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">EU</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">UK</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">JP</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">AU</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {[
+                { us: 'XS', eu: '32', uk: '4', jp: 'S', au: '6' },
+                { us: 'S', eu: '34-36', uk: '6-8', jp: 'M', au: '8-10' },
+                { us: 'M', eu: '38-40', uk: '10-12', jp: 'L', au: '12-14' },
+                { us: 'L', eu: '42-44', uk: '14-16', jp: 'XL', au: '16-18' },
+                { us: 'XL', eu: '46-48', uk: '18-20', jp: 'XXL', au: '20-22' },
+                { us: 'XXL', eu: '50-52', uk: '22-24', jp: 'XXXL', au: '24-26' },
+              ].map((row, index) => (
+                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{row.us}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{row.eu}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{row.uk}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{row.jp}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{row.au}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
