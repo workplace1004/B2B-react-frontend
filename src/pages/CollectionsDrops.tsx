@@ -1,12 +1,30 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Plus, TrendingUp, Layers, Calendar as CalendarIcon, BarChart3, X, Pencil, Trash2, AlertTriangle, Inbox, ChevronDown, ChevronLeft, ChevronRight, Package, ArrowUp, ArrowDown } from 'lucide-react';
+import { Calendar, Plus, TrendingUp, Layers, Calendar as CalendarIcon, BarChart3, X, Pencil, Trash2, AlertTriangle, Inbox, ChevronDown, ChevronLeft, ChevronRight, Package, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import { validators } from '../utils/validation';
 import Chart from 'react-apexcharts';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  useDroppable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type TabType = 'planner' | 'calendar' | 'performance';
 
@@ -322,12 +340,61 @@ function CollectionPlanner() {
     }, 300);
   };
 
+  // Drag and drop state
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [draggedCollection, setDraggedCollection] = useState<any>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
   // Group collections by lifecycle
   const collectionsByLifecycle = {
     PLANNING: collections.filter((c: any) => c.lifecycle === 'PLANNING'),
     ACTIVE: collections.filter((c: any) => c.lifecycle === 'ACTIVE'),
     ARCHIVED: collections.filter((c: any) => c.lifecycle === 'ARCHIVED'),
     DISCONTINUED: collections.filter((c: any) => c.lifecycle === 'DISCONTINUED'),
+  };
+
+  // Handle drag start
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const collection = collections.find((c: any) => c.id === active.id);
+    setActiveId(active.id as number);
+    setDraggedCollection(collection);
+  };
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    setDraggedCollection(null);
+
+    if (!over) return;
+
+    const collectionId = active.id as number;
+    const newLifecycle = over.id as string;
+
+    // Find the collection
+    const collection = collections.find((c: any) => c.id === collectionId);
+    if (!collection) return;
+
+    // Don't update if dropped in the same column
+    if (collection.lifecycle === newLifecycle) return;
+
+    // Update collection lifecycle - only send allowed fields
+    updateCollectionMutation.mutate({
+      id: collectionId,
+      collectionData: {
+        lifecycle: newLifecycle,
+      },
+    });
   };
 
   if (isLoading) {
@@ -350,73 +417,42 @@ function CollectionPlanner() {
         </button>
       </div>
 
-      {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.entries(collectionsByLifecycle).map(([lifecycle, items]) => (
-          <div key={lifecycle} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 min-h-[400px]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white capitalize">{lifecycle}</h3>
-              <span className="px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
-                {items.length}
-              </span>
-            </div>
-            <div className="space-y-3">
-              {items.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-                  <Inbox className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No collections</p>
-                </div>
-              ) : (
-                items.map((collection: any) => (
-                  <div
-                    key={collection.id}
-                    className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => {
-                      setSelectedCollection(collection);
-                      setIsEditModalOpen(true);
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-gray-900 dark:text-white text-sm">{collection.name}</h4>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCollection(collection);
-                            setIsEditModalOpen(true);
-                          }}
-                          className="p-1 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCollection(collection);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                    {collection.season && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Season: {collection.season}</p>
-                    )}
-                    {collection.drop && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Drop: {collection.drop}</p>
-                    )}
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {collection._count?.products || 0} products
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Kanban Board with Drag and Drop */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Object.entries(collectionsByLifecycle).map(([lifecycle, items]) => (
+            <DroppableColumn
+              key={lifecycle}
+              lifecycle={lifecycle}
+              items={items}
+              onEdit={(collection) => {
+                setSelectedCollection(collection);
+                setIsEditModalOpen(true);
+              }}
+              onDelete={(collection) => {
+                setSelectedCollection(collection);
+                setIsDeleteModalOpen(true);
+              }}
+            />
+          ))}
+        </div>
+
+        <DragOverlay>
+          {draggedCollection ? (
+            <CollectionCard
+              collection={draggedCollection}
+              isDragging={true}
+              onEdit={() => {}}
+              onDelete={() => {}}
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Modals */}
       {isModalOpen && (
@@ -1122,6 +1158,189 @@ function StylePerformanceTracking() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Draggable Collection Card Component
+function DraggableCollectionCard({
+  collection,
+  onEdit,
+  onDelete,
+}: {
+  collection: any;
+  onEdit: (collection: any) => void;
+  onDelete: (collection: any) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: collection.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow ${
+        isDragging ? 'cursor-grabbing' : 'cursor-grab'
+      }`}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-start gap-2 flex-1">
+          <div
+            {...attributes}
+            {...listeners}
+            className="mt-0.5 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <GripVertical className="w-4 h-4" />
+          </div>
+          <h4
+            className="font-medium text-gray-900 dark:text-white text-sm flex-1 cursor-pointer"
+            onClick={() => onEdit(collection)}
+          >
+            {collection.name}
+          </h4>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(collection);
+            }}
+            className="p-1 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+          >
+            <Pencil className="w-3 h-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(collection);
+            }}
+            className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+      {collection.season && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-6">Season: {collection.season}</p>
+      )}
+      {collection.drop && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-6">Drop: {collection.drop}</p>
+      )}
+      <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+        {collection._count?.products || 0} products
+      </p>
+    </div>
+  );
+}
+
+// Collection Card Component (for DragOverlay)
+function CollectionCard({
+  collection,
+  isDragging,
+  onEdit,
+  onDelete,
+}: {
+  collection: any;
+  isDragging: boolean;
+  onEdit: (collection: any) => void;
+  onDelete: (collection: any) => void;
+}) {
+  return (
+    <div
+      className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border-2 border-primary-500 w-64 rotate-3"
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-start gap-2 flex-1">
+          <div className="mt-0.5 text-gray-400">
+            <GripVertical className="w-4 h-4" />
+          </div>
+          <h4 className="font-medium text-gray-900 dark:text-white text-sm flex-1">
+            {collection.name}
+          </h4>
+        </div>
+      </div>
+      {collection.season && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-6">Season: {collection.season}</p>
+      )}
+      {collection.drop && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-6">Drop: {collection.drop}</p>
+      )}
+      <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+        {collection._count?.products || 0} products
+      </p>
+    </div>
+  );
+}
+
+// Droppable Column Component
+function DroppableColumn({
+  lifecycle,
+  items,
+  onEdit,
+  onDelete,
+}: {
+  lifecycle: string;
+  items: any[];
+  onEdit: (collection: any) => void;
+  onDelete: (collection: any) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: lifecycle,
+    data: {
+      type: 'column',
+      lifecycle,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 min-h-[400px] transition-colors ${
+        isOver ? 'bg-primary-50 dark:bg-primary-900/20 border-2 border-primary-500 border-dashed' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-900 dark:text-white capitalize">{lifecycle}</h3>
+        <span className="px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
+          {items.length}
+        </span>
+      </div>
+      <SortableContext
+        items={items.map((item: any) => item.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-3">
+          {items.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+              <Inbox className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No collections</p>
+            </div>
+          ) : (
+            items.map((collection: any) => (
+              <DraggableCollectionCard
+                key={collection.id}
+                collection={collection}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))
+          )}
+        </div>
+      </SortableContext>
     </div>
   );
 }
