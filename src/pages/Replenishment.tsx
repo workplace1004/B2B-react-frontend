@@ -203,8 +203,8 @@ export default function Replenishment() {
   // Filter and sort replenishment items
   const filteredItems = useMemo(() => {
     let filtered = replenishmentItems;
-    
-    // Filter by search query
+
+  // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter((item) =>
         item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -315,10 +315,10 @@ export default function Replenishment() {
               Reorder suggestions, stock risk scoring, and channel-based replenishment
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-            <Plus className="w-5 h-5" />
-            New Replenishment
-          </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <Plus className="w-5 h-5" />
+              New Replenishment
+            </button>
         </div>
       </div>
 
@@ -458,9 +458,9 @@ export default function Replenishment() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                     Product / SKU
                   </th>
@@ -485,9 +485,9 @@ export default function Replenishment() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">
                     Actions
                   </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredItems.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -523,8 +523,8 @@ export default function Replenishment() {
                       <div>Min: {item.minQty}</div>
                       <div>Max: {item.maxQty}</div>
                       <div>Safety: {item.safetyStock}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${getRiskBadgeColor(item.riskLevel)}`}>
                           {getRiskIcon(item.riskLevel)}
@@ -532,7 +532,7 @@ export default function Replenishment() {
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           ({item.riskScore})
-                        </span>
+                    </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -569,16 +569,16 @@ export default function Replenishment() {
                           <span className="text-xs text-gray-400">No channel data</span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
                         View Details
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           </div>
         )}
       </div>
