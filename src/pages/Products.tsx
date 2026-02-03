@@ -212,7 +212,7 @@ export default function Products() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteModalShowing, setIsDeleteModalShowing] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'variants'>('variants'); // New: variant view mode
+  const [viewMode, setViewMode] = useState<'table' | 'variants'>('table'); // Default: table view
   const [activeTab, setActiveTab] = useState<'products' | 'attributes' | 'bundles'>('products'); // Tab state for Catalog sections
   const queryClient = useQueryClient();
 
@@ -503,16 +503,6 @@ export default function Products() {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setViewMode('variants')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  viewMode === 'variants'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                Variant View (Style → Color → Size)
-              </button>
-              <button
                 onClick={() => setViewMode('table')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   viewMode === 'table'
@@ -521,6 +511,16 @@ export default function Products() {
                 }`}
               >
                 Table View
+              </button>
+              <button
+                onClick={() => setViewMode('variants')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  viewMode === 'variants'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Variant View (Style → Color → Size)
               </button>
             </div>
             <ButtonWithWaves onClick={openModal}>

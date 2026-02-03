@@ -24,8 +24,7 @@ import Alerts from './pages/Alerts';
 import Exceptions from './pages/Exceptions';
 import KPIReports from './pages/KPIReports';
 import MyTasks from './pages/MyTasks';
-import BOM from './pages/BOM';
-import Costing from './pages/Costing';
+import BOMCosting from './pages/BOMCosting';
 import Drops from './pages/Drops';
 import CollectionsDrops from './pages/CollectionsDrops';
 import Pricing from './pages/Pricing';
@@ -339,7 +338,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <BOM />
+                  <BOMCosting />
                 </Layout>
               </ProtectedRoute>
             }
@@ -349,7 +348,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Costing />
+                  <BOMCosting />
                 </Layout>
               </ProtectedRoute>
             }

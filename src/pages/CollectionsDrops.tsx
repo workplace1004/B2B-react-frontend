@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Plus, TrendingUp, Layers, Calendar as CalendarIcon, BarChart3, X, Pencil, Trash2, AlertTriangle, Inbox, ChevronDown, ChevronLeft, ChevronRight, Package, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
+import { Calendar, Plus, TrendingUp, Layers, Calendar as CalendarIcon, BarChart3, X, Pencil, Trash2, AlertTriangle, Inbox, ChevronDown, ChevronLeft, ChevronRight, Package, ArrowUp, ArrowDown, GripVertical, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -491,6 +491,9 @@ function CollectionPlanner() {
 function DropCalendar() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [isDateDetailModalOpen, setIsDateDetailModalOpen] = useState(false);
+  const [isDateDetailModalShowing, setIsDateDetailModalShowing] = useState(false);
+  const [selectedDateForDetail, setSelectedDateForDetail] = useState<string | null>(null);
 
   const { data: collectionsData, isLoading } = useQuery({
     queryKey: ['collections', 'calendar'],
@@ -606,6 +609,38 @@ function DropCalendar() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
 
+  // Handle date click to show detail modal
+  const handleDateClick = (date: string) => {
+    const dayDrops = getDropsForDate(date);
+    if (dayDrops.length > 0) {
+      setSelectedDateForDetail(date);
+      setIsDateDetailModalOpen(true);
+    }
+  };
+
+  // Handle body scroll lock when modal is open
+  useEffect(() => {
+    if (isDateDetailModalOpen) {
+      document.body.classList.add('modal-open');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsDateDetailModalShowing(true);
+        });
+      });
+    } else {
+      document.body.classList.remove('modal-open');
+      setIsDateDetailModalShowing(false);
+    }
+  }, [isDateDetailModalOpen]);
+
+  const closeDateDetailModal = () => {
+    setIsDateDetailModalShowing(false);
+    setTimeout(() => {
+      setIsDateDetailModalOpen(false);
+      setSelectedDateForDetail(null);
+    }, 300);
+  };
+
   if (isLoading) {
     return <SkeletonPage />;
   }
@@ -694,7 +729,10 @@ function DropCalendar() {
                   key={index}
                   className={`min-h-24 p-2 border border-gray-200 dark:border-gray-700 rounded-lg ${
                     !day.isCurrentMonth ? 'opacity-30 bg-gray-50 dark:bg-gray-900/50' : 'bg-white dark:bg-gray-800'
-                  } ${isToday ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700' : ''}`}
+                  } ${isToday ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700' : ''} ${
+                    dayDrops.length > 0 ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors' : ''
+                  }`}
+                  onClick={() => dayDrops.length > 0 && handleDateClick(day.fullDate)}
                 >
                   <div className={`text-sm font-medium mb-1 ${
                     isToday ? 'text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
@@ -705,7 +743,7 @@ function DropCalendar() {
                     {dayDrops.slice(0, 2).map((drop) => (
                       <div
                         key={drop.id}
-                        className={`text-xs px-2 py-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
+                        className={`text-xs px-2 py-1 rounded truncate ${
                           drop.lifecycle === 'ACTIVE'
                             ? 'bg-green-500 text-white'
                             : drop.lifecycle === 'PLANNING'
@@ -780,6 +818,16 @@ function DropCalendar() {
           )}
         </div>
       </div>
+
+      {/* Date Detail Modal */}
+      {isDateDetailModalOpen && selectedDateForDetail && (
+        <DateDetailModal
+          date={selectedDateForDetail}
+          drops={getDropsForDate(selectedDateForDetail)}
+          onClose={closeDateDetailModal}
+          isShowing={isDateDetailModalShowing}
+        />
+      )}
     </div>
   );
 }
@@ -1342,6 +1390,245 @@ function DroppableColumn({
         </div>
       </SortableContext>
     </div>
+  );
+}
+
+// Date Detail Modal Component
+function DateDetailModal({
+  date,
+  drops,
+  onClose,
+  isShowing,
+}: {
+  date: string;
+  drops: any[];
+  onClose: () => void;
+  isShowing: boolean;
+}) {
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 5;
+
+  const formattedDate = new Date(date).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  // Calculate pagination
+  const totalPages = Math.max(1, Math.ceil(drops.length / itemsPerPage));
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedDrops = drops.slice(startIndex, endIndex);
+
+  // Reset to first page when drops change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [drops.length]);
+
+  return (
+    <>
+      <div
+        className={`modal-backdrop fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+      />
+      <div
+        className={`modal fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dateDetailModalLabel"
+        tabIndex={-1}
+      >
+        <div
+          className="modal-dialog modal-dialog-centered"
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxWidth: '42rem' }}
+        >
+          <div className="modal-content w-full max-h-[90vh] flex flex-col">
+            <div className="modal-header">
+              <h5 id="dateDetailModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+                Drops on {formattedDate}
+              </h5>
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            <div className="modal-body flex-1 overflow-y-auto">
+              {drops.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Inbox className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No drops scheduled for this date</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Drop Name</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Collection</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Season</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Drop</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Products</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedDrops.map((drop) => (
+                        <tr
+                          key={drop.id}
+                          className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">
+                            {drop.name}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                            {drop.collection.name}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                            {drop.collection.season || '-'}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                            {drop.collection.drop || '-'}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                            {drop.products}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              drop.lifecycle === 'ACTIVE'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                                : drop.lifecycle === 'PLANNING'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
+                                : drop.lifecycle === 'ARCHIVED'
+                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                            }`}>
+                              {drop.lifecycle}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 max-w-xs">
+                            <div className="truncate" title={drop.collection.description || ''}>
+                              {drop.collection.description || '-'}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {drops.length > itemsPerPage && (
+              <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600 dark:text-white">
+                  Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {Math.min(endIndex, drops.length)}
+                  </span>{' '}
+                  of <span className="font-medium text-gray-900 dark:text-white">{drops.length}</span> results
+                </div>
+                <nav aria-label="Page navigation">
+                  <ul className="pagination pagination-rounded pagination-primary">
+                    <li className="page-item">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                        disabled={currentPage === 0}
+                        className="page-link"
+                        aria-label="Previous"
+                      >
+                        <ChevronsLeft className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                    {(() => {
+                      const pages: (number | string)[] = [];
+
+                      if (totalPages <= 7) {
+                        // Show all pages if 7 or fewer
+                        for (let i = 1; i <= totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        // Always show first page
+                        pages.push(1);
+
+                        if (currentPage + 1 > 3) {
+                          pages.push('...');
+                        }
+
+                        // Show pages around current (convert 0-indexed to 1-indexed)
+                        const currentPageNum = currentPage + 1;
+                        const start = Math.max(2, currentPageNum - 1);
+                        const end = Math.min(totalPages - 1, currentPageNum + 1);
+
+                        for (let i = start; i <= end; i++) {
+                          if (i !== 1 && i !== totalPages) {
+                            pages.push(i);
+                          }
+                        }
+
+                        if (currentPage + 1 < totalPages - 2) {
+                          pages.push('...');
+                        }
+
+                        // Always show last page
+                        if (totalPages > 1) {
+                          pages.push(totalPages);
+                        }
+                      }
+
+                      return pages.map((pageNum, idx) => {
+                        if (pageNum === '...') {
+                          return (
+                            <li key={`ellipsis-${idx}`} className="page-item">
+                              <span className="page-link" style={{ cursor: 'default', pointerEvents: 'none' }}>
+                                ...
+                              </span>
+                            </li>
+                          );
+                        }
+                        return (
+                          <li key={pageNum} className="page-item">
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage((pageNum as number) - 1)}
+                              className={`page-link ${currentPage + 1 === pageNum ? 'active' : ''}`}
+                            >
+                              {pageNum}
+                            </button>
+                          </li>
+                        );
+                      });
+                    })()}
+                    <li className="page-item">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                        disabled={currentPage + 1 >= totalPages}
+                        className="page-link"
+                        aria-label="Next"
+                      >
+                        <ChevronsRight className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
