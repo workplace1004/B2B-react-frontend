@@ -30,6 +30,15 @@ import {
   RotateCcw,
   CheckSquare,
   BarChart3,
+  Building2,
+  ClipboardList,
+  MapPin,
+  Boxes,
+  ScanLine,
+  Hash,
+  ShoppingBag,
+  PackageSearch,
+  Truck,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -133,11 +142,20 @@ export default function Layout({ children }: LayoutProps) {
       { path: '/service', label: 'Service', useFlaticon: true, flaticonClass: 'fi fi-rr-headset' },
     ],
     operations: [
-      { path: '/production-mrp', label: 'Production (MRP)', useFlaticon: false, icon: Factory },
-      { path: '/inventory-warehouse', label: 'Inventory & Warehouse (WMS)', useFlaticon: true, flaticonClass: 'fi fi-rr-warehouse-alt' },
-      { path: '/orders-fulfillment', label: 'Orders & Fulfillment (OMS)', useFlaticon: true, flaticonClass: 'fi fi-rr-shipping-fast' },
-      { path: '/returns-rma', label: 'Returns (RMA)', useFlaticon: false, icon: RotateCcw },
-      { path: '/omnichannel', label: 'Omnichannel', useFlaticon: false, icon: Store },
+      // Production (MRP) section
+      { path: '/vendors-factories', label: 'Vendors & Factories', useFlaticon: false, icon: Building2, section: 'production' },
+      { path: '/production-orders', label: 'Production Orders', useFlaticon: false, icon: ClipboardList, section: 'production' },
+      { path: '/landed-cost', label: 'Landed Cost', useFlaticon: false, icon: DollarSign, section: 'production' },
+      // Inventory & Warehouse (WMS) section
+      { path: '/warehouses-locations', label: 'Warehouses & Locations', useFlaticon: false, icon: MapPin, section: 'inventory' },
+      { path: '/stock-control', label: 'Stock Control', useFlaticon: false, icon: Boxes, section: 'inventory' },
+      { path: '/scanning', label: 'Scanning', useFlaticon: false, icon: ScanLine, section: 'inventory' },
+      { path: '/counting', label: 'Counting', useFlaticon: false, icon: Hash, section: 'inventory' },
+      // Orders & Fulfillment (OMS) section
+      { path: '/orders', label: 'Orders', useFlaticon: false, icon: ShoppingBag, section: 'orders' },
+      { path: '/pick-pack-ship', label: 'Pick / Pack / Ship', useFlaticon: false, icon: PackageSearch, section: 'orders' },
+      { path: '/returns-rma', label: 'Returns (RMA)', useFlaticon: false, icon: RotateCcw, section: 'orders' },
+      { path: '/omnichannel', label: 'Omnichannel', useFlaticon: false, icon: Store, section: 'orders' },
     ],
     'planning-intelligence': [
       { path: '/forecasting-ai', label: 'Forecasting (AI)', useFlaticon: true, flaticonClass: 'fi fi-rr-brain' },
@@ -180,7 +198,10 @@ export default function Layout({ children }: LayoutProps) {
       setSelectedNavbarItem('marketing');
     } else if (path.startsWith('/customers') || path.startsWith('/customer-profile') || path.startsWith('/b2b-terms') || path.startsWith('/service')) {
       setSelectedNavbarItem('customer-experience');
-    } else if (path.startsWith('/production-mrp') || path.startsWith('/inventory-warehouse') || path.startsWith('/orders-fulfillment') || path.startsWith('/returns-rma') || path.startsWith('/omnichannel')) {
+    } else if (path.startsWith('/vendors-factories') || path.startsWith('/production-orders') || path.startsWith('/landed-cost') || 
+               path.startsWith('/warehouses-locations') || path.startsWith('/stock-control') || path.startsWith('/scanning') || path.startsWith('/counting') ||
+               path.startsWith('/orders') || path.startsWith('/pick-pack-ship') || path.startsWith('/returns-rma') || path.startsWith('/omnichannel') ||
+               path.startsWith('/production-mrp') || path.startsWith('/inventory-warehouse') || path.startsWith('/orders-fulfillment')) {
       setSelectedNavbarItem('operations');
     } else if (path.startsWith('/forecasting-ai') || path.startsWith('/replenishment') || path.startsWith('/auto-po-proposals') || path.startsWith('/open-to-buy') || path.startsWith('/dead-stock-markdown') || path.startsWith('/allocation-intelligence') || path.startsWith('/next-best-actions')) {
       setSelectedNavbarItem('planning-intelligence');
@@ -571,6 +592,109 @@ export default function Layout({ children }: LayoutProps) {
               )}
                       <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
                         {todosItems.map((item) => {
+                          const active = isActive(item.path);
+                          return (
+                            <li key={item.path}>
+                              <Link
+                                to={item.path}
+                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                  } ${active
+                                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                              >
+                                {item.useFlaticon && item.flaticonClass ? (
+                                  <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                                ) : item.icon ? (
+                                  <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                                ) : null}
+                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
+                  );
+                } else if (selectedNavbarItem === 'operations') {
+                  // Group items by section for operations
+                  const productionItems = currentSidebarItems.filter(item => item.section === 'production');
+                  const inventoryItems = currentSidebarItems.filter(item => item.section === 'inventory');
+                  const ordersItems = currentSidebarItems.filter(item => item.section === 'orders');
+                  
+                  return (
+                    <>
+                      {sidebarOpen && productionItems.length > 0 && (
+                        <div className="px-5 mb-4">
+                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                            PRODUCTION (MRP)
+                          </h2>
+                        </div>
+                      )}
+                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'} ${inventoryItems.length > 0 || ordersItems.length > 0 ? 'mb-4' : ''}`}>
+                        {productionItems.map((item) => {
+                          const active = isActive(item.path);
+                          return (
+                            <li key={item.path}>
+                              <Link
+                                to={item.path}
+                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                  } ${active
+                                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                              >
+                                {item.useFlaticon && item.flaticonClass ? (
+                                  <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                                ) : item.icon ? (
+                                  <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                                ) : null}
+                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {sidebarOpen && inventoryItems.length > 0 && (
+                        <div className="px-5 mb-4 mt-10">
+                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                            INVENTORY & WAREHOUSE (WMS)
+                          </h2>
+                        </div>
+                      )}
+                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'} ${ordersItems.length > 0 ? 'mb-4' : ''}`}>
+                        {inventoryItems.map((item) => {
+                          const active = isActive(item.path);
+                          return (
+                            <li key={item.path}>
+                              <Link
+                                to={item.path}
+                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                  } ${active
+                                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  }`}
+                              >
+                                {item.useFlaticon && item.flaticonClass ? (
+                                  <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                                ) : item.icon ? (
+                                  <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                                ) : null}
+                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {sidebarOpen && ordersItems.length > 0 && (
+                        <div className="px-5 mb-4 mt-10">
+                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                            ORDERS & FULFILLMENT (OMS)
+                          </h2>
+                        </div>
+                      )}
+                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
+                        {ordersItems.map((item) => {
                           const active = isActive(item.path);
                           return (
                             <li key={item.path}>
