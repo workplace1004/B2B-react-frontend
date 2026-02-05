@@ -467,8 +467,8 @@ export default function OpenToBuy() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Open-to-Buy (OTB)</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Open-to-Buy (OTB)</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Budget vs actual, Commitments vs receipts vs sales, Scenario planning
             </p>
           </div>
@@ -502,7 +502,7 @@ export default function OpenToBuy() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Budget</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                 ${summaryStats.budget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
@@ -516,7 +516,7 @@ export default function OpenToBuy() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Actual Sales</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                 ${summaryStats.actual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className={`text-xs mt-1 ${summaryStats.variance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -537,7 +537,7 @@ export default function OpenToBuy() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Commitments</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                 ${summaryStats.commitments.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
@@ -588,7 +588,7 @@ export default function OpenToBuy() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Budget vs Actual</h3>
+                  <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Budget vs Actual</h3>
                   <Chart
                     options={budgetChartOptions}
                     series={budgetChartSeries}
@@ -597,7 +597,7 @@ export default function OpenToBuy() {
                   />
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Commitments vs Receipts vs Sales</h3>
+                  <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Commitments vs Receipts vs Sales</h3>
                   <Chart
                     options={commitmentsChartOptions}
                     series={commitmentsChartSeries}
@@ -613,7 +613,7 @@ export default function OpenToBuy() {
           {activeView === 'budget' && (
             <div className="space-y-6">
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">
                   Budget vs Actual - {budgetData.period}
                 </h3>
                 <Chart
@@ -653,7 +653,7 @@ export default function OpenToBuy() {
           {activeView === 'commitments' && (
             <div className="space-y-6">
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">
                   Commitments vs Receipts vs Sales
                 </h3>
                 <Chart
@@ -746,7 +746,7 @@ export default function OpenToBuy() {
           {activeView === 'scenario' && (
             <div className="space-y-6">
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">
                   Scenario Planning: "If we buy X, what happens?"
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">

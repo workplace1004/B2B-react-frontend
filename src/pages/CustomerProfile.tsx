@@ -113,7 +113,7 @@ export default function CustomerProfile() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Customer Profile</h1>
+              <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Customer Profile</h1>
             </div>
           </div>
         </div>
@@ -298,8 +298,8 @@ export default function CustomerProfile() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Customer Profile</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Customer Profile</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               View customer details, order history, and loyalty status
             </p>
           </div>
@@ -314,7 +314,7 @@ export default function CustomerProfile() {
               <User className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{data?.name || 'N/A'}</h2>
+              <h2 className="text-[24px] font-bold text-gray-900 dark:text-white">{data?.name || 'N/A'}</h2>
               {data?.segment && (
                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium mt-1 ${
                   data.segment === 'VIP' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
@@ -413,7 +413,7 @@ export default function CustomerProfile() {
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Loyalty Points</p>
               <Star className="w-5 h-5 text-yellow-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-[24px] font-bold text-gray-900 dark:text-white">
               {loyaltyStatus.points.toLocaleString()}
             </p>
             {loyaltyStatus.pointsToNextTier !== undefined && loyaltyStatus.pointsToNextTier > 0 && (
@@ -428,7 +428,7 @@ export default function CustomerProfile() {
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Total Spent</p>
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-[24px] font-bold text-gray-900 dark:text-white">
               ${loyaltyStatus.totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -754,7 +754,7 @@ export default function CustomerProfile() {
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Loyalty Points</p>
               <Star className="w-5 h-5 text-yellow-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-[24px] font-bold text-gray-900 dark:text-white">
               {loyaltyStatus.points.toLocaleString()}
             </p>
             {loyaltyStatus.pointsToNextTier !== undefined && loyaltyStatus.pointsToNextTier > 0 && (
@@ -769,7 +769,7 @@ export default function CustomerProfile() {
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Total Spent</p>
               <DollarSign className="w-5 h-5 text-green-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-[24px] font-bold text-gray-900 dark:text-white">
               ${loyaltyStatus.totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

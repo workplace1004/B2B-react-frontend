@@ -314,8 +314,8 @@ export default function InventoryFulfillmentDashboard() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Retail Dashboard</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Stock by warehouse, inbound/outbound, exceptions</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Retail Dashboard</h1>
+            <p className="text-gray-500 text-[14px] dark:text-gray-400 mt-1">Stock by warehouse, inbound/outbound, exceptions</p>
           </div>
         </div>
       </div>
@@ -329,7 +329,7 @@ export default function InventoryFulfillmentDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Inventory Value</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{formatCurrency(metrics.totalInventoryValue)}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{formatCurrency(metrics.totalInventoryValue)}</h2>
             </div>
           </div>
         </div>
@@ -341,7 +341,7 @@ export default function InventoryFulfillmentDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Stock Units</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.totalStockUnits.toLocaleString()}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.totalStockUnits.toLocaleString()}</h2>
             </div>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default function InventoryFulfillmentDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Warehouses</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.totalWarehouses}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.totalWarehouses}</h2>
             </div>
           </div>
         </div>
@@ -365,7 +365,7 @@ export default function InventoryFulfillmentDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Low Stock Items</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.lowStockItems}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.lowStockItems}</h2>
             </div>
           </div>
         </div>
@@ -377,7 +377,7 @@ export default function InventoryFulfillmentDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Out of Stock</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.outOfStockItems}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.outOfStockItems}</h2>
             </div>
           </div>
         </div>
@@ -387,7 +387,7 @@ export default function InventoryFulfillmentDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Stock by Warehouse */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Stock by Warehouse</h6>
+          <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Stock by Warehouse</h6>
           {metrics.stockByWarehouse.length > 0 ? (
             <Chart type="bar" height={300} series={stockByWarehouseChartConfig.series} options={stockByWarehouseChartConfig} />
           ) : (
@@ -402,7 +402,7 @@ export default function InventoryFulfillmentDashboard() {
 
         {/* Inventory Trend */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Inventory Trend (Last 12 Months)</h6>
+          <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Inventory Trend (Last 12 Months)</h6>
           <Chart type="area" height={300} series={inventoryTrendChartConfig.series} options={inventoryTrendChartConfig} />
         </div>
       </div>
@@ -412,7 +412,7 @@ export default function InventoryFulfillmentDashboard() {
         {/* Top Products by Stock */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Top Products by Stock</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Top Products by Stock</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -462,7 +462,7 @@ export default function InventoryFulfillmentDashboard() {
         {/* Low Stock Alerts */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Low Stock Alerts</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Low Stock Alerts</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -516,7 +516,7 @@ export default function InventoryFulfillmentDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <ArrowDown className="w-5 h-5 text-green-600 dark:text-green-400" />
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Recent Inbound Activity</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Recent Inbound Activity</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -574,7 +574,7 @@ export default function InventoryFulfillmentDashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <ArrowUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Recent Outbound Activity</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Recent Outbound Activity</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

@@ -112,7 +112,7 @@ const CustomSelect = ({
           ) : (
             options.map((option, index) => {
             const isSelected = option.value === value;
-            const isHighlighted = index === highlightedIndex;
+            
             
             return (
               <button
@@ -121,9 +121,9 @@ const CustomSelect = ({
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected || isHighlighted
+                  isSelected
                     ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                 } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                 style={{
                   fontSize: '0.875rem',
@@ -442,7 +442,7 @@ export default function Collections() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Collections</h1>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Collections</h1>
           </div>
           {(!collections || collections.length === 0) ? null : (
             <ButtonWithWaves onClick={openModal}>
@@ -476,7 +476,7 @@ export default function Collections() {
                 <div key={collection.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow relative">
                   {/* Header with ID and Action Icons */}
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{collection.id}</h3>
+                    <h3 className="text-[24px] font-bold text-gray-900 dark:text-white">{collection.id}</h3>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => {
@@ -810,7 +810,7 @@ function AddCollectionModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="addCollectionModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="addCollectionModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Add New Collection
               </h5>
               <button
@@ -1053,7 +1053,7 @@ function EditCollectionModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="editCollectionModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="editCollectionModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit Collection
               </h5>
               <button

@@ -170,7 +170,7 @@ export default function AuditLog() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Log</h1>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Audit Log</h1>
           </div>
         </div>
       </div>

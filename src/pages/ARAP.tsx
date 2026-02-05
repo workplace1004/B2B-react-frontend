@@ -37,8 +37,8 @@ export default function ARAP() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AR / AP</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">AR / AP</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Accounts receivable, accounts payable, and payment status management
             </p>
           </div>
@@ -446,7 +446,7 @@ function AccountsReceivableSection() {
 
       {/* Aging Analysis */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aging Analysis</h3>
+        <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Aging Analysis</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Current</p>
@@ -759,7 +759,7 @@ function ARDetailsModal({ invoice, onClose }: ARDetailsModalProps) {
           {/* Customer & Invoice Information */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Customer Name</p>
@@ -774,7 +774,7 @@ function ARDetailsModal({ invoice, onClose }: ARDetailsModalProps) {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invoice Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Invoice Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Invoice Number</p>
@@ -1303,7 +1303,7 @@ function APDetailsModal({ bill, onClose }: APDetailsModalProps) {
           {/* Supplier & Bill Information */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Supplier Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Supplier Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Supplier Name</p>
@@ -1318,7 +1318,7 @@ function APDetailsModal({ bill, onClose }: APDetailsModalProps) {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bill Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Bill Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Bill Number</p>
@@ -1947,7 +1947,7 @@ function PaymentDetailsModal({ payment, onClose }: PaymentDetailsModalProps) {
           {/* Party & Payment Information */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">
                 {payment.type === 'receivable' ? 'Customer' : 'Supplier'} Information
               </h3>
               <div className="space-y-2">
@@ -1964,7 +1964,7 @@ function PaymentDetailsModal({ payment, onClose }: PaymentDetailsModalProps) {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Payment Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Reference Number</p>

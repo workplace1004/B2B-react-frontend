@@ -23,8 +23,8 @@ export default function AssetsDAM() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Assets (DAM)</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Digital Asset Management: Images, Lookbooks, and Brand Content</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Assets (DAM)</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Digital Asset Management: Images, Lookbooks, and Brand Content</p>
           </div>
         </div>
       </div>
@@ -38,11 +38,10 @@ export default function AssetsDAM() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${activeTab === tab.id
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
@@ -138,29 +137,27 @@ function ImagesSection() {
               placeholder="Search images..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full ::placeholder-[12px] text-[14px] pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                className={`p-2 rounded transition-colors ${viewMode === 'grid'
+                  ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
                 title="Grid View"
               >
                 <Grid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                className={`p-2 rounded transition-colors ${viewMode === 'list'
+                  ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
                 title="List View"
               >
                 <List className="w-4 h-4" />
@@ -168,7 +165,7 @@ function ImagesSection() {
             </div>
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               <Upload className="w-4 h-4" />
               Upload Image
@@ -188,15 +185,6 @@ function ImagesSection() {
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               {searchQuery ? 'Try adjusting your search criteria.' : 'Get started by uploading your first image.'}
             </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <Upload className="w-5 h-5" />
-                Upload Image
-              </button>
-            )}
           </div>
         </div>
       ) : viewMode === 'grid' ? (
@@ -539,12 +527,12 @@ function LookbooksSection() {
               placeholder="Search lookbooks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full ::placeholder-[12px] text-[14px] pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <button
             onClick={() => setIsUploadModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Upload className="w-4 h-4" />
             Upload Lookbook
@@ -563,15 +551,6 @@ function LookbooksSection() {
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               {searchQuery ? 'Try adjusting your search criteria.' : 'Get started by uploading your first lookbook or line sheet.'}
             </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <Upload className="w-5 h-5" />
-                Upload Lookbook
-              </button>
-            )}
           </div>
         </div>
       ) : (
@@ -757,18 +736,18 @@ function BrandContentSection() {
         const descLower = asset.description?.toLowerCase() || '';
         const nameLower = asset.name.toLowerCase();
         const searchText = tagsLower + ' ' + descLower + ' ' + nameLower;
-        return !asset.productId || 
-               searchText.includes('brand') || 
-               searchText.includes('logo') || 
-               searchText.includes('marketing') ||
-               searchText.includes('campaign');
+        return !asset.productId ||
+          searchText.includes('brand') ||
+          searchText.includes('logo') ||
+          searchText.includes('marketing') ||
+          searchText.includes('campaign');
       });
-      
+
       // Filter by type if specified
       if (filterType !== 'all') {
         brandAssets = brandAssets.filter((asset: any) => asset.type === filterType);
       }
-      
+
       // Filter by search query if provided
       if (searchQuery) {
         brandAssets = brandAssets.filter((asset: any) =>
@@ -777,7 +756,7 @@ function BrandContentSection() {
           asset.tags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
         );
       }
-      
+
       return brandAssets;
     },
   });
@@ -836,36 +815,49 @@ function BrandContentSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex-1 relative w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search brand content..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative w-full sm:max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search brand content..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 ::placeholder-[12px] text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value as any)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="all">All Types</option>
+                  <option value="IMAGE">Images</option>
+                  <option value="VIDEO">Videos</option>
+                  <option value="DOCUMENT">Documents</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`p-2 rounded transition-colors ${viewMode === 'grid'
+                    ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                   title="Grid View"
                 >
                   <Grid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                  className={`p-2 rounded transition-colors ${viewMode === 'list'
+                    ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -873,27 +865,14 @@ function BrandContentSection() {
               </div>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <Upload className="w-4 h-4" />
                 Upload Asset
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Filter by type:</span>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">All Types</option>
-              <option value="IMAGE">Images</option>
-              <option value="VIDEO">Videos</option>
-              <option value="DOCUMENT">Documents</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </div>
+
         </div>
       </div>
 
@@ -908,15 +887,6 @@ function BrandContentSection() {
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               {searchQuery || filterType !== 'all' ? 'Try adjusting your search or filter criteria.' : 'Get started by uploading your first brand asset.'}
             </p>
-            {!searchQuery && filterType === 'all' && (
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <Upload className="w-5 h-5" />
-                Upload Asset
-              </button>
-            )}
           </div>
         </div>
       ) : viewMode === 'grid' ? (

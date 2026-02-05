@@ -163,8 +163,8 @@ export default function MarketingIntegrations() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Marketing Integrations</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Connect analytics platforms to track performance and insights</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Marketing Integrations</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Connect analytics platforms to track performance and insights</p>
           </div>
         </div>
       </div>
@@ -253,7 +253,7 @@ export default function MarketingIntegrations() {
       ) : (
         Object.entries(groupedConnections).map(([category, categoryConnections]) => (
           <div key={category} className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{category}</h2>
+            <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">{category}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {categoryConnections.map((connection) => (
                 <div

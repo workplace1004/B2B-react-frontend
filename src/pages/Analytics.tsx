@@ -314,7 +314,7 @@ export default function Analytics() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Analytics</h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
@@ -357,7 +357,7 @@ export default function Analytics() {
                 </div>
               </div>
               <h3 className="text-sm font-medium text-gray-600 dark:text-white mb-1">{stat.title}</h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">{stat.value}</p>
             </div>
           );
         })}

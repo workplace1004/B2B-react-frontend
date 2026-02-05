@@ -299,8 +299,8 @@ export default function ProductCollectionDashboard() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Product Dashboard</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Style performance, drop performance, DPP/compliance overview</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Product Dashboard</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Style performance, drop performance, DPP/compliance overview</p>
           </div>
         </div>
       </div>
@@ -314,7 +314,7 @@ export default function ProductCollectionDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Products</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.totalProducts.toLocaleString()}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.totalProducts.toLocaleString()}</h2>
             </div>
           </div>
         </div>
@@ -326,7 +326,7 @@ export default function ProductCollectionDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Total Collections</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.totalCollections.toLocaleString()}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.totalCollections.toLocaleString()}</h2>
             </div>
           </div>
         </div>
@@ -338,7 +338,7 @@ export default function ProductCollectionDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Unique Styles</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.totalStyles.toLocaleString()}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.totalStyles.toLocaleString()}</h2>
             </div>
           </div>
         </div>
@@ -350,7 +350,7 @@ export default function ProductCollectionDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Products/Collection</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.productsPerCollection}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.productsPerCollection}</h2>
             </div>
           </div>
         </div>
@@ -360,13 +360,13 @@ export default function ProductCollectionDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Products by Collection */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Products by Collection</h6>
+          <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Products by Collection</h6>
           <Chart type="bar" height={300} series={productsByCollectionChartConfig.series} options={productsByCollectionChartConfig} />
         </div>
 
         {/* Monthly Product Trend */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Creation Trend (Last 12 Months)</h6>
+          <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Product Creation Trend (Last 12 Months)</h6>
           <Chart type="area" height={300} series={monthlyProductTrendChartConfig.series} options={monthlyProductTrendChartConfig} />
         </div>
       </div>
@@ -376,7 +376,7 @@ export default function ProductCollectionDashboard() {
         {/* Collection Performance */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Top Performing Collections</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Top Performing Collections</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -421,7 +421,7 @@ export default function ProductCollectionDashboard() {
         {/* Style Performance */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Top Performing Styles</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Top Performing Styles</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -467,7 +467,7 @@ export default function ProductCollectionDashboard() {
       {/* Inventory Status */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Inventory Status</h6>
+          <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Inventory Status</h6>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -477,7 +477,7 @@ export default function ProductCollectionDashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Products with Inventory</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{metrics.productsWithInventory.toLocaleString()}</p>
+                <p className="text-[24px] font-bold text-gray-900 dark:text-white">{metrics.productsWithInventory.toLocaleString()}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -486,7 +486,7 @@ export default function ProductCollectionDashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Products without Inventory</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{metrics.productsWithoutInventory.toLocaleString()}</p>
+                <p className="text-[24px] font-bold text-gray-900 dark:text-white">{metrics.productsWithoutInventory.toLocaleString()}</p>
               </div>
             </div>
           </div>

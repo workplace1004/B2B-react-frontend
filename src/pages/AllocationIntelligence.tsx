@@ -35,8 +35,8 @@ export default function AllocationIntelligence() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Allocation Intelligence</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Allocation Intelligence</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Optimize stock allocation, simulate scenarios, and optimize fulfillment strategies
             </p>
           </div>
@@ -798,7 +798,7 @@ function AllocationSimulatorSection() {
     <div className="space-y-6">
       {/* Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Simulation Parameters</h2>
+        <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Simulation Parameters</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

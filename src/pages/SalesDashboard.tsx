@@ -409,7 +409,7 @@ export default function SalesDashboard() {
             colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
-            fontFamily: 'var(--bs-body-font-family)',
+            fontFamily: 'sans-serif',
           },
         },
       },
@@ -432,7 +432,7 @@ export default function SalesDashboard() {
         },
         labels: {
           colors: isDarkMode ? '#ffffff' : '#1C274C',
-          fontFamily: 'var(--bs-body-font-family)',
+          fontFamily: 'sans-serif',
           fontSize: '13px',
         },
       },
@@ -458,7 +458,7 @@ export default function SalesDashboard() {
             colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
-            fontFamily: 'var(--bs-body-font-family)',
+            fontFamily: 'sans-serif',
           },
         },
       },
@@ -489,7 +489,7 @@ export default function SalesDashboard() {
             show: true,
             offsetY: -35,
             fontSize: '28px',
-            fontFamily: 'var(--bs-body-font-family)',
+            fontFamily: 'sans-serif',
             fontWeight: 600,
             color: isDarkMode ? '#ffffff' : '#1C274C',
             formatter: () => `${Math.min(100, monthlyTargetProgress).toFixed(1)}%`,
@@ -600,7 +600,7 @@ export default function SalesDashboard() {
           colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontSize: '13px',
           fontWeight: 500,
-          fontFamily: 'var(--bs-body-font-family)',
+          fontFamily: 'sans-serif',
         },
       },
     },
@@ -614,7 +614,7 @@ export default function SalesDashboard() {
           colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontSize: '13px',
           fontWeight: 500,
-          fontFamily: 'var(--bs-body-font-family)',
+          fontFamily: 'sans-serif',
         },
       },
     },
@@ -714,25 +714,36 @@ export default function SalesDashboard() {
       yaxis: { lines: { show: true } },
     },
     tooltip: {
-      theme: 'light',
+      theme: isDarkMode ? 'dark' : 'light',
       y: {
         formatter: (val: number) => `${val} Visitors`,
       },
     },
     xaxis: {
       categories: [['Mobile'], ['Desktop'], ['Tablet'], ['iPad pro'], ['iPhone'], ['Other']],
-      axisBorder: { color: 'var(--bs-border-color)' },
+      axisBorder: { color: isDarkMode ? '#374151' : '#e5e7eb' },
       axisTicks: { show: false },
       labels: {
         style: {
-          colors: 'var(--bs-body-color)',
+          colors: isDarkMode ? '#ffffff' : '#374151',
           fontSize: '13px',
           fontWeight: 500,
-          fontFamily: 'var(--bs-body-font-family)',
+          fontFamily: 'sans-serif',
         },
       },
     },
     yaxis: { show: false },
+    legend: {
+      show: true,
+      position: 'bottom' as const,
+      horizontalAlign: 'center' as const,
+      labels: {
+        colors: isDarkMode ? '#ffffff' : '#374151',
+      },
+      markers: {
+        size: 12,
+      },
+    },
   };
 
   // Transform orders to recent sales format
@@ -860,7 +871,19 @@ export default function SalesDashboard() {
     item.product.toLowerCase().includes(topSellingSearch.toLowerCase())
   );
 
-  const totalTopSellingPages = Math.ceil(filteredTopSelling.length / itemsPerPage);
+  const totalTopSellingPages = Math.max(1, Math.ceil(filteredTopSelling.length / itemsPerPage));
+  
+  // Reset page to 1 if current page is invalid
+  useEffect(() => {
+    if (filteredTopSelling.length === 0) {
+      setTopSellingPage(1);
+    } else if (topSellingPage > totalTopSellingPages) {
+      setTopSellingPage(totalTopSellingPages);
+    } else if (topSellingPage < 1) {
+      setTopSellingPage(1);
+    }
+  }, [filteredTopSelling.length, totalTopSellingPages, topSellingPage]);
+  
   const paginatedTopSelling = filteredTopSelling.slice(
     (topSellingPage - 1) * itemsPerPage,
     topSellingPage * itemsPerPage
@@ -1016,8 +1039,8 @@ export default function SalesDashboard() {
       <Breadcrumb currentPage="Sales Dashboard" />
       <div className="mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sales Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Sales performance, order status, revenue growth, conversion rate</p>
+          <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Sales Dashboard</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Sales performance, order status, revenue growth, conversion rate</p>
         </div>
       </div>
 
@@ -1031,8 +1054,8 @@ export default function SalesDashboard() {
           </div>
           <div className="p-4 flex items-end">
             <div className="flex-1">
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Total Earning</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+              <p className="text-[14px] text-gray-600 dark:text-gray-400 mb-1">Total Earning</p>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                 {!salesReport && isLoading ? formatCurrency(0) : formatCurrency(totalEarning || 0)}
               </h2>
             </div>
@@ -1047,8 +1070,8 @@ export default function SalesDashboard() {
           </div>
           <div className="p-4 flex items-end">
             <div className="flex-1">
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Total Orders</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{(totalOrders || 0).toLocaleString()}</h2>
+              <p className="text-[14px] text-gray-600 dark:text-gray-400 mb-1">Total Orders</p>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{(totalOrders || 0).toLocaleString()}</h2>
             </div>
           </div>
         </div>
@@ -1061,8 +1084,8 @@ export default function SalesDashboard() {
           </div>
           <div className="p-4 flex items-end">
             <div className="flex-1">
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Revenue Growth</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+              <p className="text-[14px] text-gray-600 dark:text-gray-400 mb-1">Revenue Growth</p>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                 {revenueGrowth !== null ? (
                   <>
                     {revenueGrowth >= 0 ? '+' : ''}{revenueGrowth.toFixed(1)}%
@@ -1083,8 +1106,8 @@ export default function SalesDashboard() {
           </div>
           <div className="p-4 flex items-end">
             <div className="flex-1">
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">Conversion Rate</p>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+              <p className="text-[14px] text-gray-600 dark:text-gray-400 mb-1">Conversion Rate</p>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                 {conversionRate !== null ? conversionRate.toFixed(1) : '0.0'}%
               </h2>
             </div>
@@ -1098,13 +1121,13 @@ export default function SalesDashboard() {
         <div className="lg:col-span-8 xl:col-span-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between">
             <div>
-              <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales Report</h6>
+              <h6 className="text-[18px] font-semibold text-gray-900 dark:text-white mb-0">Sales Report</h6>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 mb-0">{getSalesDateDisplay()}</p>
             </div>
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
               <button
                 onClick={() => setSalesTimeRange('today')}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${salesTimeRange === 'today'
+                className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${salesTimeRange === 'today'
                   ? 'bg-primary text-white'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
@@ -1134,7 +1157,7 @@ export default function SalesDashboard() {
           <div className="p-4 pb-0">
             <div className="flex gap-5 mb-4">
               <div className="mb-2">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                   <span className="text-gray-600 dark:text-gray-400">$</span>87,352<span className="text-primary">50</span>
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-0">
@@ -1142,7 +1165,7 @@ export default function SalesDashboard() {
                 </p>
               </div>
               <div className="mb-2">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                   <span className="text-gray-600 dark:text-gray-400">$</span>97,500<span className="text-primary">50</span>
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-0">
@@ -1164,7 +1187,7 @@ export default function SalesDashboard() {
         {/* Monthly Target - 3/12 on xl, 4/12 on lg */}
         <div className="lg:col-span-4 xl:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Monthly Target</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Monthly Target</h6>
           </div>
           <div className="p-4 pt-0 border-b border-gray-200 dark:border-gray-700">
             <div className="mb-0 -mt-2">
@@ -1206,12 +1229,12 @@ export default function SalesDashboard() {
         {/* Sales by Country - 3/12 on xl, 6/12 on lg */}
         <div className="lg:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Sales by Country</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Sales by Country</h6>
             <a href="#" className="text-sm text-primary hover:text-primary/80">View All</a>
           </div>
           <div className="p-4 pt-2">
             <div className="flex gap-2 mb-3 items-center">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                 ${totalSalesByCountry.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
               <span className={`text-sm ${salesChangePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -1275,10 +1298,10 @@ export default function SalesDashboard() {
         {/* Total Visitors - 4/12 on xl, 6/12 on lg */}
         <div className="lg:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Total Visitors</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Total Visitors</h6>
           </div>
           <div className="p-4 pt-2 pb-0">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+            <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
               <span className="text-gray-600 dark:text-gray-400">$</span>
               {(() => {
                 // Calculate unique customers (visitors) from orders
@@ -1306,7 +1329,7 @@ export default function SalesDashboard() {
         {/* Recent Sales - 8/12 on xl, 6/12 on lg */}
         <div className="lg:col-span-6 xl:col-span-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-3 items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Recent Sales</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Recent Sales</h6>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -1380,9 +1403,9 @@ export default function SalesDashboard() {
       {/* Top Selling Items and Sales Growth */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-5">
         {/* Top Selling Items - 8/12 on xl, 7/12 on lg */}
-        <div className="lg:col-span-7 xl:col-span-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between">
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Top Selling Items</h6>
+        <div className="lg:col-span-7 xl:col-span-8 bg-white dark:bg-gray-800 rounded-lg mb-5 shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between mb-3">
+            <h6 className="text-[18px] font-semibold text-gray-900 dark:text-white">Top Selling Items</h6>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -1447,7 +1470,11 @@ export default function SalesDashboard() {
             {/* Pagination */}
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Showing {(topSellingPage - 1) * itemsPerPage + 1} to {Math.min(topSellingPage * itemsPerPage, filteredTopSelling.length)} of {filteredTopSelling.length} entries
+                {filteredTopSelling.length === 0 ? (
+                  'Showing 0 to 0 of 0 entries'
+                ) : (
+                  `Showing ${(topSellingPage - 1) * itemsPerPage + 1} to ${Math.min(topSellingPage * itemsPerPage, filteredTopSelling.length)} of ${filteredTopSelling.length} entries`
+                )}
               </div>
               <div className="flex gap-1">
                 <button
@@ -1510,7 +1537,7 @@ export default function SalesDashboard() {
         {/* Sales Growth Chart - 4/12 on xl, 5/12 on lg */}
         <div className="lg:col-span-5 xl:col-span-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex items-center justify-between">
-            <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Sales Growth</h6>
+            <h6 className="text-[18px] font-semibold text-gray-900 dark:text-white mb-0">Sales Growth</h6>
           </div>
           <div className="p-4 pt-2 pb-0">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
@@ -1592,12 +1619,12 @@ function EditSaleModal({
         <div
           className="modal-dialog modal-dialog-centered"
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: '32rem' }}
+          style={{ maxWidth: '24rem' }}
         >
           <div className="modal-content">
             {/* Modal Header */}
             <div className="modal-header">
-              <h5 id="editSaleModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="editSaleModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit Sale
               </h5>
               <button
@@ -1765,12 +1792,12 @@ function EditTopSellingModal({
         <div
           className="modal-dialog modal-dialog-centered"
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: '32rem' }}
+          style={{ maxWidth: '24rem' }}
         >
           <div className="modal-content">
             {/* Modal Header */}
             <div className="modal-header">
-              <h5 id="editTopSellingModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="editTopSellingModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit Top Selling Item
               </h5>
               <button

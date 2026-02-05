@@ -111,7 +111,7 @@ const CustomSelect = ({
           ) : (
             options.map((option, index) => {
               const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
+              
               
               return (
                 <button
@@ -120,9 +120,9 @@ const CustomSelect = ({
                   onClick={() => handleSelect(option.value)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected || isHighlighted
+                    isSelected
                       ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                   style={{
                     fontSize: '0.875rem',
@@ -346,22 +346,22 @@ export default function SkuEanBarcodes() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">SKU / EAN / Barcodes</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage product identifiers, generate barcodes, and track variants</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">SKU / EAN / Barcodes</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Manage product identifiers, generate barcodes, and track variants</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={bulkGenerateSkus}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center text-[14px] gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Generate Missing SKUs
             </button>
             <button
               onClick={bulkGenerateEans}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center text-[14px] gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Generate Missing EANs
             </button>
           </div>
@@ -378,7 +378,7 @@ export default function SkuEanBarcodes() {
               placeholder="Search by SKU, EAN, or product name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export default function SkuEanBarcodes() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Variants</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{allVariants.length}</p>
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white">{allVariants.length}</p>
             </div>
             <Barcode className="w-8 h-8 text-primary-600 dark:text-primary-400" />
           </div>
@@ -413,7 +413,7 @@ export default function SkuEanBarcodes() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">With SKU</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white">
                 {allVariants.filter(v => v.variantSku).length}
               </p>
             </div>
@@ -424,7 +424,7 @@ export default function SkuEanBarcodes() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">With EAN</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white">
                 {allVariants.filter(v => v.variantEan).length}
               </p>
             </div>
@@ -435,7 +435,7 @@ export default function SkuEanBarcodes() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Missing</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white">
                 {allVariants.filter(v => !v.variantSku || !v.variantEan).length}
               </p>
             </div>
@@ -709,7 +709,7 @@ function EditSkuEanModal({
           <div className="modal-content">
             {/* Modal Header */}
             <div className="modal-header">
-              <h5 className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit SKU / EAN / Barcode
               </h5>
               <button
@@ -803,7 +803,7 @@ function EditSkuEanModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  className="px-5 py-2.5 border text-[14px] border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                   disabled={isLoading}
                 >
                   Cancel
@@ -811,7 +811,7 @@ function EditSkuEanModal({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2.5 ml-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-5 py-2.5 text-[14px] ml-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isLoading ? 'Saving...' : 'Save Changes'}
                 </button>

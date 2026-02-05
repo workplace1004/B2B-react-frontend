@@ -161,7 +161,7 @@ const CustomSelect = ({
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
-            const isHighlighted = index === highlightedIndex;
+            
 
             return (
               <button
@@ -169,9 +169,9 @@ const CustomSelect = ({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${isSelected || isHighlighted
+                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${isSelected
                     ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                 style={{
                   fontSize: '0.875rem',
@@ -466,8 +466,8 @@ export default function Customers() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Customers</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Customers</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Manage your customer database and contacts by segment
             </p>
           </div>
@@ -1059,7 +1059,7 @@ function AddCustomerModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="addCustomerModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="addCustomerModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Add New Customer
               </h5>
               <button
@@ -1454,7 +1454,7 @@ function EditCustomerModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="editCustomerModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="editCustomerModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit Customer
               </h5>
               <button
@@ -1862,7 +1862,7 @@ function ContactManagementModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="contactModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="contactModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Manage Contacts - {customer.name}
               </h5>
               <button
@@ -1898,7 +1898,7 @@ function ContactManagementModal({
 
                 {/* Add/Edit Contact Form */}
                 {isAddContactOpen && (
-                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                     <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                       {editingContact ? 'Edit Contact' : 'Add New Contact'}
                     </h6>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { List, DollarSign, Calculator, Plus, ChevronRight, ChevronDown, Package, Factory, Users, TrendingUp, X, Pencil, Trash2, Save, Inbox } from 'lucide-react';
+import { List, DollarSign, Calculator, Plus, ChevronRight, ChevronDown, Package, Factory, Users, TrendingUp, X, Pencil, Trash2, Save, Inbox, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -70,9 +70,8 @@ const CustomSelect = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between transition-all ${
-          error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-        } ${isOpen ? 'ring-2 ring-primary-500 border-primary-500' : ''} hover:border-gray-400 dark:hover:border-gray-500`}
+        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between transition-all ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+          } ${isOpen ? 'ring-2 ring-primary-500 border-primary-500' : ''} hover:border-gray-400 dark:hover:border-gray-500`}
         style={{
           padding: '0.532rem 0.8rem 0.532rem 1.2rem',
           fontSize: '0.875rem',
@@ -98,7 +97,7 @@ const CustomSelect = ({
             left: 0,
             right: 0,
             minWidth: '100%',
-            maxHeight: '400px',
+            maxHeight: '210px', // Approximately 5 items (42px per item)
             overflowY: 'auto',
             overflowX: 'hidden',
           }}
@@ -113,7 +112,7 @@ const CustomSelect = ({
           ) : (
             options.map((option, index) => {
               const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
+              
 
               return (
                 <button
@@ -121,11 +120,10 @@ const CustomSelect = ({
                   type="button"
                   onClick={() => handleSelect(option.value)}
                   onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected || isHighlighted
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${isSelected
                       ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                  } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                    } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                   style={{
                     fontSize: '0.875rem',
                     fontWeight: 500,
@@ -161,8 +159,8 @@ export default function BOMCosting() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">BOM & Costing</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Bill of Materials, Cost Sheets, and Margin Analysis</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">BOM & Costing</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Bill of Materials, Cost Sheets, and Margin Analysis</p>
           </div>
         </div>
       </div>
@@ -176,11 +174,10 @@ export default function BOMCosting() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                  activeTab === tab.id
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${activeTab === tab.id
                     ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
@@ -209,6 +206,9 @@ function BillOfMaterialsSection() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditModalShowing, setIsEditModalShowing] = useState(false);
   const [selectedBOM, setSelectedBOM] = useState<any>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteModalShowing, setIsDeleteModalShowing] = useState(false);
+  const [bomToDelete, setBomToDelete] = useState<any>(null);
   const queryClient = useQueryClient();
 
   // Fetch BOMs from API
@@ -300,11 +300,33 @@ function BillOfMaterialsSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boms'] });
       toast.success('BOM deleted successfully!');
+      closeDeleteModal();
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete BOM');
     },
   });
+
+  // Delete modal handlers
+  const openDeleteModal = (bom: any) => {
+    setBomToDelete(bom);
+    setIsDeleteModalOpen(true);
+    setTimeout(() => setIsDeleteModalShowing(true), 10);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalShowing(false);
+    setTimeout(() => {
+      setIsDeleteModalOpen(false);
+      setBomToDelete(null);
+    }, 300);
+  };
+
+  const handleConfirmDelete = () => {
+    if (bomToDelete) {
+      deleteBOMMutation.mutate(bomToDelete.id);
+    }
+  };
 
   // Modal handlers
   const openModal = () => {
@@ -382,9 +404,8 @@ function BillOfMaterialsSection() {
     return (
       <div key={item.id} className="border-l-2 border-gray-200 dark:border-gray-700 ml-4">
         <div
-          className={`flex items-center gap-2 py-2 px-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
-            level > 0 ? 'ml-4' : ''
-          }`}
+          className={`flex items-center gap-2 py-2 px-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${level > 0 ? 'ml-4' : ''
+            }`}
         >
           <div className="w-6" />
           <div className="flex-1 grid grid-cols-5 gap-4 text-sm">
@@ -412,22 +433,23 @@ function BillOfMaterialsSection() {
     <div>
       {/* Search and Actions */}
       <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 max-w-md relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search BOMs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
-        <button 
+        <button
           onClick={() => {
             setIsModalOpen(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           Add BOM
         </button>
       </div>
@@ -443,13 +465,6 @@ function BillOfMaterialsSection() {
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               Get started by adding your first Bill of Materials.
             </p>
-        <button 
-          onClick={openModal}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add BOM
-        </button>
           </div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -491,11 +506,7 @@ function BillOfMaterialsSection() {
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (window.confirm('Are you sure you want to delete this BOM?')) {
-                            deleteBOMMutation.mutate(bom.id);
-                          }
-                        }}
+                        onClick={() => openDeleteModal(bom)}
                         className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         title="Delete"
                       >
@@ -557,6 +568,80 @@ function BillOfMaterialsSection() {
           isShowing={isEditModalShowing}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && bomToDelete && (
+        <>
+          <div className={`modal-backdrop fade ${isDeleteModalShowing ? 'show' : ''}`} onClick={closeDeleteModal} />
+          <div className={`modal fade ${isDeleteModalShowing ? 'show' : ''}`} onClick={closeDeleteModal} role="dialog" aria-modal="true" tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
+                    Delete BOM
+                  </h5>
+                  <button type="button" onClick={closeDeleteModal} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                      <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Are you sure you want to delete this BOM?
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <span className="font-medium">BOM Name:</span> {bomToDelete.name}
+                      </p>
+                      {bomToDelete.product && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          <span className="font-medium">Product:</span> {bomToDelete.product.name}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Total Cost:</span> ${bomToDelete.totalCost.toFixed(2)}
+                      </p>
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-3 font-medium">
+                        This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeDeleteModal}
+                    className="px-4 text-[14px] py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    disabled={deleteBOMMutation.isPending}
+                    className="px-4 py-2 text-[14px] bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  >
+                    {deleteBOMMutation.isPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Delete BOM
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -596,6 +681,10 @@ function BOMModal({
   const addComponent = () => {
     if (!componentForm.name.trim()) {
       toast.error('Component name is required');
+      return;
+    }
+    if (!componentForm.cost || componentForm.cost <= 0) {
+      toast.error('Unit cost is required and must be greater than 0');
       return;
     }
     setFormData({
@@ -653,7 +742,7 @@ function BOMModal({
         <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
                 {bom ? 'Edit BOM' : 'Create New BOM'}
               </h5>
               <button type="button" onClick={onClose} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
@@ -662,7 +751,7 @@ function BOMModal({
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   {!bom && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product *</label>
@@ -684,7 +773,8 @@ function BOMModal({
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter BOM name"
+                      className="w-full px-4 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                       required
                     />
                   </div>
@@ -703,80 +793,109 @@ function BOMModal({
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                    />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter BOM description (optional)"
+                    rows={3}
+                    className="w-full px-4 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Components</h4>
+
+                  {/* Column Headers */}
+                  <div className="grid grid-cols-5 gap-2 mb-2">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Name *</label>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Quantity</label>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Unit</label>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Unit Cost *</label>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Action</label>
                   </div>
 
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Components</h4>
-                    
-                    <div className="grid grid-cols-5 gap-2 mb-3">
-                      <input
-                        type="text"
-                        placeholder="Name *"
-                        value={componentForm.name}
-                        onChange={(e) => setComponentForm({ ...componentForm, name: e.target.value })}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                      />
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Quantity"
-                        value={componentForm.quantity}
-                        onChange={(e) => setComponentForm({ ...componentForm, quantity: parseFloat(e.target.value) || 0 })}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Unit"
-                        value={componentForm.unit}
-                        onChange={(e) => setComponentForm({ ...componentForm, unit: e.target.value })}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                      />
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Cost"
-                        value={componentForm.cost}
-                        onChange={(e) => setComponentForm({ ...componentForm, cost: parseFloat(e.target.value) || 0 })}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={addComponent}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                      >
-                        <Plus className="w-4 h-4 mx-auto" />
-                      </button>
-                    </div>
+                  {/* Input Fields */}
+                  <div className="grid grid-cols-5 gap-2 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Component name"
+                      value={componentForm.name}
+                      onChange={(e) => setComponentForm({ ...componentForm, name: e.target.value })}
+                      className="px-3 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      value={componentForm.quantity}
+                      onChange={(e) => setComponentForm({ ...componentForm, quantity: parseFloat(e.target.value) || 0 })}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <CustomSelect
+                      value={componentForm.unit}
+                      onChange={(value) => setComponentForm({ ...componentForm, unit: value })}
+                      options={[
+                        { value: 'pcs', label: 'pcs' },
+                        { value: 'kg', label: 'kg' },
+                        { value: 'g', label: 'g' },
+                        { value: 'm', label: 'm' },
+                        { value: 'cm', label: 'cm' },
+                        { value: 'mm', label: 'mm' },
+                        { value: 'L', label: 'L' },
+                        { value: 'mL', label: 'mL' },
+                        { value: 'm²', label: 'm²' },
+                        { value: 'm³', label: 'm³' },
+                        { value: 'oz', label: 'oz' },
+                        { value: 'lb', label: 'lb' },
+                        { value: 'ft', label: 'ft' },
+                        { value: 'in', label: 'in' },
+                        { value: 'yd', label: 'yd' },
+                      ]}
+                      placeholder="Select unit"
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={componentForm.cost}
+                      onChange={(e) => setComponentForm({ ...componentForm, cost: parseFloat(e.target.value) || 0 })}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={addComponent}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 mx-auto" />
+                    </button>
+                  </div>
 
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {formData.components.map((comp: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
-                            <span className="font-medium text-gray-900 dark:text-white">{comp.name}</span>
-                            <span className="text-gray-600 dark:text-gray-400">{comp.quantity} {comp.unit}</span>
-                            <span className="text-gray-600 dark:text-gray-400">${comp.cost}</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              ${(comp.cost * comp.quantity).toFixed(2)}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeComponent(index)}
-                            className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {formData.components.map((comp: any, index: number) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
+                          <span className="font-medium text-gray-900 dark:text-white">{comp.name}</span>
+                          <span className="text-gray-600 dark:text-gray-400">{comp.quantity} {comp.unit}</span>
+                          <span className="text-gray-600 dark:text-gray-400">${comp.cost}</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            ${(comp.cost * comp.quantity).toFixed(2)}
+                          </span>
                         </div>
-                      ))}
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => removeComponent(index)}
+                          className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -784,18 +903,18 @@ function BOMModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  className="px-5 text-[14px] py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-5 py-2.5 text-[14px] bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isLoading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 text-[14px] border-2 border-white border-t-transparent rounded-full animate-spin" />
                       Saving...
                     </>
                   ) : (
@@ -822,6 +941,9 @@ function CostSheetsSection() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditModalShowing, setIsEditModalShowing] = useState(false);
   const [selectedCostSheet, setSelectedCostSheet] = useState<any>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteModalShowing, setIsDeleteModalShowing] = useState(false);
+  const [costSheetToDelete, setCostSheetToDelete] = useState<any>(null);
   const queryClient = useQueryClient();
 
   // Fetch cost sheets from API
@@ -903,11 +1025,33 @@ function CostSheetsSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cost-sheets'] });
       toast.success('Cost sheet deleted successfully!');
+      closeDeleteModal();
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete cost sheet');
     },
   });
+
+  // Delete modal handlers
+  const openDeleteModal = (costSheet: any) => {
+    setCostSheetToDelete(costSheet);
+    setIsDeleteModalOpen(true);
+    setTimeout(() => setIsDeleteModalShowing(true), 10);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalShowing(false);
+    setTimeout(() => {
+      setIsDeleteModalOpen(false);
+      setCostSheetToDelete(null);
+    }, 300);
+  };
+
+  const handleConfirmDelete = () => {
+    if (costSheetToDelete) {
+      deleteCostSheetMutation.mutate(costSheetToDelete.id);
+    }
+  };
 
   // Modal handlers
   const openModal = () => {
@@ -976,20 +1120,21 @@ function CostSheetsSection() {
     <div className="space-y-6">
       {/* Search and Actions */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 max-w-md relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search cost sheets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+            className="w-full pl-10 pr-4 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
-        <button 
+        <button
           onClick={openModal}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           Add Cost Sheet
         </button>
       </div>
@@ -1070,19 +1215,17 @@ function CostSheetsSection() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => openEditModal(sheet)}
-                          className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                          className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                          title="Edit"
                         >
-                          Edit
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this cost sheet?')) {
-                              deleteCostSheetMutation.mutate(sheet.id);
-                            }
-                          }}
-                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                          onClick={() => openDeleteModal(sheet)}
+                          className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Delete"
                         >
-                          Delete
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -1120,6 +1263,78 @@ function CostSheetsSection() {
           isShowing={isEditModalShowing}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && costSheetToDelete && (
+        <>
+          <div className={`modal-backdrop fade ${isDeleteModalShowing ? 'show' : ''}`} onClick={closeDeleteModal} />
+          <div className={`modal fade ${isDeleteModalShowing ? 'show' : ''}`} onClick={closeDeleteModal} role="dialog" aria-modal="true" tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
+                    Delete Cost Sheet
+                  </h5>
+                  <button type="button" onClick={closeDeleteModal} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                      <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Are you sure you want to delete this cost sheet?
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <span className="font-medium">Product:</span> {costSheetToDelete.productName}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <span className="font-medium">SKU:</span> {costSheetToDelete.sku}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Total Cost:</span> ${costSheetToDelete.totalCost.toFixed(2)}
+                      </p>
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-3 font-medium">
+                        This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeDeleteModal}
+                    className="px-4 text-[14px] py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    disabled={deleteCostSheetMutation.isPending}
+                    className="px-4 text-[14px] py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  >
+                    {deleteCostSheetMutation.isPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Delete Cost Sheet
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1150,8 +1365,8 @@ function CostSheetModal({
   });
 
   const totalCost = formData.materials + formData.labor + formData.overhead;
-  const margin = formData.sellingPrice > 0 
-    ? ((formData.sellingPrice - totalCost) / formData.sellingPrice) * 100 
+  const margin = formData.sellingPrice > 0
+    ? ((formData.sellingPrice - totalCost) / formData.sellingPrice) * 100
     : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1183,7 +1398,7 @@ function CostSheetModal({
         <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
                 {costSheet ? 'Edit Cost Sheet' : 'Create New Cost Sheet'}
               </h5>
               <button type="button" onClick={onClose} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
@@ -1284,11 +1499,10 @@ function CostSheetModal({
                     <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Margin</span>
-                        <span className={`text-lg font-bold ${
-                          margin >= 30 ? 'text-green-600 dark:text-green-400' : 
-                          margin >= 20 ? 'text-yellow-600 dark:text-yellow-400' : 
-                          'text-red-600 dark:text-red-400'
-                        }`}>
+                        <span className={`text-lg font-bold ${margin >= 30 ? 'text-green-600 dark:text-green-400' :
+                            margin >= 20 ? 'text-yellow-600 dark:text-yellow-400' :
+                              'text-red-600 dark:text-red-400'
+                          }`}>
                           {margin.toFixed(1)}%
                         </span>
                       </div>
@@ -1310,14 +1524,14 @@ function CostSheetModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  className="px-5 text-[14px] py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-5 text-[14px] py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isLoading ? (
                     <>
@@ -1391,8 +1605,8 @@ function MarginSimulatorSection() {
       // Check if cost sheet exists for this product
       try {
         const existingResponse = await api.get(`/cost-sheets?skip=0&take=1000`);
-        const existingSheets = Array.isArray(existingResponse.data) 
-          ? existingResponse.data 
+        const existingSheets = Array.isArray(existingResponse.data)
+          ? existingResponse.data
           : (existingResponse.data?.data || []);
         const existingSheet = existingSheets.find((sheet: any) => sheet.productId === productId);
 
@@ -1461,8 +1675,8 @@ function MarginSimulatorSection() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cost Inputs */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Cost Breakdown</h3>
-          
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-6">Cost Breakdown</h3>
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1525,8 +1739,8 @@ function MarginSimulatorSection() {
 
         {/* Margin & Price Calculator */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Margin & Pricing</h3>
-          
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-6">Margin & Pricing</h3>
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1587,11 +1801,10 @@ function MarginSimulatorSection() {
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Resulting Margin</span>
-                  <span className={`text-xl font-bold ${
-                    calculatedMargin >= 30 ? 'text-green-600 dark:text-green-400' : 
-                    calculatedMargin >= 20 ? 'text-yellow-600 dark:text-yellow-400' : 
-                    'text-red-600 dark:text-red-400'
-                  }`}>
+                  <span className={`text-xl font-bold ${calculatedMargin >= 30 ? 'text-green-600 dark:text-green-400' :
+                      calculatedMargin >= 20 ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-red-600 dark:text-red-400'
+                    }`}>
                     {calculatedMargin.toFixed(1)}%
                   </span>
                 </div>
@@ -1609,12 +1822,12 @@ function MarginSimulatorSection() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <TrendingUp className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pricing Summary</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white">Pricing Summary</h3>
           </div>
           <button
             onClick={handleSave}
             disabled={!selectedProductId || saveCostSheetMutation.isPending}
-            className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex text-[14px] items-center gap-2 px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saveCostSheetMutation.isPending ? (
               <>

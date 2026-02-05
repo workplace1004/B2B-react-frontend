@@ -34,8 +34,8 @@ export default function Invoicing() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Invoicing</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Invoicing</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Manage sales invoices and credit notes
             </p>
           </div>
@@ -660,7 +660,7 @@ function InvoiceDetailsModal({ invoice, onClose }: InvoiceDetailsModalProps) {
           {/* Customer & Order Information */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Customer Name</p>
@@ -675,7 +675,7 @@ function InvoiceDetailsModal({ invoice, onClose }: InvoiceDetailsModalProps) {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invoice Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Invoice Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Invoice Number</p>
@@ -708,7 +708,7 @@ function InvoiceDetailsModal({ invoice, onClose }: InvoiceDetailsModalProps) {
           {/* Invoice Lines */}
           {invoice.invoiceLines && invoice.invoiceLines.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invoice Items</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Invoice Items</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
@@ -1220,7 +1220,7 @@ function CreditNoteDetailsModal({ creditNote, onClose }: CreditNoteDetailsModalP
           {/* Information */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Customer Name</p>
@@ -1229,7 +1229,7 @@ function CreditNoteDetailsModal({ creditNote, onClose }: CreditNoteDetailsModalP
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Credit Note Information</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Credit Note Information</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Credit Note Number</p>

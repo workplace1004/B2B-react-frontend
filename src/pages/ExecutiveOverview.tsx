@@ -464,7 +464,7 @@ export default function ExecutiveOverview() {
         break;
     }
 
-        return {
+    return {
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0]
     };
@@ -724,18 +724,18 @@ export default function ExecutiveOverview() {
   };
 
   if (isAllDataLoading) {
-  return (
-    <div>
+    return (
+      <div>
         {/* Header Skeleton */}
-      <div className="mb-6">
+        <div className="mb-6">
           <div className="flex items-center justify-between animate-pulse">
             <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-48"></div>
             <div className="flex items-center gap-3">
               <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
               <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Main Content Grid Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -767,7 +767,7 @@ export default function ExecutiveOverview() {
                 <div className="p-4">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
                   <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-          <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                     <div className="space-y-2">
                       <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
                       <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
@@ -875,12 +875,12 @@ export default function ExecutiveOverview() {
   }
 
   return (
-            <div>
+    <div>
       <Breadcrumb currentPage="ExecutiveOverview" />
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Executive Overview</h1>
-        <p className="text-gray-600 dark:text-gray-400">Overview of your business metrics and activities</p>
-            </div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Executive Overview</h1>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">Overview of your business metrics and activities</p>
+      </div>
       {/* Dashboard Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-6">
         {/* Left Column - Main Cards (Cards 1-5) */}
@@ -890,12 +890,12 @@ export default function ExecutiveOverview() {
             {/* Card 1: Total Customers */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Total Customers</h6>
-          </div>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Total Customers</h6>
+              </div>
               <div className="px-4 mt-3 pb-0">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                    <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                       {(dashboardStats?.totalCustomers || 0).toLocaleString()}
                     </h2>
                     {customerChangePercent !== 0 && (
@@ -906,7 +906,7 @@ export default function ExecutiveOverview() {
                         {customerChangePercent > 0 ? '+' : ''}{customerChangePercent.toFixed(2)}%
                       </span>
                     )}
-        </div>
+                  </div>
                 </div>
                 <div className="w-full h-[120px] -mt-2">
                   <Chart
@@ -966,7 +966,7 @@ export default function ExecutiveOverview() {
                 </div>
               </div>
               <div className="p-4 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-0">
                     Vs last month: {dashboardStats?.lastMonthCustomers?.toLocaleString() || '0'}
                   </p>
@@ -976,18 +976,18 @@ export default function ExecutiveOverview() {
                   >
                     <ArrowRight className="w-5 h-5" />
                   </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
             {/* Card 2: Order Analytics */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border w-full border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white">Order Analytics</h6>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white">Order Analytics</h6>
               </div>
               <div className="p-4 pt-0">
                 <div className="flex items-center gap-2 mb-3 mt-3">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                  <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-1">
                     {(dashboardStats?.thisMonthOrders || 0).toLocaleString()}
                   </h2>
                   {orderChangePercent !== 0 && (
@@ -1055,7 +1055,7 @@ export default function ExecutiveOverview() {
                     legend: { show: false }
                   }}
                 />
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center text-sm text-gray-500 dark:text-gray-400 w-full">
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center text-[13px] text-gray-500 dark:text-gray-400 w-full">
                   Compared to Last Month
                 </div>
               </div>
@@ -1066,7 +1066,7 @@ export default function ExecutiveOverview() {
               <div className="p-4">
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
-                    <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Tasks Overview</h6>
+                    <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Tasks Overview</h6>
                     <span className="text-xs text-gray-600 dark:text-gray-400">
                       Tasks Done <span className="text-primary font-semibold">{taskStats.tasksDone}</span>
                     </span>
@@ -1078,20 +1078,20 @@ export default function ExecutiveOverview() {
                     ></div>
                   </div>
                 </div>
-          <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-1 text-xs">
                       <div className="w-3 h-3 bg-primary opacity-10 rounded"></div>
                       <span className="text-gray-600 dark:text-gray-400">Follow-ups</span>
-            </div>
+                    </div>
                     <div className="flex items-center gap-1 text-xs">
                       <div className="w-3 h-3 bg-primary opacity-25 rounded"></div>
                       <span className="text-gray-600 dark:text-gray-400">In Progress</span>
-          </div>
+                    </div>
                     <div className="flex items-center gap-1 text-xs">
                       <div className="w-3 h-3 bg-primary opacity-50 rounded"></div>
                       <span className="text-gray-600 dark:text-gray-400">Pending</span>
-        </div>
+                    </div>
                   </div>
                   <div className="w-24 h-24">
                     {taskStats.total > 0 ? (
@@ -1131,11 +1131,11 @@ export default function ExecutiveOverview() {
             {/* Card 4: Active Orders */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-full justify-between">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Active Orders</h6>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Active Orders</h6>
               </div>
               <div className="p-4 pt-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">
+                  <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">
                     {(dashboardStats?.totalOrders || 0).toLocaleString()}
                   </h2>
                   {orderChangePercent !== 0 && (
@@ -1149,7 +1149,7 @@ export default function ExecutiveOverview() {
                 </div>
               </div>
               <div className="p-4 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-0">
                     Vs last month: {(dashboardStats?.lastMonthOrders || 0).toLocaleString()}
                   </p>
@@ -1166,16 +1166,16 @@ export default function ExecutiveOverview() {
             {/* Card 5: Revenue */}
             <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-2 items-center justify-between">
-            <div>
-                  <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Revenue</h6>
-            </div>
+                <div>
+                  <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Revenue</h6>
+                </div>
                 <div className="flex flex-wrap gap-2 items-center">
                   <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
                     {(['Today', 'Week', 'Month'] as const).map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setRevenueTimeRange(tab === 'Today' ? 'today' : tab === 'Week' ? 'week' : 'month')}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${(tab === 'Month' && revenueTimeRange === 'month') ||
+                        className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${(tab === 'Month' && revenueTimeRange === 'month') ||
                           (tab === 'Week' && revenueTimeRange === 'week') ||
                           (tab === 'Today' && revenueTimeRange === 'today')
                           ? 'bg-primary text-white'
@@ -1185,13 +1185,13 @@ export default function ExecutiveOverview() {
                         {tab}
                       </button>
                     ))}
-          </div>
+                  </div>
                   <div className="relative" ref={calendarRef}>
                     <button
                       onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                      className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-[16px] w-10 h-10 flex items-center justify-center"
                     >
-                      <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      <i className="fi fi-rr-calendar text-md text-gray-700 dark:text-white"></i>
                     </button>
                     {isCalendarOpen && (
                       <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
@@ -1204,7 +1204,7 @@ export default function ExecutiveOverview() {
                             >
                               <ChevronLeft className="w-5 h-5 text-primary dark:text-primary-300" />
                             </button>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white">
                               {calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                             </h3>
                             <button
@@ -1213,8 +1213,8 @@ export default function ExecutiveOverview() {
                             >
                               <ChevronRight className="w-5 h-5 text-primary dark:text-primary-300" />
                             </button>
-        </div>
-      </div>
+                          </div>
+                        </div>
 
                         {/* Calendar Days */}
                         <div className="p-4">
@@ -1226,7 +1226,7 @@ export default function ExecutiveOverview() {
                                 className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2"
                               >
                                 {day}
-          </div>
+                              </div>
                             ))}
                           </div>
 
@@ -1264,17 +1264,17 @@ export default function ExecutiveOverview() {
                                   day: 'numeric'
                                 })}
                               </span>
-          </p>
-        </div>
+                            </p>
+                          </div>
                         )}
-      </div>
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
               <div className="p-4 py-0 flex w-full justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl mt-3 font-bold text-gray-900 dark:text-white mb-0">
+                  <h2 className="text-[28px] mt-3 font-bold text-gray-900 dark:text-white mb-0">
                     <span className="text-gray-600 dark:text-gray-400">$</span>
                     {formatCurrency(revenuePeriodRevenue).replace('$', '').split('.')[0]}.
                     <span className="text-primary">{formatCurrency(revenuePeriodRevenue).split('.')[1]}</span>
@@ -1385,7 +1385,7 @@ export default function ExecutiveOverview() {
             {/* Card 6: Order Sources - Using order types from schema */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Order Types</h6>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Order Types</h6>
               </div>
               <div className="p-4 pt-0">
                 {(() => {
@@ -1524,8 +1524,8 @@ export default function ExecutiveOverview() {
                               <div className={`w-3 h-3 bg-primary ${opacityMap[idx] || 'opacity-100'} rounded`}></div>
                               <span className="text-gray-600 dark:text-gray-400 flex-1">{item.type}</span>
                               <strong className="text-gray-900 dark:text-white font-semibold">{item.percentage.toFixed(1)}%</strong>
-    </div>
-  );
+                            </div>
+                          );
                         }) : (
                           <div className="flex items-center gap-1 text-xs py-1">
                             <div className="w-3 h-3 bg-primary opacity-10 rounded"></div>
@@ -1542,7 +1542,7 @@ export default function ExecutiveOverview() {
                 <h6 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Annual report</h6>
                 <button
                   onClick={handleDownloadAnnualReport}
-                  className="px-3 py-1.5 text-sm font-semibold text-primary bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-[13px] font-semibold text-primary bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5"
                 >
                   <Download className="w-4 h-4" />
                   <span>Download</span>
@@ -1553,7 +1553,7 @@ export default function ExecutiveOverview() {
             {/* Card 7: Customer Retention Rate */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Customer Retention Rate</h6>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Customer Retention Rate</h6>
               </div>
               <div className="p-4 pb-0 pt-0">
                 {(() => {
@@ -1869,7 +1869,7 @@ export default function ExecutiveOverview() {
                 style={{ mixBlendMode: 'overlay' }}
               />
               <div className="p-4 border-b border-white/10 relative z-10">
-                <h6 className="text-lg font-semibold text-white mb-0">Total Revenue</h6>
+                <h6 className="text-[14px] font-semibold text-white mb-0">Total Revenue</h6>
               </div>
               <div className="p-4 pt-0 border-b border-white/10 relative z-10">
                 <div className="mb-5 -mt-3 relative" style={{ height: '250px' }}>
@@ -2033,7 +2033,7 @@ export default function ExecutiveOverview() {
             {/* Card 9: Orders By Time */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Orders By Time</h6>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Orders By Time</h6>
               </div>
               <div className="p-4 p-0">
                 {(() => {
@@ -2118,7 +2118,7 @@ export default function ExecutiveOverview() {
         {/* New Customers Card */}
         <div className="xl:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">New Customers</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">New Customers</h6>
             <div className="flex flex-wrap gap-2 items-center">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -2263,7 +2263,7 @@ export default function ExecutiveOverview() {
         {/* Task Update Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Task Update</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Task Update</h6>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/tasks')}
@@ -2313,41 +2313,6 @@ export default function ExecutiveOverview() {
               </DndContext>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button
-            onClick={() => navigate('/products')}
-            className="flex flex-col items-center justify-center p-4 bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30 rounded-lg transition-colors border border-primary/20"
-          >
-            <i className="fi fi-rr-box text-2xl text-primary mb-2"></i>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">Add Product</span>
-          </button>
-          <button
-            onClick={() => navigate('/orders')}
-            className="flex flex-col items-center justify-center p-4 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 rounded-lg transition-colors border border-green-200 dark:border-green-800"
-          >
-            <i className="fi fi-rr-shopping-cart text-2xl text-green-600 dark:text-green-400 mb-2"></i>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">New Order</span>
-          </button>
-          <button
-            onClick={() => navigate('/analytics')}
-            className="flex flex-col items-center justify-center p-4 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 rounded-lg transition-colors border border-purple-200 dark:border-purple-800"
-          >
-            <i className="fi fi-rr-chart-histogram text-2xl text-purple-600 dark:text-purple-400 mb-2"></i>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">View Analytics</span>
-          </button>
-          <button
-            onClick={() => navigate('/warehouses')}
-            className="flex flex-col items-center justify-center p-4 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 rounded-lg transition-colors border border-orange-200 dark:border-orange-800"
-          >
-            <i className="fi fi-rr-building text-2xl text-orange-600 dark:text-orange-400 mb-2"></i>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">Warehouses</span>
-          </button>
         </div>
       </div>
     </div>

@@ -185,7 +185,7 @@ const CustomSelect = ({
         >
           {sortedOptions.map((option, index) => {
             const isSelected = option.value === value;
-            const isHighlighted = index === highlightedIndex;
+            
             
             return (
               <button
@@ -195,9 +195,9 @@ const CustomSelect = ({
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected || isHighlighted
+                  isSelected
                     ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                 } ${index === 0 ? 'rounded-t-lg' : ''} ${index === sortedOptions.length - 1 ? 'rounded-b-lg' : ''}`}
                 style={{
                   fontSize: '0.875rem',
@@ -426,7 +426,7 @@ export default function Inventory() {
     <div>
       <Breadcrumb currentPage="Inventory" />
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Inventory</h1>
+        <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Inventory</h1>
         <div className="flex items-center gap-4">
           {warehouses && warehouses.length > 0 && (
             <CustomSelect
@@ -790,7 +790,7 @@ function AddInventoryModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="addInventoryModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="addInventoryModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Add Inventory
               </h5>
               <button
@@ -1039,7 +1039,7 @@ function EditInventoryModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="editInventoryModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="editInventoryModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit Inventory
               </h5>
               <button

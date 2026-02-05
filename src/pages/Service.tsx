@@ -37,8 +37,8 @@ export default function Service() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Services</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Services</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Return status inquiry and case/issue log management
             </p>
           </div>
@@ -594,7 +594,7 @@ function ReturnDetailsModal({ returnItem, onClose }: ReturnDetailsModalProps) {
 
           {/* Order Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Information</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Order Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Order Number</p>
@@ -609,7 +609,7 @@ function ReturnDetailsModal({ returnItem, onClose }: ReturnDetailsModalProps) {
 
           {/* Product Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Information</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Product Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Product Name</p>
@@ -628,7 +628,7 @@ function ReturnDetailsModal({ returnItem, onClose }: ReturnDetailsModalProps) {
 
           {/* Return Details */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Return Details</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Return Details</h3>
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Reason</p>
@@ -645,7 +645,7 @@ function ReturnDetailsModal({ returnItem, onClose }: ReturnDetailsModalProps) {
 
           {/* Timeline */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Timeline</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Timeline</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
@@ -1260,7 +1260,7 @@ function CaseDetailsModal({ caseItem, onClose, onUpdate }: CaseDetailsModalProps
 
           {/* Case Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Case Information</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Case Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Case Number</p>
@@ -1289,13 +1289,13 @@ function CaseDetailsModal({ caseItem, onClose, onUpdate }: CaseDetailsModalProps
 
           {/* Description */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Description</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Description</h3>
             <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{caseItem.description}</p>
           </div>
 
           {/* Notes */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Notes</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Notes</h3>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

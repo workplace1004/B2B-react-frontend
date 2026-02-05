@@ -147,7 +147,7 @@ export default function FinanceDashboard() {
         style: {
           colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontSize: '13px',
-          fontFamily: 'var(--bs-body-font-family)',
+          fontFamily: 'sans-serif',
         },
       },
     },
@@ -159,7 +159,7 @@ export default function FinanceDashboard() {
         style: {
           colors: isDarkMode ? '#ffffff' : '#1C274C',
           fontSize: '13px',
-          fontFamily: 'var(--bs-body-font-family)',
+          fontFamily: 'sans-serif',
         },
       },
     },
@@ -192,7 +192,7 @@ export default function FinanceDashboard() {
         colors: isDarkMode ? '#ffffff' : '#1C274C',
         fontSize: '12px',
         fontWeight: '600',
-        fontFamily: 'var(--bs-body-font-family)',
+        fontFamily: 'sans-serif',
       },
     },
   };
@@ -406,8 +406,8 @@ export default function FinanceDashboard() {
       <Breadcrumb currentPage="Marketing Dashboard" />
       <div className="mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Marketing Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Revenue vs Expenses, Expense Breakdown, Monthly Target</p>
+          <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Marketing Dashboard</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Revenue vs Expenses, Expense Breakdown, Monthly Target</p>
         </div>
       </div>
 
@@ -422,8 +422,8 @@ export default function FinanceDashboard() {
                   <i className="fi fi-rr-coins text-green-600 dark:text-green-400" style={{ fontSize: '24px' }}></i>
               </div>
               <div>
-                  <span className="text-lg font-semibold text-gray-600 dark:text-gray-400 block">Total Revenue</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalRevenue)}</h2>
+                  <span className="text-[14px] font-semibold text-gray-600 dark:text-gray-400 block">Total Revenue</span>
+                <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalRevenue)}</h2>
               </div>
             </div>
           </div>
@@ -434,8 +434,8 @@ export default function FinanceDashboard() {
                   <i className="fi fi-rr-credit-card text-red-600 dark:text-red-400" style={{ fontSize: '24px' }}></i>
               </div>
               <div>
-                  <span className="text-lg font-semibold text-gray-600 dark:text-gray-400 block">Total Expenses</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalExpenses)}</h2>
+                  <span className="text-[14px] font-semibold text-gray-600 dark:text-gray-400 block">Total Expenses</span>
+                <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(totalExpenses)}</h2>
               </div>
             </div>
           </div>
@@ -446,8 +446,8 @@ export default function FinanceDashboard() {
                   <i className="fi fi-rr-chart-histogram text-purple-600 dark:text-purple-400" style={{ fontSize: '24px' }}></i>
               </div>
               <div>
-                  <span className="text-lg font-semibold text-gray-600 dark:text-gray-400 block">Net Profit</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(netProfit)}</h2>
+                  <span className="text-[14px] font-semibold text-gray-600 dark:text-gray-400 block">Net Profit</span>
+                <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0 mt-1">{formatCurrency(netProfit)}</h2>
               </div>
             </div>
           </div>
@@ -458,8 +458,8 @@ export default function FinanceDashboard() {
                   <i className="fi fi-rr-calendar text-orange-600 dark:text-orange-400" style={{ fontSize: '24px' }}></i>
               </div>
               <div>
-                  <span className="text-lg font-semibold text-gray-600 dark:text-gray-400 block">Pending Invoices</span>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-0 mt-1">{pendingInvoices}</h2>
+                  <span className="text-[14px] font-semibold text-gray-600 dark:text-gray-400 block">Pending Invoices</span>
+                <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0 mt-1">{pendingInvoices}</h2>
               </div>
             </div>
           </div>
@@ -470,7 +470,7 @@ export default function FinanceDashboard() {
           {/* Revenue vs Expenses Chart */}
           <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Revenue vs Expenses</h6>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Revenue vs Expenses</h6>
                 <div className="relative" ref={yearDropdownRef}>
                   <button
                     onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
@@ -488,7 +488,7 @@ export default function FinanceDashboard() {
                         }}
                         className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${selectedYear === 'This Year'
                             ? 'bg-primary text-white font-medium'
-                            : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                            : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
                         This Year
@@ -500,7 +500,7 @@ export default function FinanceDashboard() {
                         }}
                         className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${selectedYear === 'Last Year'
                             ? 'bg-primary text-white font-medium'
-                            : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                            : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
                         Last Year
@@ -517,7 +517,7 @@ export default function FinanceDashboard() {
             {/* Revenue Summary */}
             <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="border-b border-gray-200 dark:border-gray-700 mb-4 pb-4">
-                <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Revenue Summary</h6>
+                <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Revenue Summary</h6>
               </div>
               <div className="flex flex-col gap-4 mt-10">
                 <div className="flex items-center justify-center">
@@ -552,7 +552,7 @@ export default function FinanceDashboard() {
                         position: 'bottom',
                         horizontalAlign: 'center',
                         fontSize: '12px',
-                        fontFamily: 'var(--bs-body-font-family)',
+                        fontFamily: 'sans-serif',
                         labels: {
                           colors: isDarkMode ? '#ffffff' : '#1C274C',
                         },
@@ -623,7 +623,7 @@ export default function FinanceDashboard() {
               style={{ mixBlendMode: 'overlay' }}
             />
             <div className="p-4 pb-0 border-0 flex items-center justify-between relative z-10">
-              <h6 className="text-lg font-semibold text-white mb-0">Monthly Target</h6>
+              <h6 className="text-[14px] font-semibold text-white mb-0">Monthly Target</h6>
             </div>
             <div className="p-4 pt-2 pb-0 flex-1 flex flex-col">
                 <div className="flex gap-2 items-center mb-0">
@@ -677,7 +677,7 @@ export default function FinanceDashboard() {
                               show: true,
                               offsetY: -35,
                               fontSize: '28px',
-                              fontFamily: 'var(--bs-body-font-family)',
+                              fontFamily: 'sans-serif',
                               fontWeight: 600,
                               color: '#FFFFFF',
                               formatter: () => `${(currentMonthRevenue / 1000).toFixed(0)}K`,
@@ -730,7 +730,7 @@ export default function FinanceDashboard() {
       {/* Recent Transactions Table */}
       <div className="mt-5 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 items-center justify-between">
-          <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Recent Transactions</h6>
+          <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Recent Transactions</h6>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -749,7 +749,7 @@ export default function FinanceDashboard() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[12px]">
             <thead className="bg-gray-50 dark:bg-gray-900/50">
               <tr>
                 <th className="px-4 py-3 text-left text-gray-700 dark:text-gray-300 font-semibold min-w-[150px]">Name</th>

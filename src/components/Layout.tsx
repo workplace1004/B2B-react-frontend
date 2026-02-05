@@ -196,10 +196,10 @@ export default function Layout({ children }: LayoutProps) {
       setSelectedNavbarItem('marketing');
     } else if (path.startsWith('/customers') || path.startsWith('/customer-profile') || path.startsWith('/b2b-terms') || path.startsWith('/service')) {
       setSelectedNavbarItem('customer-experience');
-    } else if (path.startsWith('/vendors-factories') || path.startsWith('/production-orders') || path.startsWith('/landed-cost') || 
-               path.startsWith('/warehouses-locations') || path.startsWith('/stock-control') || path.startsWith('/scanning') || path.startsWith('/counting') ||
-               path.startsWith('/orders') || path.startsWith('/pick-pack-ship') || path.startsWith('/returns-rma') || path.startsWith('/omnichannel') ||
-               path.startsWith('/production-mrp') || path.startsWith('/inventory-warehouse') || path.startsWith('/orders-fulfillment')) {
+    } else if (path.startsWith('/vendors-factories') || path.startsWith('/production-orders') || path.startsWith('/landed-cost') ||
+      path.startsWith('/warehouses-locations') || path.startsWith('/stock-control') || path.startsWith('/scanning') || path.startsWith('/counting') ||
+      path.startsWith('/orders') || path.startsWith('/pick-pack-ship') || path.startsWith('/returns-rma') || path.startsWith('/omnichannel') ||
+      path.startsWith('/production-mrp') || path.startsWith('/inventory-warehouse') || path.startsWith('/orders-fulfillment')) {
       setSelectedNavbarItem('operations');
     } else if (path.startsWith('/forecasting-ai') || path.startsWith('/replenishment') || path.startsWith('/auto-po-proposals') || path.startsWith('/open-to-buy') || path.startsWith('/dead-stock-markdown') || path.startsWith('/allocation-intelligence') || path.startsWith('/next-best-actions')) {
       setSelectedNavbarItem('planning-intelligence');
@@ -531,8 +531,8 @@ export default function Layout({ children }: LayoutProps) {
         <div className='w-full h-full flex flex-col px-3'>
           <div className='h-20 flex px-5 justify-center border-gray-200 dark:border-gray-700 flex flex-col'>
             {/* Sidebar header */}
-            <h1 className='text-2xl font-bold text-primary-600 dark:text-primary-400'>HAZEL</h1>
-            <p className='text-md text-gray-500 dark:text-gray-400'>Inventory Platform</p>
+            <h1 className='text-[18px] font-bold text-primary-600 dark:text-primary-400'>HAZEL</h1>
+            <p className='text-[14px] text-gray-500 dark:text-gray-400'>Inventory Platform</p>
           </div>
 
           {/* Sidebar */}
@@ -547,24 +547,24 @@ export default function Layout({ children }: LayoutProps) {
                 if (selectedNavbarItem === 'dashboards') {
                   const overviewItems = currentSidebarItems.filter(item => !item.section || item.section === 'overview');
                   const todosItems = currentSidebarItems.filter(item => item.section === 'todos');
-                  
+
                   return (
                     <>
                       {sidebarOpen && overviewItems.length > 0 && (
-                <div className="px-5 mb-4">
-                  <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                        <div className="px-5 mb-4">
+                          <h2 className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
                             OVERVIEW
                           </h2>
                         </div>
                       )}
-                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'} ${todosItems.length > 0 ? 'mb-4' : ''}`}>
+                      <ul className={`space-y-1 border-b border-gray-200 dark:border-gray-700 pb-4 ${sidebarOpen ? 'px-2' : 'px-0'} ${todosItems.length > 0 ? 'mb-4' : ''}`}>
                         {overviewItems.map((item) => {
                           const active = isActive(item.path);
                           return (
                             <li key={item.path}>
                               <Link
                                 to={item.path}
-                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                className={`flex items-center gap-3 py-2 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
                                   } ${active
                                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -575,19 +575,19 @@ export default function Layout({ children }: LayoutProps) {
                                 ) : item.icon ? (
                                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                                 ) : null}
-                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                                {sidebarOpen && <span className="text-[14px]">{item.label}</span>}
                               </Link>
                             </li>
                           );
                         })}
                       </ul>
                       {sidebarOpen && todosItems.length > 0 && (
-                        <div className="px-5 mb-4 mt-10">
-                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                        <div className="px-5 mb-4 mt-7">
+                          <h2 className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
                             TODOS
-                  </h2>
-                </div>
-              )}
+                          </h2>
+                        </div>
+                      )}
                       <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
                         {todosItems.map((item) => {
                           const active = isActive(item.path);
@@ -595,7 +595,7 @@ export default function Layout({ children }: LayoutProps) {
                             <li key={item.path}>
                               <Link
                                 to={item.path}
-                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                className={`flex items-center gap-3 py-2 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
                                   } ${active
                                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -606,7 +606,7 @@ export default function Layout({ children }: LayoutProps) {
                                 ) : item.icon ? (
                                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                                 ) : null}
-                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                                {sidebarOpen && <span className="text-[14px]">{item.label}</span>}
                               </Link>
                             </li>
                           );
@@ -619,24 +619,24 @@ export default function Layout({ children }: LayoutProps) {
                   const productionItems = currentSidebarItems.filter(item => item.section === 'production');
                   const inventoryItems = currentSidebarItems.filter(item => item.section === 'inventory');
                   const ordersItems = currentSidebarItems.filter(item => item.section === 'orders');
-                  
+
                   return (
                     <>
                       {sidebarOpen && productionItems.length > 0 && (
                         <div className="px-5 mb-4">
-                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                          <h2 className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
                             PRODUCTION (MRP)
                           </h2>
                         </div>
                       )}
-                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'} ${inventoryItems.length > 0 || ordersItems.length > 0 ? 'mb-4' : ''}`}>
+                      <ul className={`space-y-1 border-b border-gray-200 dark:border-gray-700 pb-4 ${sidebarOpen ? 'px-2' : 'px-0'} ${inventoryItems.length > 0 || ordersItems.length > 0 ? 'mb-4' : ''}`}>
                         {productionItems.map((item) => {
                           const active = isActive(item.path);
                           return (
                             <li key={item.path}>
                               <Link
                                 to={item.path}
-                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                className={`flex items-center gap-3 py-2 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
                                   } ${active
                                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -647,27 +647,27 @@ export default function Layout({ children }: LayoutProps) {
                                 ) : item.icon ? (
                                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                                 ) : null}
-                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                                {sidebarOpen && <span className="text-[14px]">{item.label}</span>}
                               </Link>
                             </li>
                           );
                         })}
                       </ul>
                       {sidebarOpen && inventoryItems.length > 0 && (
-                        <div className="px-5 mb-4 mt-10">
-                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                        <div className="px-5 mb-4 mt-7">
+                          <h2 className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
                             INVENTORY & WAREHOUSE (WMS)
                           </h2>
                         </div>
                       )}
-                      <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'} ${ordersItems.length > 0 ? 'mb-4' : ''}`}>
+                      <ul className={`space-y-1 border-b border-gray-200 dark:border-gray-700 pb-4 ${sidebarOpen ? 'px-2' : 'px-0'} ${ordersItems.length > 0 ? 'mb-4' : ''}`}>
                         {inventoryItems.map((item) => {
                           const active = isActive(item.path);
                           return (
                             <li key={item.path}>
                               <Link
                                 to={item.path}
-                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                className={`flex items-center gap-3 py-2 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
                                   } ${active
                                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -678,15 +678,15 @@ export default function Layout({ children }: LayoutProps) {
                                 ) : item.icon ? (
                                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                                 ) : null}
-                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                                {sidebarOpen && <span className="text-[14px]">{item.label}</span>}
                               </Link>
                             </li>
                           );
                         })}
                       </ul>
                       {sidebarOpen && ordersItems.length > 0 && (
-                        <div className="px-5 mb-4 mt-10">
-                          <h2 className="text-xs font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                        <div className="px-5 mb-4 mt-7">
+                          <h2 className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
                             ORDERS & FULFILLMENT (OMS)
                           </h2>
                         </div>
@@ -698,7 +698,7 @@ export default function Layout({ children }: LayoutProps) {
                             <li key={item.path}>
                               <Link
                                 to={item.path}
-                                className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                className={`flex items-center gap-3 py-2 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
                                   } ${active
                                     ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -709,7 +709,7 @@ export default function Layout({ children }: LayoutProps) {
                                 ) : item.icon ? (
                                   <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
                                 ) : null}
-                                {sidebarOpen && <span className="text-lg">{item.label}</span>}
+                                {sidebarOpen && <span className="text-[14px]">{item.label}</span>}
                               </Link>
                             </li>
                           );
@@ -720,30 +720,30 @@ export default function Layout({ children }: LayoutProps) {
                 } else {
                   // For other navbar items, show without section headers
                   return (
-              <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
-                {currentSidebarItems.map((item) => {
-                  const active = isActive(item.path);
-                  return (
-                    <li key={item.path}>
-                      <Link
-                        to={item.path}
-                        className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
-                          } ${active
-                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          }`}
-                      >
-                        {item.useFlaticon && item.flaticonClass ? (
-                          <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
-                        ) : item.icon ? (
-                          <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
-                        ) : null}
-                        {sidebarOpen && <span className="text-lg">{item.label}</span>}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+                    <ul className={`space-y-1 ${sidebarOpen ? 'px-2' : 'px-0'}`}>
+                      {currentSidebarItems.map((item) => {
+                        const active = isActive(item.path);
+                        return (
+                          <li key={item.path}>
+                            <Link
+                              to={item.path}
+                              className={`flex items-center gap-3 py-2 rounded-lg transition-colors ${sidebarOpen ? 'px-3' : 'px-0 justify-center'
+                                } ${active
+                                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                            >
+                              {item.useFlaticon && item.flaticonClass ? (
+                                <i className={item.flaticonClass} style={{ fontSize: '18px', display: 'inline-block', lineHeight: 1 }}></i>
+                              ) : item.icon ? (
+                                <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+                              ) : null}
+                              {sidebarOpen && <span className="text-[14px]">{item.label}</span>}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   );
                 }
               })()}

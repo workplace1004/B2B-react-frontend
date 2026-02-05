@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { FileText, ShoppingCart, User, Search, Download, Share2, Eye, X, Mail, Link as LinkIcon, Copy, Check, Receipt, RotateCcw, Package } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { FileText, ShoppingCart, User, Search, Download, Share2, Eye, X, Mail, Link as LinkIcon, Copy, Check, Receipt, RotateCcw, Package, Plus, Trash2, ChevronDown, Inbox } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -23,8 +23,8 @@ export default function B2BPortal() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">B2B Portal</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Digital line sheets, wholesale ordering, and customer self-service</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">B2B Portal</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Digital line sheets, wholesale ordering, and customer self-service</p>
           </div>
         </div>
       </div>
@@ -450,15 +450,6 @@ function WholesaleOrderingSection() {
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               {searchQuery || statusFilter !== 'all' ? 'Try adjusting your search or filter criteria.' : 'Get started by creating your first wholesale order.'}
             </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <button
-                onClick={() => setIsOrderModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                New Order
-              </button>
-            )}
           </div>
         </div>
       ) : (
@@ -518,32 +509,585 @@ function WholesaleOrderingSection() {
         </div>
       )}
 
-      {/* Order Details Modal - Placeholder */}
+      {/* New Order Modal */}
       {isOrderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {selectedOrder ? 'Order Details' : 'New Wholesale Order'}
-              </h3>
-              <button
-                onClick={() => {
-                  setIsOrderModalOpen(false);
-                  setSelectedOrder(null);
-                }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <NewOrderModal
+          order={selectedOrder}
+          onClose={() => {
+            setIsOrderModalOpen(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Custom Select Component
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select...',
+  className = '',
+  error = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder?: string;
+  className?: string;
+  error?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelect(options[highlightedIndex].value);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
+  };
+
+  return (
+    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
+        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between transition-all ${
+          error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+        } ${isOpen ? 'ring-2 ring-primary-500 border-primary-500' : ''} hover:border-gray-400 dark:hover:border-gray-500`}
+        style={{
+          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          lineHeight: 1.6,
+          backgroundColor: 'transparent',
+        }}
+      >
+        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl custom-dropdown-menu"
+          style={{
+            zIndex: 10000,
+            top: '100%',
+            left: 0,
+            right: 0,
+            minWidth: '100%',
+            maxHeight: '400px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+          }}
+        >
+          {options.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4">
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
             </div>
-            <div className="p-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {selectedOrder ? `Order details for ${selectedOrder.orderNumber}` : 'Order creation form will be implemented here.'}
-              </p>
-            </div>
-          </div>
+          ) : (
+            options.map((option, index) => {
+              const isSelected = option.value === value;
+              
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isSelected
+                      ? 'bg-primary-500 text-white'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                  } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    display: 'block',
+                    width: '100%',
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })
+          )}
         </div>
       )}
+    </div>
+  );
+};
+
+// New Order Modal Component
+function NewOrderModal({ order, onClose }: { order?: any; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    customerId: order?.customerId?.toString() || '',
+    notes: order?.notes || '',
+    shippingAddress: order?.shippingAddress || '',
+    billingAddress: order?.billingAddress || '',
+  });
+  const [orderLines, setOrderLines] = useState<Array<{
+    productId: number;
+    productName: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number;
+    size?: string;
+    color?: string;
+  }>>(order?.orderLines?.map((line: any) => ({
+    productId: line.productId,
+    productName: line.product?.name || 'Product',
+    sku: line.product?.sku || '',
+    quantity: line.quantity,
+    unitPrice: parseFloat(line.unitPrice.toString()),
+    size: line.size || '',
+    color: line.color || '',
+  })) || []);
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch customers
+  const { data: customersData } = useQuery({
+    queryKey: ['customers'],
+    queryFn: async () => {
+      const response = await api.get('/customers?skip=0&take=1000');
+      return response.data?.data || [];
+    },
+  });
+
+  // Fetch products
+  const { data: productsData } = useQuery({
+    queryKey: ['products', 'order-creation'],
+    queryFn: async () => {
+      const response = await api.get('/products?skip=0&take=1000');
+      return response.data?.data || [];
+    },
+  });
+
+  const customers = customersData || [];
+  const products = productsData || [];
+
+  const customerOptions = customers.map((customer: any) => ({
+    value: customer.id.toString(),
+    label: customer.name,
+  }));
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!productSearch) return products;
+    return products.filter((p: any) =>
+      p.name?.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.sku?.toLowerCase().includes(productSearch.toLowerCase())
+    );
+  }, [products, productSearch]);
+
+  const productOptions = filteredProducts.map((product: any) => ({
+    value: product.id.toString(),
+    label: `${product.name} (${product.sku || 'N/A'})`,
+  }));
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    const subtotal = orderLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+    return {
+      subtotal,
+      total: subtotal,
+    };
+  }, [orderLines]);
+
+  const handleAddProduct = () => {
+    if (!selectedProductId) {
+      toast.error('Please select a product');
+      return;
+    }
+
+    const selectedProduct = products.find((p: any) => p.id.toString() === selectedProductId);
+    if (!selectedProduct) {
+      toast.error('Product not found');
+      return;
+    }
+
+    const existingLine = orderLines.find(line => line.productId === selectedProduct.id);
+    if (existingLine) {
+      toast.error('Product already added to order');
+      return;
+    }
+
+    const basePrice = parseFloat(selectedProduct.basePrice?.toString() || '0');
+    const wholesalePrice = basePrice * 0.7; // 30% discount for wholesale
+
+    setOrderLines([...orderLines, {
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      sku: selectedProduct.sku || '',
+      quantity: 1,
+      unitPrice: wholesalePrice,
+      size: selectedProduct.sizes?.[0] || '',
+      color: selectedProduct.colors?.[0] || '',
+    }]);
+    setSelectedProductId('');
+    setProductSearch('');
+  };
+
+  const handleRemoveLine = (index: number) => {
+    setOrderLines(orderLines.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateLine = (index: number, field: string, value: any) => {
+    const updated = [...orderLines];
+    updated[index] = { ...updated[index], [field]: value };
+    setOrderLines(updated);
+  };
+
+  const createOrderMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await api.post('/orders', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Order created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create order');
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.customerId) {
+      newErrors.customerId = 'Customer is required';
+    }
+
+    if (orderLines.length === 0) {
+      newErrors.orderLines = 'At least one product is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    const orderData = {
+      customerId: parseInt(formData.customerId),
+      type: 'WHOLESALE',
+      status: 'DRAFT',
+      notes: formData.notes || undefined,
+      shippingAddress: formData.shippingAddress || undefined,
+      billingAddress: formData.billingAddress || undefined,
+      orderLines: orderLines.map(line => ({
+        productId: line.productId,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        size: line.size || undefined,
+        color: line.color || undefined,
+      })),
+    };
+
+    createOrderMutation.mutate(orderData);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {order ? 'Order Details' : 'New Wholesale Order'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-6">
+            {/* Customer Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Customer <span className="text-red-500">*</span>
+              </label>
+              <CustomSelect
+                value={formData.customerId}
+                onChange={(value) => {
+                  setFormData({ ...formData, customerId: value });
+                  if (errors.customerId) setErrors({ ...errors, customerId: '' });
+                }}
+                options={customerOptions}
+                placeholder="Select a customer"
+                error={!!errors.customerId}
+              />
+              {errors.customerId && <p className="mt-1 text-sm text-red-500">{errors.customerId}</p>}
+            </div>
+
+            {/* Product Selection */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Add Products</h4>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search products by name or SKU..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div className="w-64">
+                  <CustomSelect
+                    value={selectedProductId}
+                    onChange={(value) => setSelectedProductId(value)}
+                    options={productOptions}
+                    placeholder="Select a product"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddProduct}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add
+                </button>
+              </div>
+              {errors.orderLines && <p className="mt-1 text-sm text-red-500">{errors.orderLines}</p>}
+            </div>
+
+            {/* Order Lines */}
+            {orderLines.length > 0 && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Product</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">SKU</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Size</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Color</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Quantity</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Unit Price</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Total</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {orderLines.map((line, index) => {
+                        const product = products.find((p: any) => p.id === line.productId);
+                        return (
+                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{line.productName}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{line.sku}</td>
+                            <td className="px-4 py-3">
+                              {product?.sizes && product.sizes.length > 0 ? (
+                                <select
+                                  value={line.size || ''}
+                                  onChange={(e) => handleUpdateLine(index, 'size', e.target.value)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                >
+                                  {product.sizes.map((size: string) => (
+                                    <option key={size} value={size}>{size}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={line.size || ''}
+                                  onChange={(e) => handleUpdateLine(index, 'size', e.target.value)}
+                                  placeholder="Size"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                />
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              {product?.colors && product.colors.length > 0 ? (
+                                <select
+                                  value={line.color || ''}
+                                  onChange={(e) => handleUpdateLine(index, 'color', e.target.value)}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                >
+                                  {product.colors.map((color: string) => (
+                                    <option key={color} value={color}>{color}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={line.color || ''}
+                                  onChange={(e) => handleUpdateLine(index, 'color', e.target.value)}
+                                  placeholder="Color"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                />
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                min="1"
+                                value={line.quantity}
+                                onChange={(e) => handleUpdateLine(index, 'quantity', parseInt(e.target.value) || 1)}
+                                className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={line.unitPrice}
+                                onChange={(e) => handleUpdateLine(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                className="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                              ${(line.unitPrice * line.quantity).toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLine(index)}
+                                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Order Totals */}
+            {orderLines.length > 0 && (
+              <div className="bg-gray-200 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal:</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">${totals.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-600">
+                  <span className="text-base font-semibold text-gray-900 dark:text-white">Total:</span>
+                  <span className="text-lg font-bold text-primary-600 dark:text-primary-400">${totals.total.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Additional Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Shipping Address
+                </label>
+                <textarea
+                  value={formData.shippingAddress}
+                  onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter shipping address..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Billing Address
+                </label>
+                <textarea
+                  value={formData.billingAddress}
+                  onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter billing address..."
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Notes
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Additional notes about this order..."
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={createOrderMutation.isPending}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {createOrderMutation.isPending ? 'Creating...' : order ? 'Update Order' : 'Create Order'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

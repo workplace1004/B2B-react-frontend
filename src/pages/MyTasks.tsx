@@ -324,14 +324,14 @@ export default function MyTasks() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Tasks</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your tasks and track your progress</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">My Tasks</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Manage your tasks and track your progress</p>
           </div>
           <button
             onClick={openModal}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             New Task
           </button>
         </div>
@@ -343,7 +343,7 @@ export default function MyTasks() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Tasks</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">{stats.total}</p>
             </div>
             <CheckSquare className="w-8 h-8 text-primary-600 dark:text-primary-400" />
           </div>
@@ -352,7 +352,7 @@ export default function MyTasks() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">{stats.pending}</p>
             </div>
             <Circle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
           </div>
@@ -361,7 +361,7 @@ export default function MyTasks() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.inProgress}</p>
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">{stats.inProgress}</p>
             </div>
             <Clock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
@@ -370,7 +370,7 @@ export default function MyTasks() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">{stats.completed}</p>
             </div>
             <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
@@ -379,7 +379,7 @@ export default function MyTasks() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Overdue</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.overdue}</p>
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">{stats.overdue}</p>
             </div>
             <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
@@ -430,7 +430,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterStatus === 'all'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     All Status
@@ -444,7 +444,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterStatus === 'PENDING'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Pending
@@ -458,7 +458,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterStatus === 'IN_PROGRESS'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     In Progress
@@ -472,7 +472,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterStatus === 'COMPLETED'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Completed
@@ -486,7 +486,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterStatus === 'OVERDUE'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Overdue
@@ -523,7 +523,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterPriority === 'all'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     All Priority
@@ -537,7 +537,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterPriority === 'HIGH'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     High
@@ -551,7 +551,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterPriority === 'MEDIUM'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Medium
@@ -565,7 +565,7 @@ export default function MyTasks() {
                     className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                       filterPriority === 'LOW'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Low
@@ -598,7 +598,7 @@ export default function MyTasks() {
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                <thead className="bg-gray-200 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Title
@@ -781,7 +781,7 @@ export default function MyTasks() {
             <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+                  <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
                     Change Status
                   </h5>
                   <button type="button" onClick={closeStatusModal} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
@@ -858,7 +858,7 @@ export default function MyTasks() {
             <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+                  <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
                     Delete Task
                   </h5>
                   <button type="button" onClick={closeDeleteModal} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
@@ -1049,7 +1049,7 @@ function TaskModal({
         <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 className="modal-title font-semibold text-gray-900 dark:text-white">
                 {task ? 'Edit Task' : 'Create New Task'}
               </h5>
               <button type="button" onClick={onClose} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
@@ -1109,7 +1109,7 @@ function TaskModal({
                             className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                               status === 'PENDING'
                                 ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             Pending
@@ -1123,7 +1123,7 @@ function TaskModal({
                             className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                               status === 'IN_PROGRESS'
                                 ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             In Progress
@@ -1137,7 +1137,7 @@ function TaskModal({
                             className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                               status === 'COMPLETED'
                                 ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             Completed
@@ -1151,7 +1151,7 @@ function TaskModal({
                             className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                               status === 'OVERDUE'
                                 ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             Overdue
@@ -1190,7 +1190,7 @@ function TaskModal({
                             className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                               priority === 'LOW'
                                 ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             Low
@@ -1204,7 +1204,7 @@ function TaskModal({
                             className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                               priority === 'MEDIUM'
                                 ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             Medium
@@ -1218,7 +1218,7 @@ function TaskModal({
                             className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                               priority === 'HIGH'
                                 ? 'bg-primary-600 text-white'
-                                : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                           >
                             High
@@ -1400,7 +1400,7 @@ function TaskModal({
                               className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                                 category === cat
                                   ? 'bg-primary-600 text-white'
-                                  : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                  : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                               }`}
                             >
                               {cat}
@@ -1417,10 +1417,10 @@ function TaskModal({
                 </div>
               </div>
               <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4">
-                <button type="button" onClick={onClose} className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                <button type="button" onClick={onClose} className="px-5 text-[14px] py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2.5 ml-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium">
+                <button type="submit" className="px-5 py-2.5 text-[14px] ml-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium">
                   {task ? 'Update Task' : 'Create Task'}
                 </button>
               </div>

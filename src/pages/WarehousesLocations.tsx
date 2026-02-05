@@ -181,7 +181,7 @@ const CustomSelect = ({
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
-            const isHighlighted = index === highlightedIndex;
+            
             
             return (
               <button
@@ -190,9 +190,9 @@ const CustomSelect = ({
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected || isHighlighted
+                  isSelected
                     ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                 } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                 style={{
                   fontSize: '0.875rem',
@@ -546,8 +546,8 @@ export default function WarehousesLocations() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Warehouses & Locations</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Warehouses & Locations</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Manage warehouses, bins/locations, and put-away rules
             </p>
           </div>
@@ -2290,7 +2290,7 @@ function PutAwayRulesModal({
               {filteredRules.map((rule) => (
                 <div
                   key={rule.id}
-                  className="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-4 hover:shadow-md transition-shadow"
+                  className="bg-gray-200 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

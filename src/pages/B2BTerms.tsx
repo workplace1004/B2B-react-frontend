@@ -112,7 +112,7 @@ const CustomSelect = ({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 ${
+              className={`w-full px-4 py-2 text-left hover:bg-gray-200 dark:hover:bg-gray-700 ${
                 value === option.value ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-white'
               }`}
             >
@@ -316,8 +316,8 @@ export default function B2BTerms() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">B2B Terms</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">B2B Terms</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Manage credit limits and payment terms for B2B customers
             </p>
           </div>
@@ -832,7 +832,7 @@ function AddTermsModal({
               )}
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex items-center justify-end gap-3">
+            <div className="bg-gray-200 dark:bg-gray-700 px-6 py-4 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -1050,7 +1050,7 @@ function EditTermsModal({
               </div>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex items-center justify-end gap-3">
+            <div className="bg-gray-200 dark:bg-gray-700 px-6 py-4 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={onClose}

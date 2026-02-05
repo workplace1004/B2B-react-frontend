@@ -284,8 +284,8 @@ export default function AlertsExceptionsDashboard() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Operational Dashboard</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Low stock, overstock, delayed POs, demand spikes, stuck RMAs</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Operational Dashboard</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Low stock, overstock, delayed POs, demand spikes, stuck RMAs</p>
           </div>
         </div>
       </div>
@@ -299,7 +299,7 @@ export default function AlertsExceptionsDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Low Stock</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.lowStockItems}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.lowStockItems}</h2>
             </div>
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function AlertsExceptionsDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Overstock</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.overstockItems}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.overstockItems}</h2>
             </div>
           </div>
         </div>
@@ -323,7 +323,7 @@ export default function AlertsExceptionsDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Delayed Orders</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.delayedOrders}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.delayedOrders}</h2>
             </div>
           </div>
         </div>
@@ -335,7 +335,7 @@ export default function AlertsExceptionsDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Demand Spikes</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.demandSpikes}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.demandSpikes}</h2>
             </div>
           </div>
         </div>
@@ -347,7 +347,7 @@ export default function AlertsExceptionsDashboard() {
             </div>
             <div>
               <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Stuck RMAs</span>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-0">{metrics.stuckRMAs}</h2>
+              <h2 className="text-[28px] font-bold text-gray-900 dark:text-white mb-0">{metrics.stuckRMAs}</h2>
             </div>
           </div>
         </div>
@@ -355,7 +355,7 @@ export default function AlertsExceptionsDashboard() {
 
       {/* Alert Trends Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Alert Trends (Last 30 Days)</h6>
+        <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Alert Trends (Last 30 Days)</h6>
         <Chart type="line" height={300} series={alertTrendsChartConfig.series} options={alertTrendsChartConfig} />
       </div>
 
@@ -364,7 +364,7 @@ export default function AlertsExceptionsDashboard() {
         {/* Low Stock Alerts */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Low Stock Alerts</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Low Stock Alerts</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -414,7 +414,7 @@ export default function AlertsExceptionsDashboard() {
         {/* Overstock Alerts */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Overstock Alerts</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Overstock Alerts</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -463,7 +463,7 @@ export default function AlertsExceptionsDashboard() {
         {/* Delayed Orders */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Delayed Orders</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Delayed Orders</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -513,7 +513,7 @@ export default function AlertsExceptionsDashboard() {
         {/* Demand Spikes */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Demand Spikes</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Demand Spikes</h6>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -560,7 +560,7 @@ export default function AlertsExceptionsDashboard() {
       {/* Stuck RMAs */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Stuck RMAs</h6>
+          <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Stuck RMAs</h6>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

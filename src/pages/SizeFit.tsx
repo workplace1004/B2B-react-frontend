@@ -111,7 +111,6 @@ const CustomSelect = ({
           ) : (
             options.map((option, index) => {
               const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
               
               return (
                 <button
@@ -120,9 +119,9 @@ const CustomSelect = ({
                   onClick={() => handleSelect(option.value)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected || isHighlighted
+                    isSelected
                       ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                   style={{
                     fontSize: '0.875rem',
@@ -332,15 +331,15 @@ export default function SizeFit() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Size & Fit</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Size charts, Localization & Conversions</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Size & Fit</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Size charts, Localization & Conversions</p>
           </div>
           {activeTab === 'size-charts' && (
             <button
               onClick={openModal}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Add Size Chart
             </button>
           )}
@@ -382,7 +381,7 @@ export default function SizeFit() {
             placeholder="Search size charts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+            className="w-full pl-10 ::placeholder-[12px] text-[14px] pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
         <div className="relative" ref={categoryFilterRef}>
@@ -408,7 +407,7 @@ export default function SizeFit() {
                 className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                   filterCategory === 'all'
                     ? 'bg-primary-600 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 All Categories
@@ -424,7 +423,7 @@ export default function SizeFit() {
                   className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
                     filterCategory === cat
                       ? 'bg-primary-600 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
                   {cat}
@@ -448,15 +447,6 @@ export default function SizeFit() {
                 ? 'Try adjusting your search or filter criteria.'
                 : 'Get started by creating your first size chart.'}
             </p>
-            {!searchQuery && filterCategory === 'all' && (
-              <button
-                onClick={openModal}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Add Size Chart
-              </button>
-            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -650,8 +640,8 @@ function LocalizationConversionsSection() {
       {/* Unit Conversion */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-3 mb-6">
-          <ArrowLeftRight className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Unit Conversion</h3>
+          <ArrowLeftRight className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white">Unit Conversion</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -686,7 +676,7 @@ function LocalizationConversionsSection() {
               value={conversionValue}
               onChange={(e) => handleUnitConversion(e.target.value)}
               placeholder="Enter value"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           
@@ -727,8 +717,8 @@ function LocalizationConversionsSection() {
       {/* Language & Localization Settings */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-3 mb-6">
-          <Languages className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Language & Localization Settings</h3>
+          <Languages className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white">Language & Localization Settings</h3>
         </div>
         
         <div className="space-y-6">
@@ -811,8 +801,8 @@ function LocalizationConversionsSection() {
       {/* Regional Size Conversions */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-3 mb-6">
-          <Globe className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Regional Size Conversions</h3>
+          <Globe className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white">Regional Size Conversions</h3>
         </div>
         
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -898,15 +888,99 @@ function SizeChartModal({
     return {};
   });
 
-  const handleAddSize = () => {
-    const newSize = prompt('Enter size name (e.g., XXL, 2XL):');
-    if (newSize && newSize.trim() && !sizes.includes(newSize.trim())) {
-      setSizes([...sizes, newSize.trim()]);
-      setMeasurements({
-        ...measurements,
-        [newSize.trim()]: {},
+  // Modal states for Add Size and Add Measurement
+  const [isAddSizeModalOpen, setIsAddSizeModalOpen] = useState(false);
+  const [isAddSizeModalShowing, setIsAddSizeModalShowing] = useState(false);
+  const [isAddMeasurementModalOpen, setIsAddMeasurementModalOpen] = useState(false);
+  const [isAddMeasurementModalShowing, setIsAddMeasurementModalShowing] = useState(false);
+  const [newSizeName, setNewSizeName] = useState('');
+  const [newMeasurementName, setNewMeasurementName] = useState('');
+
+  // Handle body scroll lock when modals are open
+  useEffect(() => {
+    if (isAddSizeModalOpen) {
+      document.body.classList.add('modal-open');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAddSizeModalShowing(true);
+        });
       });
+    } else {
+      document.body.classList.remove('modal-open');
+      setIsAddSizeModalShowing(false);
     }
+  }, [isAddSizeModalOpen]);
+
+  useEffect(() => {
+    if (isAddMeasurementModalOpen) {
+      document.body.classList.add('modal-open');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAddMeasurementModalShowing(true);
+        });
+      });
+    } else {
+      document.body.classList.remove('modal-open');
+      setIsAddMeasurementModalShowing(false);
+    }
+  }, [isAddMeasurementModalOpen]);
+
+  const openAddSizeModal = () => {
+    setNewSizeName('');
+    setIsAddSizeModalOpen(true);
+  };
+
+  const closeAddSizeModal = () => {
+    setIsAddSizeModalShowing(false);
+    setTimeout(() => {
+      setIsAddSizeModalOpen(false);
+      setNewSizeName('');
+    }, 300);
+  };
+
+  const handleAddSize = () => {
+    if (!newSizeName.trim()) {
+      toast.error('Size name is required');
+      return;
+    }
+    if (sizes.includes(newSizeName.trim())) {
+      toast.error('This size already exists');
+      return;
+    }
+    setSizes([...sizes, newSizeName.trim()]);
+    setMeasurements({
+      ...measurements,
+      [newSizeName.trim()]: {},
+    });
+    closeAddSizeModal();
+    toast.success('Size added successfully');
+  };
+
+  const openAddMeasurementModal = () => {
+    setNewMeasurementName('');
+    setIsAddMeasurementModalOpen(true);
+  };
+
+  const closeAddMeasurementModal = () => {
+    setIsAddMeasurementModalShowing(false);
+    setTimeout(() => {
+      setIsAddMeasurementModalOpen(false);
+      setNewMeasurementName('');
+    }, 300);
+  };
+
+  const handleAddMeasurementType = () => {
+    if (!newMeasurementName.trim()) {
+      toast.error('Measurement type is required');
+      return;
+    }
+    if (measurementTypes.includes(newMeasurementName.trim())) {
+      toast.error('This measurement type already exists');
+      return;
+    }
+    setMeasurementTypes([...measurementTypes, newMeasurementName.trim()]);
+    closeAddMeasurementModal();
+    toast.success('Measurement type added successfully');
   };
 
   const handleRemoveSize = (size: string) => {
@@ -920,12 +994,6 @@ function SizeChartModal({
     setMeasurements(newMeasurements);
   };
 
-  const handleAddMeasurementType = () => {
-    const newType = prompt('Enter measurement type (e.g., Shoulder, Hip):');
-    if (newType && newType.trim() && !measurementTypes.includes(newType.trim())) {
-      setMeasurementTypes([...measurementTypes, newType.trim()]);
-    }
-  };
 
   const handleRemoveMeasurementType = (type: string) => {
     if (measurementTypes.length <= 1) {
@@ -991,7 +1059,7 @@ function SizeChartModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-          <h5 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h5 className="text-[16px] font-semibold text-gray-900 dark:text-white">
             {chart ? 'Edit Size Chart' : 'Create Size Chart'}
           </h5>
           <button type="button" onClick={onClose} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
@@ -1006,7 +1074,7 @@ function SizeChartModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="e.g., Men's T-Shirt Size Chart"
                 required
               />
@@ -1019,7 +1087,7 @@ function SizeChartModal({
                   type="text"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Tops, Bottoms, Shoes"
                 />
               </div>
@@ -1045,7 +1113,7 @@ function SizeChartModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter description"
               />
             </div>
@@ -1056,14 +1124,14 @@ function SizeChartModal({
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={handleAddSize}
+                    onClick={openAddSizeModal}
                     className="px-3 py-1 text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
                   >
                     + Add Size
                   </button>
                   <button
                     type="button"
-                    onClick={handleAddMeasurementType}
+                    onClick={openAddMeasurementModal}
                     className="px-3 py-1 text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
                   >
                     + Add Measurement
@@ -1133,19 +1201,139 @@ function SizeChartModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="px-4 text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 text-[14px] py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Saving...' : chart ? 'Update' : 'Create'}
             </button>
           </div>
         </form>
+
+        {/* Add Size Modal */}
+        {isAddSizeModalOpen && (
+          <div
+            className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-300 ${
+              isAddSizeModalShowing ? 'opacity-100' : 'opacity-0'
+            }`}
+            onClick={closeAddSizeModal}
+          >
+            <div className="absolute inset-0 bg-black/50" />
+            <div
+              className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-transform duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+                <h5 className="text-[16px] font-semibold text-gray-900 dark:text-white">Add Size</h5>
+                <button type="button" onClick={closeAddSizeModal} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Size Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newSizeName}
+                    onChange={(e) => setNewSizeName(e.target.value)}
+                    className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="e.g., XXL, 2XL"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddSize();
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer border-t border-gray-200 dark:border-gray-700 p-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeAddSizeModal}
+                  className="px-4 text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddSize}
+                  className="px-4 text-[14px] py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                >
+                  Add Size
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Measurement Modal */}
+        {isAddMeasurementModalOpen && (
+          <div
+            className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-300 ${
+              isAddMeasurementModalShowing ? 'opacity-100' : 'opacity-0'
+            }`}
+            onClick={closeAddMeasurementModal}
+          >
+            <div className="absolute inset-0 bg-black/50" />
+            <div
+              className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-transform duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+                <h5 className="text-[16px] font-semibold text-gray-900 dark:text-white">Add Measurement</h5>
+                <button type="button" onClick={closeAddMeasurementModal} className="btn-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Measurement Type *
+                  </label>
+                  <input
+                    type="text"
+                    value={newMeasurementName}
+                    onChange={(e) => setNewMeasurementName(e.target.value)}
+                    className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="e.g., Shoulder, Hip"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddMeasurementType();
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer border-t border-gray-200 dark:border-gray-700 p-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeAddMeasurementModal}
+                  className="px-4 text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddMeasurementType}
+                  className="px-4 text-[14px] py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                >
+                  Add Measurement
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

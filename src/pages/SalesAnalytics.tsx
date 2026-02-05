@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, Store, Users, Search, Calendar, ArrowUp, ArrowDown, DollarSign, Package, ShoppingCart } from 'lucide-react';
+import { TrendingUp, Store, Users, Search, Calendar, ArrowUp, ArrowDown, DollarSign, Package, ShoppingCart, Inbox } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -23,8 +23,8 @@ export default function SalesAnalytics() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sales Analytics</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Sell-in performance, channel performance, and customer performance analytics</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Sales Analytics</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Sell-in performance, channel performance, and customer performance analytics</p>
           </div>
         </div>
       </div>
@@ -406,8 +406,13 @@ function SellInPerformanceSection() {
                 if (topProducts.length === 0) {
                   return (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No sales data available
+                      <td colSpan={5} className="px-6 py-16">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                            <Package className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                          </div>
+                          <p className="text-gray-500 dark:text-gray-400">No sales data available</p>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -727,8 +732,13 @@ function ChannelPerformanceSection() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {channelMetrics.channels.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    No channel data available
+                  <td colSpan={7} className="px-6 py-16">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                        <Store className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400">No channel data available</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -1165,8 +1175,15 @@ function CustomerPerformanceSection() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {customerMetrics.customers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    {searchQuery ? 'No customers found matching your search' : 'No customer data available'}
+                  <td colSpan={7} className="px-6 py-16">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                        <Inbox className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        {searchQuery ? 'No customers found matching your search' : 'No customer data available'}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (

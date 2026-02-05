@@ -292,8 +292,8 @@ const CustomSelect = ({
                     isSelected
                       ? 'bg-blue-500 text-white font-medium'
                       : isHighlighted
-                      ? 'bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                   style={{
                     fontSize: '0.875rem',
@@ -675,8 +675,8 @@ export default function PickPackShip() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Pick / Pack / Ship</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Pick / Pack / Ship</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Manage pick lists, pack slips, and shipping labels for order fulfillment
             </p>
           </div>
@@ -1474,7 +1474,7 @@ function CreatePickListModal({
               placeholder={orders.length === 0 ? 'No orders available' : 'Select an order...'}
             />
             {selectedOrder && (
-              <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="mt-2 p-3 bg-gray-200 dark:bg-gray-700 rounded-lg">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   <span className="font-medium">Customer:</span> {selectedOrder.customer?.name || 'Unknown'}
                 </p>
@@ -1855,7 +1855,7 @@ function CreatePackSlipModal({
               placeholder={orders.length === 0 ? 'No orders available' : 'Select an order...'}
             />
             {selectedOrder && (
-              <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="mt-2 p-3 bg-gray-200 dark:bg-gray-700 rounded-lg">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   <span className="font-medium">Customer:</span> {selectedOrder.customer?.name || 'Unknown'}
                 </p>
@@ -2431,7 +2431,7 @@ function CreateShippingLabelModal({
 
           {/* From Address */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">From Address *</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">From Address *</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>
@@ -2497,7 +2497,7 @@ function CreateShippingLabelModal({
 
           {/* To Address */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">To Address *</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">To Address *</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>

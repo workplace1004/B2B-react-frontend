@@ -213,7 +213,7 @@ export default function Calendar() {
 
         {/* Upcoming Events Sidebar */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upcoming Events</h3>
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Upcoming Events</h3>
           <div className="space-y-4">
             {events.length === 0 ? (
               <div className="text-center py-8">

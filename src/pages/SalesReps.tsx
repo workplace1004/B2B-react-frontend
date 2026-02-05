@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { User, MapPin, Users, DollarSign, Search, Plus, X, Pencil, Trash2, ChevronDown, Inbox } from 'lucide-react';
+import { User, MapPin, Users, DollarSign, Search, Plus, X, Pencil, Trash2, ChevronDown, Inbox, Calculator } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -113,7 +113,7 @@ const CustomSelect = ({
           ) : (
             options.map((option, index) => {
               const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
+              
               
               return (
                 <button
@@ -122,9 +122,9 @@ const CustomSelect = ({
                   onClick={() => handleSelect(option.value)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected || isHighlighted
+                    isSelected
                       ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                   style={{
                     fontSize: '0.875rem',
@@ -159,8 +159,8 @@ export default function SalesReps() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sales Reps</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage sales rep accounts, territories, client assignments, and commissions</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Sales Reps</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Manage sales rep accounts, territories, client assignments, and commissions</p>
           </div>
         </div>
       </div>
@@ -272,9 +272,9 @@ function RepAccountsTerritoriesSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Header with Search and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -525,15 +525,21 @@ function RepTerritoryModal({ rep, onClose, onSave }: { rep?: any; onClose: () =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {rep ? 'Edit Sales Rep & Territory' : 'Add Sales Rep & Territory'}
           </h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -549,6 +555,7 @@ function RepTerritoryModal({ rep, onClose, onSave }: { rep?: any; onClose: () =>
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="Enter first name"
                   required
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
@@ -559,6 +566,7 @@ function RepTerritoryModal({ rep, onClose, onSave }: { rep?: any; onClose: () =>
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Enter last name"
                   required
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
@@ -571,6 +579,7 @@ function RepTerritoryModal({ rep, onClose, onSave }: { rep?: any; onClose: () =>
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Enter email address"
                   required
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
@@ -584,6 +593,7 @@ function RepTerritoryModal({ rep, onClose, onSave }: { rep?: any; onClose: () =>
                     { value: 'SALES', label: 'Sales' },
                     { value: 'B2B', label: 'B2B' },
                   ]}
+                  placeholder="Select role"
                 />
               </div>
             </div>
@@ -736,6 +746,7 @@ function RepTerritoryModal({ rep, onClose, onSave }: { rep?: any; onClose: () =>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter description (optional)"
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
@@ -1041,6 +1052,431 @@ function AssignClientModal({ customer, reps, onClose, onSave, isLoading }: { cus
   );
 }
 
+// Calculate Commissions Modal Component
+function CalculateCommissionsModal({
+  isOpen,
+  onClose,
+  selectedCommission,
+  reps,
+  onCalculate,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedCommission?: any;
+  reps: any[];
+  onCalculate: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    period: new Date().toISOString().slice(0, 7), // YYYY-MM
+    commissionType: 'SALES_VOLUME',
+    salesVolumeRate: 5, // percentage
+    marginRate: 10, // percentage
+    selectedRepIds: [] as number[],
+    calculateForAll: true,
+  });
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+
+  // Fetch orders for the selected period
+  const { data: ordersData } = useQuery({
+    queryKey: ['orders', 'commission-calculation', formData.period],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/orders?skip=0&take=1000');
+        const orders = response.data?.data || [];
+        // Filter by period
+        const periodStart = new Date(formData.period + '-01');
+        const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0);
+        return orders.filter((order: any) => {
+          const orderDate = new Date(order.orderDate);
+          return orderDate >= periodStart && orderDate <= periodEnd && 
+                 (order.status === 'FULFILLED' || order.status === 'DELIVERED') &&
+                 order.userId;
+        });
+      } catch (error) {
+        return [];
+      }
+    },
+    enabled: isOpen,
+  });
+
+  // Calculate preview
+  const calculatePreview = () => {
+    if (!ordersData || ordersData.length === 0) {
+      toast.error('No orders found for the selected period');
+      return;
+    }
+
+    const filteredOrders = formData.calculateForAll
+      ? ordersData
+      : ordersData.filter((order: any) => formData.selectedRepIds.includes(order.userId));
+
+    if (filteredOrders.length === 0) {
+      toast.error('No orders found for selected sales reps');
+      return;
+    }
+
+    setIsCalculating(true);
+    setTimeout(() => {
+      const commissionMap: any = {};
+
+    filteredOrders.forEach((order: any) => {
+      const repId = order.userId;
+      if (!repId) return;
+
+      const salesAmount = parseFloat(order.totalAmount || 0);
+      const marginAmount = salesAmount * 0.3; // Assuming 30% margin
+      
+      let commissionAmount = 0;
+      if (formData.commissionType === 'SALES_VOLUME') {
+        commissionAmount = salesAmount * (formData.salesVolumeRate / 100);
+      } else if (formData.commissionType === 'MARGIN') {
+        commissionAmount = marginAmount * (formData.marginRate / 100);
+      } else if (formData.commissionType === 'HYBRID') {
+        commissionAmount = (salesAmount * (formData.salesVolumeRate / 100)) + 
+                          (marginAmount * (formData.marginRate / 100));
+      }
+
+      if (!commissionMap[repId]) {
+        const rep = reps.find((r: any) => r.id === repId);
+        commissionMap[repId] = {
+          repId,
+          rep,
+          salesAmount: 0,
+          marginAmount: 0,
+          commissionAmount: 0,
+          orderCount: 0,
+        };
+      }
+
+      commissionMap[repId].salesAmount += salesAmount;
+      commissionMap[repId].marginAmount += marginAmount;
+      commissionMap[repId].commissionAmount += commissionAmount;
+      commissionMap[repId].orderCount += 1;
+    });
+
+    setPreviewData(Object.values(commissionMap));
+    setIsPreviewMode(true);
+    setIsCalculating(false);
+    }, 500);
+  };
+
+  // Save commissions
+  const saveCommissions = useMutation({
+    mutationFn: async () => {
+      // TODO: Replace with actual commissions API endpoint when backend is ready
+      const commissions = previewData.map((data: any) => ({
+        userId: data.repId,
+        period: formData.period,
+        type: formData.commissionType,
+        salesAmount: data.salesAmount,
+        marginAmount: data.marginAmount,
+        commissionAmount: data.commissionAmount,
+        commissionRate: formData.commissionType === 'SALES_VOLUME' 
+          ? formData.salesVolumeRate / 100 
+          : formData.commissionType === 'MARGIN'
+          ? formData.marginRate / 100
+          : (formData.salesVolumeRate / 100) + (formData.marginRate / 100),
+        status: 'CALCULATED',
+      }));
+      
+      // For now, just simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return commissions;
+    },
+    onSuccess: () => {
+      toast.success('Commissions calculated and saved successfully!');
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      onCalculate();
+      onClose();
+    },
+    onError: () => {
+      toast.error('Failed to save commissions');
+    },
+  });
+
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {selectedCommission ? 'Commission Details' : 'Calculate Commissions'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors dark:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {selectedCommission ? (
+            // Commission Details View
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sales Rep</label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {selectedCommission.rep 
+                      ? `${selectedCommission.rep.firstName} ${selectedCommission.rep.lastName}`.trim()
+                      : selectedCommission.rep?.email || 'Unknown'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period</label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {new Date(selectedCommission.period + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sales Amount</label>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    ${(selectedCommission.salesAmount || 0).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Commission Amount</label>
+                  <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                    ${(selectedCommission.commissionAmount || 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : isPreviewMode ? (
+            // Preview Mode
+            <div className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  Preview of commissions to be calculated for {new Date(formData.period + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                </p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Sales Rep</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Orders</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Sales Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase">Commission</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {previewData.map((data: any, index: number) => (
+                      <tr key={index}>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                          {data.rep 
+                            ? `${data.rep.firstName} ${data.rep.lastName}`.trim()
+                            : data.rep?.email || 'Unknown'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          {data.orderCount}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                          ${data.salesAmount.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-bold text-primary-600 dark:text-primary-400">
+                          ${data.commissionAmount.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">Total</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">
+                        ${previewData.reduce((sum: number, d: any) => sum + d.salesAmount, 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-bold text-primary-600 dark:text-primary-400">
+                        ${previewData.reduce((sum: number, d: any) => sum + d.commissionAmount, 0).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setIsPreviewMode(false)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => saveCommissions.mutate()}
+                  disabled={saveCommissions.isPending}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                >
+                  {saveCommissions.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="w-4 h-4" />
+                      Save Commissions
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Calculation Form
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Period *</label>
+                  <input
+                    type="month"
+                    value={formData.period}
+                    onChange={(e) => setFormData({ ...formData, period: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Commission Type *</label>
+                  <CustomSelect
+                    value={formData.commissionType}
+                    onChange={(value) => setFormData({ ...formData, commissionType: value })}
+                    options={[
+                      { value: 'SALES_VOLUME', label: 'Sales Volume' },
+                      { value: 'MARGIN', label: 'Margin' },
+                      { value: 'HYBRID', label: 'Hybrid' },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {formData.commissionType !== 'MARGIN' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Sales Volume Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={formData.salesVolumeRate}
+                      onChange={(e) => setFormData({ ...formData, salesVolumeRate: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="5.0"
+                    />
+                  </div>
+                )}
+                {formData.commissionType !== 'SALES_VOLUME' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Margin Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={formData.marginRate}
+                      onChange={(e) => setFormData({ ...formData, marginRate: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="10.0"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 mb-4">
+                  <input
+                    type="checkbox"
+                    checked={formData.calculateForAll}
+                    onChange={(e) => setFormData({ ...formData, calculateForAll: e.target.checked, selectedRepIds: [] })}
+                    className="rounded border-gray-300 dark:border-gray-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Calculate for all sales reps</span>
+                </label>
+
+                {!formData.calculateForAll && (
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Select Sales Reps *
+                    </label>
+                    {reps.length === 0 ? (
+                      <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">No sales reps available</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                        {reps.map((rep: any) => (
+                          <label key={rep.id} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedRepIds.includes(rep.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({ ...formData, selectedRepIds: [...formData.selectedRepIds, rep.id] });
+                                } else {
+                                  setFormData({ ...formData, selectedRepIds: formData.selectedRepIds.filter((id: number) => id !== rep.id) });
+                                }
+                              }}
+                              className="rounded border-gray-300 dark:border-gray-600"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              {`${rep.firstName || ''} ${rep.lastName || ''}`.trim() || rep.email}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={calculatePreview}
+                  disabled={isCalculating || (!formData.calculateForAll && formData.selectedRepIds.length === 0)}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                >
+                  {isCalculating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Calculating...
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="w-4 h-4" />
+                      Calculate Preview
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Commissions Section Component
 function CommissionsSection() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -1049,6 +1485,7 @@ function CommissionsSection() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCommission, setSelectedCommission] = useState<any>(null);
+  const queryClient = useQueryClient();
 
   // Fetch sales reps
   const { data: repsData } = useQuery({
@@ -1388,31 +1825,22 @@ function CommissionsSection() {
         </div>
       )}
 
-      {/* Commission Details Modal - Placeholder */}
+      {/* Commission Calculation Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {selectedCommission ? 'Commission Details' : 'Calculate Commissions'}
-              </h3>
-              <button
-                onClick={() => {
+        <CalculateCommissionsModal
+          isOpen={isModalOpen}
+          onClose={() => {
                   setIsModalOpen(false);
                   setSelectedCommission(null);
                 }}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {selectedCommission 
-                ? `Commission details for ${selectedCommission.rep ? `${selectedCommission.rep.firstName} ${selectedCommission.rep.lastName}`.trim() : 'this rep'}` 
-                : 'Commission calculation form will be implemented here.'}
-            </p>
-          </div>
-        </div>
+          selectedCommission={selectedCommission}
+          reps={repsData || []}
+          onCalculate={() => {
+            queryClient.invalidateQueries({ queryKey: ['commissions'] });
+            setIsModalOpen(false);
+            setSelectedCommission(null);
+          }}
+        />
       )}
     </div>
   );

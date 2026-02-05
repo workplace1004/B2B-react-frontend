@@ -420,8 +420,8 @@ export default function KPIReports() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">KPI Reports</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Track and analyze key performance indicators</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">KPI Reports</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Track and analyze key performance indicators</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative" ref={dateRangeRef}>
@@ -449,7 +449,7 @@ export default function KPIReports() {
                     className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
                       dateRange === '7d'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Last 7 Days
@@ -462,7 +462,7 @@ export default function KPIReports() {
                     className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
                       dateRange === '30d'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Last 30 Days
@@ -475,7 +475,7 @@ export default function KPIReports() {
                     className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
                       dateRange === '90d'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Last 90 Days
@@ -488,7 +488,7 @@ export default function KPIReports() {
                     className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
                       dateRange === '1y'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     Last Year
@@ -501,7 +501,7 @@ export default function KPIReports() {
                     className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
                       dateRange === 'all'
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
                     All Time
@@ -566,7 +566,7 @@ export default function KPIReports() {
                 </div>
               )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-[24px] font-bold text-gray-900 dark:text-white">
               {formatValue(kpi.value, kpi.format)}
             </h2>
           </div>

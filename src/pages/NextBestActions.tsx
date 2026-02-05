@@ -40,8 +40,8 @@ export default function NextBestActions() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Next Best Actions</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Next Best Actions</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Priority queue, exception triage, and automated task management
             </p>
           </div>

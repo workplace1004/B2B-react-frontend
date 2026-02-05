@@ -133,7 +133,7 @@ const CustomSelect = ({
           ) : (
             options.map((option, index) => {
               const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
+              
               
               return (
                 <button
@@ -142,9 +142,9 @@ const CustomSelect = ({
                   onClick={() => handleSelect(option.value)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected || isHighlighted
+                    isSelected
                       ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
                   style={{
                     fontSize: '0.875rem',
@@ -179,7 +179,7 @@ export default function CollectionsDrops() {
       
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Collections & Drops</h1>
+        <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Collections & Drops</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Plan collections, track drops, and analyze style performance</p>
       </div>
 
@@ -402,14 +402,14 @@ function CollectionPlanner() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Collection Planner</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Plan and organize your collections by lifecycle stage</p>
+          <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white">Collection Planner</h2>
+          <p className="text-[12px] text-gray-600 dark:text-gray-400 mt-1">Plan and organize your collections by lifecycle stage</p>
         </div>
         <button 
           onClick={openModal}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           New Collection
         </button>
       </div>
@@ -646,8 +646,8 @@ function DropCalendar() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Drop Calendar</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Visual calendar view of all drops and collections</p>
+          <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white">Drop Calendar</h2>
+          <p className="text-[12px] text-gray-600 dark:text-gray-400 mt-1">Visual calendar view of all drops and collections</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
@@ -740,7 +740,7 @@ function DropCalendar() {
                     {dayDrops.slice(0, 2).map((drop: any) => (
                       <div
                         key={drop.id}
-                        className={`text-xs px-2 py-1 rounded truncate ${
+                        className={`text-[12px] px-2 py-1 rounded truncate ${
                           drop.lifecycle === 'ACTIVE'
                             ? 'bg-green-500 text-white'
                             : drop.lifecycle === 'PLANNING'
@@ -768,7 +768,7 @@ function DropCalendar() {
 
         {/* Upcoming Drops Sidebar */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upcoming Drops</h3>
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Upcoming Drops</h3>
           {upcomingDrops.length === 0 ? (
             <div className="text-center py-8 text-gray-400 dark:text-gray-500">
               <CalendarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -1035,8 +1035,8 @@ function StylePerformanceTracking() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Style Performance Tracking</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Track and analyze style performance metrics</p>
+          <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white">Style Performance Tracking</h2>
+          <p className="text-[12px] text-gray-600 dark:text-gray-400 mt-1">Track and analyze style performance metrics</p>
         </div>
         <div className="flex items-center gap-2">
           <CustomSelect
@@ -1060,7 +1060,7 @@ function StylePerformanceTracking() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Styles</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white mt-1">
                 {new Set(products.map((p: any) => p.style || 'No Style')).size}
               </p>
             </div>
@@ -1074,7 +1074,7 @@ function StylePerformanceTracking() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Products</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white mt-1">
                 {products.length}
               </p>
             </div>
@@ -1088,7 +1088,7 @@ function StylePerformanceTracking() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white mt-1">
                 ${stylePerformance.reduce((sum, s) => sum + s.totalRevenue, 0).toLocaleString()}
               </p>
             </div>
@@ -1102,7 +1102,7 @@ function StylePerformanceTracking() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+              <p className="text-[28px] font-bold text-gray-900 dark:text-white mt-1">
                 {stylePerformance.reduce((sum, s) => sum + s.totalOrders, 0)}
               </p>
             </div>
@@ -1115,7 +1115,7 @@ function StylePerformanceTracking() {
 
       {/* Performance Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Performing Styles</h3>
+        <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Top Performing Styles</h3>
         {chartData.categories.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[300px]">
             <BarChart3 className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
@@ -1134,7 +1134,7 @@ function StylePerformanceTracking() {
       {/* Style Performance Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Style Performance Details</h3>
+          <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white">Style Performance Details</h3>
         </div>
         {stylePerformance.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
@@ -1146,34 +1146,34 @@ function StylePerformanceTracking() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Style</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Products</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Orders</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Revenue</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Avg Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Collections</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-white uppercase tracking-wider">Trend</th>
+                  <th className="px-6 py-3 text-left text-[12px] font-medium text-gray-500 dark:text-white uppercase tracking-wider">Style</th>
+                  <th className="px-6 py-3 text-left text-[12px] font-medium text-gray-500 dark:text-white uppercase tracking-wider">Products</th>
+                  <th className="px-6 py-3 text-left text-[12px] font-medium text-gray-500 dark:text-white uppercase tracking-wider">Orders</th>
+                  <th className="px-6 py-3 text-left text-[12px] font-medium text-gray-500 dark:text-white uppercase tracking-wider">Revenue</th>
+                  <th className="px-6 py-3 text-left text-[12px] font-medium text-gray-500 dark:text-white uppercase tracking-wider">Avg Price</th>
+                  <th className="px-6 py-3 text-left text-[12px] font-medium text-gray-500 dark:text-white uppercase tracking-wider">Collections</th>
+                  <th className="px-6 py-3 text-left text-[12px] font-medium text-gray-500 dark:text-white uppercase tracking-wider">Trend</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {performanceTrends.map((style, index) => (
                   <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{style.name}</div>
+                      <div className="text-[12px] font-medium text-gray-900 dark:text-white">{style.name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-[12px] text-gray-500 dark:text-gray-400">
                       {style.totalProducts}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-[12px] text-gray-500 dark:text-gray-400">
                       {style.totalOrders}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <td className="px-6 py-4 whitespace-nowrap text-[12px] font-medium text-gray-900 dark:text-white">
                       ${style.totalRevenue.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-[12px] text-gray-500 dark:text-gray-400">
                       ${style.avgPrice.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-[12px] text-gray-500 dark:text-gray-400">
                       {style.collections.size}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -1181,14 +1181,14 @@ function StylePerformanceTracking() {
                         {style.trend === 'up' ? (
                           <>
                             <ArrowUp className="w-4 h-4 text-green-500" />
-                            <span className="text-sm text-green-600 dark:text-green-400">
+                            <span className="text-[12px] text-green-600 dark:text-green-400">
                               +{style.change.toFixed(1)}%
                             </span>
                           </>
                         ) : (
                           <>
                             <ArrowDown className="w-4 h-4 text-red-500" />
-                            <span className="text-sm text-red-600 dark:text-red-400">
+                            <span className="text-[12px] text-red-600 dark:text-red-400">
                               {style.change.toFixed(1)}%
                             </span>
                           </>
@@ -1358,7 +1358,7 @@ function DroppableColumn({
       }`}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900 dark:text-white capitalize">{lifecycle}</h3>
+        <h3 className="font-semibold text-[14px] text-gray-900 dark:text-white capitalize">{lifecycle}</h3>
         <span className="px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
           {items.length}
         </span>
@@ -1439,11 +1439,11 @@ function DateDetailModal({
         <div
           className="modal-dialog modal-dialog-centered"
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: '42rem' }}
+          style={{ maxWidth: '45rem' }}
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col">
             <div className="modal-header">
-              <h5 id="dateDetailModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="dateDetailModalLabel" className="modal-title text-[14px] font-semibold text-gray-900 dark:text-white">
                 Drops on {formattedDate}
               </h5>
               <button
@@ -1460,20 +1460,20 @@ function DateDetailModal({
               {drops.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Inbox className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No drops scheduled for this date</p>
+                  <p className="text-[12px] text-gray-500 dark:text-gray-400">No drops scheduled for this date</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full text-[12px]">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-700">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Drop Name</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Collection</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Season</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Drop</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Products</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Description</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Drop Name</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Collection</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Season</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Drop</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Products</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Description</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1482,23 +1482,23 @@ function DateDetailModal({
                           key={drop.id}
                           className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                         >
-                          <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">
+                          <td className="py-3 px-4 text-[12px] font-medium text-gray-900 dark:text-white">
                             {drop.name}
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                          <td className="py-3 px-4 text-[12px] text-gray-700 dark:text-gray-300">
                             {drop.collection.name}
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                          <td className="py-3 px-4 text-[12px] text-gray-700 dark:text-gray-300">
                             {drop.collection.season || '-'}
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                          <td className="py-3 px-4 text-[12px] text-gray-700 dark:text-gray-300">
                             {drop.collection.drop || '-'}
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                          <td className="py-3 px-4 text-[12px] text-gray-700 dark:text-gray-300">
                             {drop.products}
                           </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          <td className="py-3 px-4 text-[12px]">
+                            <span className={`px-2 py-1 text-[12px] font-medium rounded-full ${
                               drop.lifecycle === 'ACTIVE'
                                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                                 : drop.lifecycle === 'PLANNING'
@@ -1510,7 +1510,7 @@ function DateDetailModal({
                               {drop.lifecycle}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 max-w-xs">
+                          <td className="py-3 px-4 text-[12px] text-gray-700 dark:text-gray-300 max-w-xs">
                             <div className="truncate" title={drop.collection.description || ''}>
                               {drop.collection.description || '-'}
                             </div>
@@ -1772,7 +1772,7 @@ function AddCollectionModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="addCollectionModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="addCollectionModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Add New Collection
               </h5>
               <button
@@ -1796,7 +1796,7 @@ function AddCollectionModal({
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleChange('name', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                      className={`w-full ::placeholder-[12px] text-[14px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                         errors.name ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Enter collection name"
@@ -1811,7 +1811,7 @@ function AddCollectionModal({
                         type="text"
                         value={formData.season}
                         onChange={(e) => handleChange('season', e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                        className={`w-full px-4 py-2 border ::placeholder-[12px] text-[14px] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                           errors.season ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="e.g., Spring 2024"
@@ -1825,7 +1825,7 @@ function AddCollectionModal({
                         type="text"
                         value={formData.drop}
                         onChange={(e) => handleChange('drop', e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                        className={`w-full px-4 py-2 border ::placeholder-[12px] text-[14px] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                           errors.drop ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="e.g., Drop 1, Spring Launch"
@@ -1861,7 +1861,7 @@ function AddCollectionModal({
                       value={formData.description}
                       onChange={(e) => handleChange('description', e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                       placeholder="Enter collection description"
                     />
                   </div>
@@ -1872,7 +1872,7 @@ function AddCollectionModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  className="px-5 text-[14px] py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
                 </button>
@@ -1881,7 +1881,7 @@ function AddCollectionModal({
                   type="submit"
                   onClick={handleButtonClick}
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
+                  className="px-5 py-2.5 text-[14px] bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
                 >
                   {isLoading ? 'Adding...' : 'Add Collection'}
                   {ripples.map((ripple) => (
@@ -2025,7 +2025,7 @@ function EditCollectionModal({
         >
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             <div className="modal-header">
-              <h5 id="editCollectionModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="editCollectionModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit Collection
               </h5>
               <button
@@ -2049,7 +2049,7 @@ function EditCollectionModal({
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleChange('name', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                      className={`w-full ::placeholder-[12px] text-[14px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                         errors.name ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Enter collection name"
@@ -2064,7 +2064,7 @@ function EditCollectionModal({
                         type="text"
                         value={formData.season}
                         onChange={(e) => handleChange('season', e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                        className={`w-full px-4 py-2 border ::placeholder-[12px] text-[14px] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                           errors.season ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="e.g., Spring 2024"
@@ -2078,7 +2078,7 @@ function EditCollectionModal({
                         type="text"
                         value={formData.drop}
                         onChange={(e) => handleChange('drop', e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                        className={`w-full px-4 py-2 border ::placeholder-[12px] text-[14px] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                           errors.drop ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="e.g., Drop 1, Spring Launch"
@@ -2114,7 +2114,7 @@ function EditCollectionModal({
                       value={formData.description}
                       onChange={(e) => handleChange('description', e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                       placeholder="Enter collection description"
                     />
                   </div>
@@ -2125,7 +2125,7 @@ function EditCollectionModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  className="px-5 py-2.5 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
                 </button>
@@ -2134,7 +2134,7 @@ function EditCollectionModal({
                   type="submit"
                   onClick={handleButtonClick}
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
+                  className="px-5 py-2.5 text-[14px] bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
                 >
                   {isLoading ? 'Updating...' : 'Update Collection'}
                   {ripples.map((ripple) => (

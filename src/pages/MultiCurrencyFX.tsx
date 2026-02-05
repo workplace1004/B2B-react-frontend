@@ -35,8 +35,8 @@ export default function MultiCurrencyFX() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Multi-Currency & FX</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Multi-Currency & FX</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Foreign exchange rates and market currency settings management
             </p>
           </div>
@@ -590,7 +590,7 @@ function FXRateDetailsModal({ rate, onClose, currencies }: FXRateDetailsModalPro
           {/* Currency Information */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">From Currency</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">From Currency</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Code</p>
@@ -613,7 +613,7 @@ function FXRateDetailsModal({ rate, onClose, currencies }: FXRateDetailsModalPro
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">To Currency</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">To Currency</h3>
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Code</p>
@@ -639,7 +639,7 @@ function FXRateDetailsModal({ rate, onClose, currencies }: FXRateDetailsModalPro
 
           {/* Rate Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Rate Information</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Rate Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Current Rate</p>
@@ -670,7 +670,7 @@ function FXRateDetailsModal({ rate, onClose, currencies }: FXRateDetailsModalPro
 
           {/* Metadata */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Metadata</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Metadata</h3>
             <div className="space-y-2">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Last Updated</p>

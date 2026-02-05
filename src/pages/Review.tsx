@@ -87,7 +87,7 @@ export default function Review() {
             colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
-            fontFamily: 'var(--bs-body-font-family)',
+            fontFamily: 'sans-serif',
           },
         },
       },
@@ -123,7 +123,7 @@ export default function Review() {
         },
         labels: {
           colors: isDarkMode ? '#ffffff' : '#1C274C',
-          fontFamily: 'var(--bs-body-font-family)',
+          fontFamily: 'sans-serif',
           fontSize: '13px',
         },
       },
@@ -151,7 +151,7 @@ export default function Review() {
             colors: isDarkMode ? '#ffffff' : '#1C274C',
             fontSize: '13px',
             fontWeight: '500',
-            fontFamily: 'var(--bs-body-font-family)',
+            fontFamily: 'sans-serif',
           },
         },
       },
@@ -288,7 +288,7 @@ export default function Review() {
       <Breadcrumb currentPage="Review" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reviews</h1>
+          <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Reviews</h1>
         </div>
       </div>
 
@@ -435,7 +435,7 @@ export default function Review() {
         {/* Review Trends Chart - 6/12 */}
         <div className="lg:col-span-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-3 items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Review Trends</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Review Trends</h6>
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
               <button
                 onClick={() => setReviewTimeRange('today')}
@@ -477,7 +477,7 @@ export default function Review() {
         {/* Review Sources Breakdown - 3/12 */}
         <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Review Sources Breakdown</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Review Sources Breakdown</h6>
           </div>
           <div className="p-4 pt-0">
             {reviewsData?.sourceBreakdown && Object.keys(reviewsData.sourceBreakdown).length > 0 ? (
@@ -517,7 +517,7 @@ export default function Review() {
         {/* Rating Distribution - 3/12 */}
         <div className="lg:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Rating Distribution</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Rating Distribution</h6>
             <span className="text-sm text-gray-600 dark:text-gray-400">Star wise breakdown</span>
           </div>
           <div className="p-4">
@@ -574,7 +574,7 @@ export default function Review() {
         {/* Recent Reviews - 7/12 */}
         <div className="lg:col-span-7 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Recent Reviews</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Recent Reviews</h6>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -628,7 +628,7 @@ export default function Review() {
         {/* Top Rated Products - 5/12 */}
         <div className="lg:col-span-5 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 pb-0 border-0 flex flex-wrap gap-2 items-center justify-between">
-            <h6 className="text-lg font-semibold text-gray-900 dark:text-white mb-0">Top Rated Products</h6>
+            <h6 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-0">Top Rated Products</h6>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input

@@ -37,8 +37,8 @@ export default function TaxesVAT() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Taxes & VAT</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Taxes & VAT</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               VAT reports and region-specific tax rules management
             </p>
           </div>
@@ -671,7 +671,7 @@ function VATReportDetailsModal({ report, onClose }: VATReportDetailsModalProps) 
           {/* Invoices List */}
           {report.invoices && report.invoices.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invoices ({report.invoices.length})</h3>
+              <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Invoices ({report.invoices.length})</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">

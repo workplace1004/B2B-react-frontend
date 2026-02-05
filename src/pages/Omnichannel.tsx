@@ -280,8 +280,8 @@ const CustomSelect = ({
                   isSelected
                     ? 'bg-blue-500 text-white font-medium'
                     : isHighlighted
-                    ? 'bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
                 style={{
                   fontSize: '0.875rem',
@@ -638,8 +638,8 @@ export default function Omnichannel() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Omnichannel</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Omnichannel</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Manage BOPIS, BORIS, and Endless Aisle operations
             </p>
           </div>

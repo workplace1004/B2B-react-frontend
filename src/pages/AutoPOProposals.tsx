@@ -412,8 +412,8 @@ export default function AutoPOProposals() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Auto PO Proposals</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Auto PO Proposals</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Threshold-based PO generation, Supplier/MOQ-aware suggestions, Approval workflow
             </p>
           </div>
@@ -454,7 +454,7 @@ export default function AutoPOProposals() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Total Proposals</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{proposals.length}</p>
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">{proposals.length}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
               <ShoppingBag className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -466,7 +466,7 @@ export default function AutoPOProposals() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Draft</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                 {proposals.filter((p) => p.status === 'DRAFT').length}
               </p>
             </div>
@@ -775,7 +775,7 @@ function ImpactPreviewModal({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">PO Change Impact Preview</h2>
+            <h2 className="text-[24px] font-bold text-gray-900 dark:text-white">PO Change Impact Preview</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
@@ -793,7 +793,7 @@ function ImpactPreviewModal({
                 <DollarSign className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">Cash Impact</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                 ${impact.totalCashImpact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
@@ -803,7 +803,7 @@ function ImpactPreviewModal({
                 <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">Max Lead Time</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                 {impact.totalLeadTimeDays} days
               </p>
             </div>
@@ -813,7 +813,7 @@ function ImpactPreviewModal({
                 <Package className="w-5 h-5 text-green-600 dark:text-green-400" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">Stock Increase</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                 {impact.totalStockIncrease.toLocaleString()}
               </p>
             </div>
@@ -838,7 +838,7 @@ function ImpactPreviewModal({
 
           {/* Selected Proposals List */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">
               Selected Proposals ({proposals.length})
             </h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -903,7 +903,7 @@ function ProposalDetailModal({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">PO Proposal Details</h2>
+            <h2 className="text-[24px] font-bold text-gray-900 dark:text-white">PO Proposal Details</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
@@ -916,7 +916,7 @@ function ProposalDetailModal({
         <div className="p-6 space-y-6">
           {/* Product Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Information</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Product Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Product Name</p>
@@ -939,15 +939,15 @@ function ProposalDetailModal({
 
           {/* Stock Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Stock Information</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Stock Information</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Current Stock</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{proposal.currentQty}</p>
+                <p className="text-[24px] font-bold text-gray-900 dark:text-white">{proposal.currentQty}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Reorder Point</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{proposal.reorderPoint}</p>
+                <p className="text-[24px] font-bold text-gray-900 dark:text-white">{proposal.reorderPoint}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <p className="text-sm text-gray-500 dark:text-gray-400">Stock After PO</p>
@@ -958,7 +958,7 @@ function ProposalDetailModal({
 
           {/* Purchase Details */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Purchase Details</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Purchase Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Suggested Quantity</p>
@@ -1003,7 +1003,7 @@ function ProposalDetailModal({
 
           {/* Impact Preview */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Impact Preview</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Impact Preview</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -1037,7 +1037,7 @@ function ProposalDetailModal({
 
           {/* Status Workflow */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Approval Workflow</h3>
+            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4">Approval Workflow</h3>
             <div className="flex items-center justify-between">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${getStatusColor(proposal.status)}`}>
                 {getStatusIcon(proposal.status)}

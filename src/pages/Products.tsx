@@ -91,7 +91,7 @@ const CustomSelect = ({
 
       {isOpen && (
         <div
-          className="absolute w-full mt-1 bg-gray-800 dark:bg-gray-800 border border-gray-600 dark:border-gray-600 rounded-lg shadow-xl custom-dropdown-menu"
+          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl custom-dropdown-menu"
           style={{
             zIndex: 10000,
             top: '100%',
@@ -113,7 +113,7 @@ const CustomSelect = ({
           ) : (
             options.map((option, index) => {
               const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
+              
 
               return (
                 <button
@@ -122,9 +122,11 @@ const CustomSelect = ({
                   onClick={() => handleSelect(option.value)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected || isHighlighted
+                    isSelected
                       ? 'bg-primary-500 text-white'
-                      : 'text-white hover:bg-gray-700 dark:hover:bg-gray-700'
+                      : isHighlighted
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                   style={{
                     fontSize: '0.875rem',
@@ -470,8 +472,8 @@ export default function Products() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Catalog</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Products (Style → Color → Size → Variant), Attributes & Taxonomy, Bundles & Kits</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Catalog</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">Products (Style → Color → Size → Variant), Attributes & Taxonomy, Bundles & Kits</p>
           </div>
         </div>
       </div>
@@ -535,7 +537,7 @@ export default function Products() {
               </button>
             </div>
             <ButtonWithWaves onClick={openModal}>
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Add Product
             </ButtonWithWaves>
           </div>
@@ -552,7 +554,7 @@ export default function Products() {
                   Get started by adding your first product to the catalog.
                 </p>
                 <ButtonWithWaves onClick={openModal}>
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                   Add Product
                 </ButtonWithWaves>
               </div>
@@ -574,7 +576,7 @@ export default function Products() {
                           }
                           setExpandedStyles(newExpanded);
                         }}
-                        className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="text-[14px] font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                       >
                         {isExpanded ? (
                           <ChevronDown className="w-5 h-5" />
@@ -599,7 +601,7 @@ export default function Products() {
                                 }
                                 setExpandedColors(newExpanded);
                               }}
-                              className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                              className="text-[14px] font-medium text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                             >
                               {isColorExpanded ? (
                                 <ChevronDown className="w-4 h-4" />
@@ -638,7 +640,7 @@ export default function Products() {
                                       {sizeGroup.variants.map((variant: any) => (
                                         <div
                                           key={variant.variantKey}
-                                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                          className="flex items-center justify-between p-3 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                         >
                                           <div className="flex-1">
                                             <div className="flex items-center gap-3">
@@ -1520,7 +1522,7 @@ function AddProductModal({
           <div className="modal-content w-full flex flex-col" style={{ overflow: 'visible' }}>
             {/* Modal Header */}
             <div className="modal-header">
-              <h5 id="addProductModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="addProductModalLabel" className="modal-title text-[16px] font-semibold text-gray-900 dark:text-white">
                 Add New Product
               </h5>
               <button
@@ -1547,7 +1549,7 @@ function AddProductModal({
                         type="text"
                         value={formData.name}
                         onChange={(e) => handleChange('name', e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.name ? 'border-red-500' : 'border-gray-300'
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none text-[14px] ::placeholder-[12px] focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.name ? 'border-red-500' : 'border-gray-300'
                           }`}
                         placeholder="Enter product name"
                       />
@@ -1562,7 +1564,7 @@ function AddProductModal({
                         type="text"
                         value={formData.sku}
                         onChange={(e) => handleChange('sku', e.target.value)}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sku ? 'border-red-500' : 'border-gray-300'
+                        className={`w-full px-4 py-2 border rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sku ? 'border-red-500' : 'border-gray-300'
                           }`}
                         placeholder="Enter SKU"
                       />
@@ -1595,7 +1597,7 @@ function AddProductModal({
                         type="text"
                         value={formData.style}
                         onChange={(e) => handleChange('style', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                         placeholder="Enter style"
                       />
                     </div>
@@ -1652,7 +1654,7 @@ function AddProductModal({
                               setShowSizesSuggestions(filtered.length > 0);
                             }
                           }}
-                          className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                          className="flex-1 min-w-[120px] ::placeholder-[12px] text-[14px]  px-2 py-1 border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                           placeholder={selectedSizes.length === 0 ? "Type to search sizes..." : ""}
                         />
                       </div>
@@ -1669,7 +1671,7 @@ function AddProductModal({
                               key={index}
                               type="button"
                               onClick={() => handleSizeSelect(size)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                              className="w-full text-left px-4 py-2 text-[14px] hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                               onMouseDown={(e) => e.preventDefault()} // Prevent input blur
                             >
                               {size}
@@ -1728,7 +1730,7 @@ function AddProductModal({
                               setShowColorsSuggestions(filtered.length > 0);
                             }
                           }}
-                          className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                          className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent ::placeholder-[12px] text-[14px] focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                           placeholder={selectedColors.length === 0 ? "Type to search colors..." : ""}
                         />
                       </div>
@@ -1745,7 +1747,7 @@ function AddProductModal({
                               key={index}
                               type="button"
                               onClick={() => handleColorSelect(color)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                              className="w-full text-left px-4 text-[14px] py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                               onMouseDown={(e) => e.preventDefault()} // Prevent input blur
                             >
                               {color}
@@ -1804,7 +1806,7 @@ function AddProductModal({
                               setShowMaterialsSuggestions(filtered.length > 0);
                             }
                           }}
-                          className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                          className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent ::placeholder-[12px] text-[14px] focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                           placeholder={selectedMaterials.length === 0 ? "Type to search materials..." : ""}
                         />
                       </div>
@@ -1821,7 +1823,7 @@ function AddProductModal({
                               key={index}
                               type="button"
                               onClick={() => handleMaterialSelect(material)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                              className="w-full text-left text-[14px] px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                               onMouseDown={(e) => e.preventDefault()} // Prevent input blur
                             >
                               {material}
@@ -1883,7 +1885,7 @@ function AddProductModal({
                             });
                           }
                         }}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.ean ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                        className={`w-full px-4 py-2 border rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.ean ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                           }`}
                         placeholder="Enter EAN (13 digits)"
                         maxLength={13}
@@ -1901,7 +1903,7 @@ function AddProductModal({
                         step="0.01"
                         value={formData.basePrice}
                         onChange={(e) => handleChange('basePrice', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                         placeholder="0.00"
                       />
                     </div>
@@ -1914,7 +1916,7 @@ function AddProductModal({
                       value={formData.description}
                       onChange={(e) => handleChange('description', e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                       placeholder="Enter product description"
                     />
                   </div>
@@ -1991,7 +1993,7 @@ function AddProductModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  className="px-5 py-2.5 border text-[14px] border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
                 </button>
@@ -2003,7 +2005,7 @@ function AddProductModal({
                     // Form submission is handled by form's onSubmit
                   }}
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
+                  className="px-5 py-2.5 text-[14px] bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
                 >
                   {isLoading ? 'Adding...' : 'Add Product'}
                   {ripples.map((ripple) => (
@@ -2594,7 +2596,7 @@ function EditProductModal({
           <div className="modal-content w-full max-h-[90vh] flex flex-col" style={{ overflow: 'visible' }}>
             {/* Modal Header */}
             <div className="modal-header">
-              <h5 id="editProductModalLabel" className="modal-title text-xl font-semibold text-gray-900 dark:text-white">
+              <h5 id="editProductModalLabel" className="modal-title font-semibold text-gray-900 dark:text-white">
                 Edit Product
               </h5>
               <button
@@ -2620,7 +2622,7 @@ function EditProductModal({
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleChange('name', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.name ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none text-[14px] ::placeholder-[12px] focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.name ? 'border-red-500' : 'border-gray-300'
                         }`}
                       placeholder="Enter product name"
                     />
@@ -2634,7 +2636,7 @@ function EditProductModal({
                       type="text"
                       value={formData.sku}
                       onChange={(e) => handleChange('sku', e.target.value)}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sku ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-4 py-2 border rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.sku ? 'border-red-500' : 'border-gray-300'
                         }`}
                       placeholder="Enter SKU"
                     />
@@ -2667,7 +2669,7 @@ function EditProductModal({
                       type="text"
                       value={formData.style}
                       onChange={(e) => handleChange('style', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                       placeholder="Enter style"
                     />
                   </div>
@@ -2724,7 +2726,7 @@ function EditProductModal({
                             setShowSizesSuggestions(filtered.length > 0);
                           }
                         }}
-                        className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                        className="flex-1 min-w-[120px] px-2 py-1 ::placeholder-[12px] text-[14px] border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder={selectedSizes.length === 0 ? "Type to search sizes..." : ""}
                       />
                     </div>
@@ -2741,7 +2743,7 @@ function EditProductModal({
                             key={index}
                             type="button"
                             onClick={() => handleSizeSelect(size)}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                            className="w-full text-left text-[14px] px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                             onMouseDown={(e) => e.preventDefault()} // Prevent input blur
                           >
                             {size}
@@ -2800,7 +2802,7 @@ function EditProductModal({
                             setShowColorsSuggestions(filtered.length > 0);
                           }
                         }}
-                        className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                        className="flex-1 min-w-[120px] px-2 py-1 ::placeholder-[12px] text-[14px] border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder={selectedColors.length === 0 ? "Type to search colors..." : ""}
                       />
                     </div>
@@ -2817,7 +2819,7 @@ function EditProductModal({
                             key={index}
                             type="button"
                             onClick={() => handleColorSelect(color)}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                            className="w-full text-left text-[14px] px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                             onMouseDown={(e) => e.preventDefault()} // Prevent input blur
                           >
                             {color}
@@ -2876,7 +2878,7 @@ function EditProductModal({
                             setShowMaterialsSuggestions(filtered.length > 0);
                           }
                         }}
-                        className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                        className="flex-1 min-w-[120px] px-2 py-1 border-0 bg-transparent ::placeholder-[12px] text-[14px] focus:outline-none dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder={selectedMaterials.length === 0 ? "Type to search materials..." : ""}
                       />
                     </div>
@@ -2893,7 +2895,7 @@ function EditProductModal({
                             key={index}
                             type="button"
                             onClick={() => handleMaterialSelect(material)}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                            className="w-full text-left text-[14px] px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                             onMouseDown={(e) => e.preventDefault()} // Prevent input blur
                           >
                             {material}
@@ -2955,7 +2957,7 @@ function EditProductModal({
                           });
                         }
                       }}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.ean ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      className={`w-full px-4 py-2 border rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${errors.ean ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                       placeholder="Enter EAN (13 digits)"
                       maxLength={13}
@@ -2972,7 +2974,7 @@ function EditProductModal({
                       step="0.01"
                       value={formData.basePrice}
                       onChange={(e) => handleChange('basePrice', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                       placeholder="0.00"
                     />
                   </div>
@@ -2985,7 +2987,7 @@ function EditProductModal({
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg ::placeholder-[12px] text-[14px] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Enter product description"
                   />
                 </div>
@@ -3095,7 +3097,7 @@ function EditProductModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                  className="px-5 text-[14px] py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
                 </button>
@@ -3104,7 +3106,7 @@ function EditProductModal({
                   type="submit"
                   onClick={handleButtonClick}
                   disabled={isLoading}
-                  className="px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
+                  className="px-5 py-2.5 text-[14px] bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed relative overflow-hidden"
                 >
                   {isLoading ? 'Updating...' : 'Update Product'}
                   {ripples.map((ripple) => (
@@ -3162,7 +3164,7 @@ function DeleteProductModal({
         <div
           className="modal-dialog modal-dialog-centered"
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: '28rem' }}
+          style={{ maxWidth: '24rem' }}
         >
           <div className="modal-content">
             {/* Modal Body with Icon */}
@@ -3175,15 +3177,15 @@ function DeleteProductModal({
               </div>
 
               {/* Title */}
-              <h5 id="deleteProductModalLabel" className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              <h5 id="deleteProductModalLabel" className="text-[16px] font-semibold text-gray-900 dark:text-white mb-2">
                 Delete Product
               </h5>
 
               {/* Description */}
-              <p className="text-gray-600 dark:text-gray-400 mb-1">
+              <p className="text-[14px] text-gray-600 dark:text-gray-400 mb-1">
                 Are you sure you want to delete
               </p>
-              <p className="text-gray-900 dark:text-white font-semibold mb-4">
+              <p className="text-[14px] text-gray-900 dark:text-white font-semibold mb-4">
                 "{product.name}"?
               </p>
               <p className="text-sm text-red-600 dark:text-red-400 font-medium">
@@ -3192,11 +3194,11 @@ function DeleteProductModal({
             </div>
 
             {/* Modal Footer */}
-            <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 w-full items-center flex">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+                className="px-5 py-2.5 border text-[14px] border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 disabled={isLoading}
               >
                 Cancel
@@ -3205,7 +3207,7 @@ function DeleteProductModal({
                 type="button"
                 onClick={onConfirm}
                 disabled={isLoading}
-                className="px-5 py-2.5 ml-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-5 text-[14px] py-2.5 ml-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium disabled:opacity-65 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
                 {isLoading ? 'Deleting...' : 'Delete Product'}
@@ -3470,7 +3472,8 @@ function AttributeModal({ attribute, onClose, onSave }: {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Enter attribute name"
             />
           </div>
           <div>
@@ -3512,7 +3515,7 @@ function AttributeModal({ attribute, onClose, onSave }: {
           </div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+          <button onClick={onClose} className="px-4 text-[14px] py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
             Cancel
           </button>
           <button
@@ -3529,7 +3532,7 @@ function AttributeModal({ attribute, onClose, onSave }: {
                 required,
               });
             }}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            className="px-4 py-2 bg-primary-600 text-[14px] text-white rounded-lg hover:bg-primary-700"
           >
             {attribute ? 'Update' : 'Create'}
           </button>
@@ -3834,7 +3837,7 @@ function BundleModal({ bundle, products, onClose, onSave }: {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Products</label>
                 <button
                   onClick={addProduct}
-                  className="px-3 py-1 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                  className="px-3 py-2 text-[14px] bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex h-full justify-center items-center"
                 >
                   <Plus className="w-4 h-4 inline mr-1" />
                   Add Product
@@ -3893,7 +3896,7 @@ function BundleModal({ bundle, products, onClose, onSave }: {
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg ::placeholder-[12px] text-[14px] bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="0.00"
               />
             </div>
@@ -3912,7 +3915,7 @@ function BundleModal({ bundle, products, onClose, onSave }: {
           </div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+          <button onClick={onClose} className="px-4 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
             Cancel
           </button>
           <button
@@ -3940,7 +3943,7 @@ function BundleModal({ bundle, products, onClose, onSave }: {
                 discount: discount ? Number(discount) : undefined,
               });
             }}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-[14px]"
           >
             {bundle ? 'Update' : 'Create'}
           </button>

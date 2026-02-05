@@ -58,7 +58,7 @@ export default function Purchasing() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Purchasing</h1>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Purchasing</h1>
           </div>
           {(!filteredPOs || filteredPOs.length === 0) ? null : (
             <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">

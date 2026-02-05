@@ -1,12 +1,143 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Percent, Star, TrendingDown, Package, Search, X, DollarSign } from 'lucide-react';
+import { Percent, Star, TrendingDown, Package, Search, X, DollarSign, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, Inbox } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 
 type TabType = 'featured' | 'markdown';
+
+// Custom Select Component
+const CustomSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select...',
+  className = '',
+  error = false,
+  disabled = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder?: string;
+  className?: string;
+  error?: boolean;
+  disabled?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef<HTMLDivElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelect(options[highlightedIndex].value);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
+  };
+
+  return (
+    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 10001 : 'auto', position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between transition-all ${
+          error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+        } ${isOpen ? 'ring-2 ring-primary-500 border-primary-500' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}`}
+      >
+        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {isOpen && !disabled && (
+        <div 
+          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden custom-dropdown-menu"
+          style={{
+            zIndex: 10001,
+            top: '100%',
+            left: 0,
+            right: 0,
+            minWidth: '100%',
+            position: 'absolute',
+            maxHeight: '210px',
+          }}
+        >
+          {options.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4">
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
+            </div>
+          ) : (
+            <div className="py-1">
+              {options.map((option, index) => {
+                const isSelected = option.value === value;
+                
+                
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-all duration-150 ${
+                      isSelected
+                        ? 'bg-primary-600 text-white'
+                        : isHighlighted
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                          : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function AssortmentMerchandising() {
   const [activeTab, setActiveTab] = useState<TabType>('featured');
@@ -22,8 +153,8 @@ export default function AssortmentMerchandising() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Assortment & Merchandising</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage featured collections and plan markdowns for dead stock</p>
+            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Assortment & Merchandising</h1>
+            <p className="text-gray-500 text-[14px] dark:text-gray-400 mt-1">Manage featured collections and plan markdowns for dead stock</p>
           </div>
         </div>
       </div>
@@ -385,12 +516,12 @@ function MarkdownPlanningSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Header with Search and Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex flex-col gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
+        <div className="flex w-full justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex-1 relative w-full sm:max-w-md">
+            <div className="flex items-center relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
@@ -402,22 +533,23 @@ function MarkdownPlanningSection() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Filter:</span>
-            <select
+            <CustomSelect
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">All Products</option>
-              <option value="candidates">Dead Stock Candidates</option>
-              <option value="planned">With Markdown Plans</option>
-            </select>
+              onChange={(value) => setFilterStatus(value)}
+              options={[
+                { value: 'all', label: 'All Products' },
+                { value: 'candidates', label: 'Dead Stock Candidates' },
+                { value: 'planned', label: 'With Markdown Plans' },
+              ]}
+              placeholder="Select filter"
+              className="min-w-[200px]"
+            />
           </div>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -652,22 +784,294 @@ function MarkdownPlanModal({
     onSave(formData);
   };
 
+  // Calendar state for Start Date
+  const [isStartCalendarOpen, setIsStartCalendarOpen] = useState(false);
+  const [startCalendarDate, setStartCalendarDate] = useState(() => {
+    if (formData.startDate) {
+      return new Date(formData.startDate);
+    }
+    return new Date();
+  });
+  const [startCalendarPosition, setStartCalendarPosition] = useState({ top: 0, left: 0 });
+  const startCalendarRef = useRef<HTMLDivElement>(null);
+  const startCalendarButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Calendar state for End Date
+  const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false);
+  const [endCalendarDate, setEndCalendarDate] = useState(() => {
+    if (formData.endDate) {
+      return new Date(formData.endDate);
+    }
+    return new Date();
+  });
+  const [endCalendarPosition, setEndCalendarPosition] = useState({ top: 0, left: 0 });
+  const endCalendarRef = useRef<HTMLDivElement>(null);
+  const endCalendarButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Calendar helper functions
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const navigateStartMonth = (direction: 'prev' | 'next') => {
+    setStartCalendarDate((prev) => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const navigateStartYear = (direction: 'prev' | 'next') => {
+    setStartCalendarDate((prev) => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setFullYear(prev.getFullYear() - 1);
+      } else {
+        newDate.setFullYear(prev.getFullYear() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const navigateEndMonth = (direction: 'prev' | 'next') => {
+    setEndCalendarDate((prev) => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const navigateEndYear = (direction: 'prev' | 'next') => {
+    setEndCalendarDate((prev) => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setFullYear(prev.getFullYear() - 1);
+      } else {
+        newDate.setFullYear(prev.getFullYear() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const handleStartDateSelect = (day: number) => {
+    const selected = new Date(startCalendarDate.getFullYear(), startCalendarDate.getMonth(), day);
+    const formattedDate = selected.toISOString().split('T')[0];
+    setFormData({ ...formData, startDate: formattedDate });
+    setIsStartCalendarOpen(false);
+  };
+
+  const handleEndDateSelect = (day: number) => {
+    const selected = new Date(endCalendarDate.getFullYear(), endCalendarDate.getMonth(), day);
+    const formattedDate = selected.toISOString().split('T')[0];
+    setFormData({ ...formData, endDate: formattedDate });
+    setIsEndCalendarOpen(false);
+  };
+
+  const handleStartClearDate = () => {
+    setFormData({ ...formData, startDate: '' });
+    setIsStartCalendarOpen(false);
+  };
+
+  const handleEndClearDate = () => {
+    setFormData({ ...formData, endDate: '' });
+    setIsEndCalendarOpen(false);
+  };
+
+  const handleStartToday = () => {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    setFormData({ ...formData, startDate: formattedDate });
+    setStartCalendarDate(today);
+    setIsStartCalendarOpen(false);
+  };
+
+  const handleEndToday = () => {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    setFormData({ ...formData, endDate: formattedDate });
+    setEndCalendarDate(today);
+    setIsEndCalendarOpen(false);
+  };
+
+  const isStartSelected = (day: number) => {
+    if (!formData.startDate) return false;
+    const selected = new Date(formData.startDate);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      selected.getDate() === day &&
+      selected.getMonth() === startCalendarDate.getMonth() &&
+      selected.getFullYear() === startCalendarDate.getFullYear()
+    );
+  };
+
+  const isEndSelected = (day: number) => {
+    if (!formData.endDate) return false;
+    const selected = new Date(formData.endDate);
+    return (
+      selected.getDate() === day &&
+      selected.getMonth() === endCalendarDate.getMonth() &&
+      selected.getFullYear() === endCalendarDate.getFullYear()
+    );
+  };
+
+  const isToday = (day: number, calendarDate: Date) => {
+    const today = new Date();
+    return (
+      today.getDate() === day &&
+      today.getMonth() === calendarDate.getMonth() &&
+      today.getFullYear() === calendarDate.getFullYear()
+    );
+  };
+
+  // Calculate calendar position
+  const calculateCalendarPosition = (buttonRef: React.RefObject<HTMLButtonElement | null>, setPosition: (pos: { top: number; left: number }) => void) => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const calendarHeight = 400;
+      const calendarWidth = 320;
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // Check if we should open upward
+      const openUpward = spaceBelow < calendarHeight && spaceAbove > spaceBelow;
+      
+      // Calculate top position
+      let top: number;
+      if (openUpward) {
+        // Position above the button
+        top = Math.max(16, rect.top - calendarHeight - 4);
+      } else {
+        // Position below the button
+        top = rect.bottom + 4;
+        // Ensure calendar doesn't go below viewport
+        if (top + calendarHeight > viewportHeight - 16) {
+          top = viewportHeight - calendarHeight - 16;
+        }
+      }
+      
+      // Calculate left position - center align with button, but keep within viewport
+      let left = rect.left + (rect.width / 2) - (calendarWidth / 2);
+      
+      // Adjust if calendar goes off the right edge
+      if (left + calendarWidth > viewportWidth - 16) {
+        left = viewportWidth - calendarWidth - 16;
+      }
+      
+      // Adjust if calendar goes off the left edge
+      if (left < 16) {
+        left = 16;
+      }
+      
+      // If button is on the right side, align calendar to the right edge of button
+      if (rect.right > viewportWidth - calendarWidth - 16) {
+        left = rect.right - calendarWidth;
+      }
+      
+      setPosition({
+        top: top,
+        left: left,
+      });
+    }
+  };
+
+  // Update calendar dates when formData changes
+  useEffect(() => {
+    if (formData.startDate) {
+      const date = new Date(formData.startDate);
+      if (!isNaN(date.getTime())) {
+        setStartCalendarDate(date);
+      }
+    }
+  }, [formData.startDate]);
+
+  useEffect(() => {
+    if (formData.endDate) {
+      const date = new Date(formData.endDate);
+      if (!isNaN(date.getTime())) {
+        setEndCalendarDate(date);
+      }
+    }
+  }, [formData.endDate]);
+
+  // Close calendars when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isStartCalendarOpen && 
+          startCalendarRef.current && !startCalendarRef.current.contains(event.target as Node) &&
+          startCalendarButtonRef.current && !startCalendarButtonRef.current.contains(event.target as Node)) {
+        setIsStartCalendarOpen(false);
+      }
+      if (isEndCalendarOpen && 
+          endCalendarRef.current && !endCalendarRef.current.contains(event.target as Node) &&
+          endCalendarButtonRef.current && !endCalendarButtonRef.current.contains(event.target as Node)) {
+        setIsEndCalendarOpen(false);
+      }
+    };
+
+    const handleResize = () => {
+      if (isStartCalendarOpen) {
+        calculateCalendarPosition(startCalendarButtonRef, setStartCalendarPosition);
+      }
+      if (isEndCalendarOpen) {
+        calculateCalendarPosition(endCalendarButtonRef, setEndCalendarPosition);
+      }
+    };
+
+    if (isStartCalendarOpen || isEndCalendarOpen) {
+      if (isStartCalendarOpen) {
+        calculateCalendarPosition(startCalendarButtonRef, setStartCalendarPosition);
+      }
+      if (isEndCalendarOpen) {
+        calculateCalendarPosition(endCalendarButtonRef, setEndCalendarPosition);
+      }
+      
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleResize, true);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleResize, true);
+    };
+  }, [isStartCalendarOpen, isEndCalendarOpen]);
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {plan ? 'Edit Markdown Plan' : 'Create Markdown Plan'}
           </h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors dark:text-white"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <div className="p-4 bg-gray-200 dark:bg-gray-700 rounded-lg">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product</p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">{product.name}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400">SKU: {product.sku}</p>
@@ -741,24 +1145,307 @@ function MarkdownPlanModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Start Date *
               </label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
+              <div className="relative">
+                <button
+                  type="button"
+                  ref={startCalendarButtonRef}
+                  onClick={() => setIsStartCalendarOpen(!isStartCalendarOpen)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white flex items-center justify-between text-left"
+                >
+                  <span className={formData.startDate ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+                    {formData.startDate 
+                      ? new Date(formData.startDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+                      : 'Select date'}
+                  </span>
+                  <Calendar className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                </button>
+
+                {isStartCalendarOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[10001]" onClick={() => setIsStartCalendarOpen(false)} />
+                    <div 
+                      ref={startCalendarRef}
+                      className="fixed w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700" 
+                      style={{ 
+                        zIndex: 10002,
+                        top: `${startCalendarPosition.top}px`,
+                        left: `${startCalendarPosition.left}px`,
+                        maxHeight: '90vh',
+                        overflowY: 'auto'
+                      }}
+                    >
+                      {/* Calendar Header */}
+                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-2">
+                          <button
+                            type="button"
+                            onClick={() => navigateStartMonth('prev')}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          >
+                            <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                              {startCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </h3>
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => navigateStartYear('next')}
+                                className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              >
+                                <ChevronUp className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => navigateStartYear('prev')}
+                                className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              >
+                                <ChevronDown className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                              </button>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => navigateStartMonth('next')}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          >
+                            <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Calendar Days */}
+                      <div className="p-4">
+                        {/* Day names */}
+                        <div className="grid grid-cols-7 gap-1 mb-2">
+                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                            <div
+                              key={day}
+                              className="text-center text-xs font-medium text-gray-600 dark:text-gray-400 py-1"
+                            >
+                              {day}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Calendar grid */}
+                        <div className="grid grid-cols-7 gap-1">
+                          {/* Empty cells for days before month starts */}
+                          {Array.from({ length: getFirstDayOfMonth(startCalendarDate) }).map((_, index) => (
+                            <div key={`empty-${index}`} className="aspect-square"></div>
+                          ))}
+                          {/* Days of the month */}
+                          {Array.from({ length: getDaysInMonth(startCalendarDate) }, (_, i) => i + 1).map((day) => {
+                            const isSelectedDay = isStartSelected(day);
+                            const isTodayDay = isToday(day, startCalendarDate);
+                            return (
+                              <button
+                                key={day}
+                                type="button"
+                                onClick={() => handleStartDateSelect(day)}
+                                className={`aspect-square rounded text-sm font-medium transition-all ${
+                                  isSelectedDay
+                                    ? 'bg-primary-600 text-white'
+                                    : isTodayDay
+                                      ? 'bg-primary-200 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold'
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            );
+                          })}
+                          {/* Days from next month to fill grid */}
+                          {(() => {
+                            const totalCells = getFirstDayOfMonth(startCalendarDate) + getDaysInMonth(startCalendarDate);
+                            const remainingCells = 42 - totalCells;
+                            return Array.from({ length: remainingCells }, (_, i) => i + 1).map((day) => (
+                              <div
+                                key={`next-${day}`}
+                                className="aspect-square text-sm text-gray-400 dark:text-gray-600"
+                              >
+                                {day}
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Calendar Footer */}
+                      <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={handleStartClearDate}
+                          className="px-4 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        >
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleStartToday}
+                          className="px-4 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                        >
+                          Today
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 End Date
               </label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
+              <div className="relative">
+                <button
+                  type="button"
+                  ref={endCalendarButtonRef}
+                  onClick={() => setIsEndCalendarOpen(!isEndCalendarOpen)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white flex items-center justify-between text-left"
+                >
+                  <span className={formData.endDate ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+                    {formData.endDate 
+                      ? new Date(formData.endDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+                      : 'Select date'}
+                  </span>
+                  <Calendar className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                </button>
+
+                {isEndCalendarOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[10001]" onClick={() => setIsEndCalendarOpen(false)} />
+                    <div 
+                      ref={endCalendarRef}
+                      className="fixed w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700" 
+                      style={{ 
+                        zIndex: 10002,
+                        top: `${endCalendarPosition.top}px`,
+                        left: `${endCalendarPosition.left}px`,
+                        maxHeight: '90vh',
+                        overflowY: 'auto'
+                      }}
+                    >
+                      {/* Calendar Header */}
+                      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-2">
+                          <button
+                            type="button"
+                            onClick={() => navigateEndMonth('prev')}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          >
+                            <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                              {endCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </h3>
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => navigateEndYear('next')}
+                                className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              >
+                                <ChevronUp className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => navigateEndYear('prev')}
+                                className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                              >
+                                <ChevronDown className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                              </button>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => navigateEndMonth('next')}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                          >
+                            <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Calendar Days */}
+                      <div className="p-4">
+                        {/* Day names */}
+                        <div className="grid grid-cols-7 gap-1 mb-2">
+                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
+                            <div
+                              key={day}
+                              className="text-center text-xs font-medium text-gray-600 dark:text-gray-400 py-1"
+                            >
+                              {day}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Calendar grid */}
+                        <div className="grid grid-cols-7 gap-1">
+                          {/* Empty cells for days before month starts */}
+                          {Array.from({ length: getFirstDayOfMonth(endCalendarDate) }).map((_, index) => (
+                            <div key={`empty-${index}`} className="aspect-square"></div>
+                          ))}
+                          {/* Days of the month */}
+                          {Array.from({ length: getDaysInMonth(endCalendarDate) }, (_, i) => i + 1).map((day) => {
+                            const isSelectedDay = isEndSelected(day);
+                            const isTodayDay = isToday(day, endCalendarDate);
+                            return (
+                              <button
+                                key={day}
+                                type="button"
+                                onClick={() => handleEndDateSelect(day)}
+                                className={`aspect-square rounded text-sm font-medium transition-all ${
+                                  isSelectedDay
+                                    ? 'bg-primary-600 text-white'
+                                    : isTodayDay
+                                      ? 'bg-primary-200 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold'
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            );
+                          })}
+                          {/* Days from next month to fill grid */}
+                          {(() => {
+                            const totalCells = getFirstDayOfMonth(endCalendarDate) + getDaysInMonth(endCalendarDate);
+                            const remainingCells = 42 - totalCells;
+                            return Array.from({ length: remainingCells }, (_, i) => i + 1).map((day) => (
+                              <div
+                                key={`next-${day}`}
+                                className="aspect-square text-sm text-gray-400 dark:text-gray-600"
+                              >
+                                {day}
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Calendar Footer */}
+                      <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={handleEndClearDate}
+                          className="px-4 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        >
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleEndToday}
+                          className="px-4 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                        >
+                          Today
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -766,18 +1453,19 @@ function MarkdownPlanModal({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Reason
             </label>
-            <select
+            <CustomSelect
               value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="Dead stock clearance">Dead stock clearance</option>
-              <option value="Seasonal clearance">Seasonal clearance</option>
-              <option value="End of line">End of line</option>
-              <option value="Overstock">Overstock</option>
-              <option value="Promotional">Promotional</option>
-              <option value="Other">Other</option>
-            </select>
+              onChange={(value) => setFormData({ ...formData, reason: value })}
+              options={[
+                { value: 'Dead stock clearance', label: 'Dead stock clearance' },
+                { value: 'Seasonal clearance', label: 'Seasonal clearance' },
+                { value: 'End of line', label: 'End of line' },
+                { value: 'Overstock', label: 'Overstock' },
+                { value: 'Promotional', label: 'Promotional' },
+                { value: 'Other', label: 'Other' },
+              ]}
+              placeholder="Select reason"
+            />
           </div>
 
           <div>
