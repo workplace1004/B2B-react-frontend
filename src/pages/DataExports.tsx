@@ -460,7 +460,7 @@ function ImportsSection() {
               placeholder="Search by file name, type, or uploader..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 pr-4 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -494,9 +494,9 @@ function ImportsSection() {
             </div>
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <Upload className="w-5 h-5" />
+              <Upload className="w-4 h-4" />
               Upload File
             </button>
           </div>
@@ -570,7 +570,7 @@ function ImportsSection() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <StatusIcon className={`w-4 h-4 ${imp.status === 'processing' ? 'animate-spin' : ''}`} />
+                          <StatusIcon className={`w-4 h-4 dark:text-white ${imp.status === 'processing' ? 'animate-spin' : ''}`} />
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(imp.status)}`}>
                             {imp.status}
                           </span>
@@ -1309,7 +1309,7 @@ function ExportsSection() {
               placeholder="Search by name, type, or creator..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 text-[14px] ::placeholder-[12px] pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -1353,9 +1353,9 @@ function ExportsSection() {
               />
             </div>
             <button
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Create Export
             </button>
           </div>
@@ -1439,7 +1439,7 @@ function ExportsSection() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <StatusIcon className={`w-4 h-4 ${exp.status === 'processing' ? 'animate-spin' : ''}`} />
+                          <StatusIcon className={`w-4 h-4 dark:text-white ${exp.status === 'processing' ? 'animate-spin' : ''}`} />
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(exp.status)}`}>
                             {exp.status}
                           </span>

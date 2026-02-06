@@ -20,6 +20,8 @@ import {
   Lock,
   Unlock,
   Globe,
+  Pencil,
+  AlertTriangle,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
 
@@ -126,6 +128,156 @@ function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdow
   );
 }
 
+// Delete 2FA Modal Component
+function Delete2FAModal({
+  config,
+  onClose,
+  onConfirm,
+  isShowing,
+}: {
+  config: TwoFactorConfig;
+  onClose: () => void;
+  onConfirm: () => void;
+  isShowing: boolean;
+}) {
+  return (
+    <>
+      <div
+        className={`modal-backdrop fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+      />
+      <div
+        className={`modal fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete2FAModalLabel"
+        tabIndex={-1}
+      >
+        <div
+          className="modal-dialog modal-dialog-centered"
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxWidth: '28rem' }}
+        >
+          <div className="modal-content">
+            <div className="modal-body text-center py-8 px-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" strokeWidth={2} />
+                </div>
+              </div>
+              <h5 id="delete2FAModalLabel" className="text-[16px] font-semibold text-gray-900 dark:text-white mb-2">
+                Delete 2FA Method
+              </h5>
+              <p className="text-gray-600 dark:text-gray-400 mb-1">
+                Are you sure you want to delete
+              </p>
+              <p className="text-gray-900 dark:text-white font-semibold mb-4">
+                "{config.label}"?
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3 px-6 pb-6 text-[14px]">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete 2FA Method
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Delete SSO Modal Component
+function DeleteSSOModal({
+  sso,
+  onClose,
+  onConfirm,
+  isShowing,
+}: {
+  sso: SSOConfig;
+  onClose: () => void;
+  onConfirm: () => void;
+  isShowing: boolean;
+}) {
+  return (
+    <>
+      <div
+        className={`modal-backdrop fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+      />
+      <div
+        className={`modal fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteSSOModalLabel"
+        tabIndex={-1}
+      >
+        <div
+          className="modal-dialog modal-dialog-centered"
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxWidth: '28rem' }}
+        >
+          <div className="modal-content">
+            <div className="modal-body text-center py-8 px-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" strokeWidth={2} />
+                </div>
+              </div>
+              <h5 id="deleteSSOModalLabel" className="text-[16px] font-semibold text-gray-900 dark:text-white mb-2">
+                Delete SSO Configuration
+              </h5>
+              <p className="text-gray-600 dark:text-gray-400 mb-1">
+                Are you sure you want to delete
+              </p>
+              <p className="text-gray-900 dark:text-white font-semibold mb-4">
+                "{sso.name}"?
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3 px-6 pb-6 text-[14px]">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete SSO Configuration
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function Security() {
   const [activeTab, setActiveTab] = useState<TabType>('2fa');
 
@@ -186,6 +338,10 @@ function TwoFactorSection() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedConfig, setSelectedConfig] = useState<TwoFactorConfig | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [configToView, setConfigToView] = useState<TwoFactorConfig | null>(null);
+  const [configToEdit, setConfigToEdit] = useState<TwoFactorConfig | null>(null);
+  const [configToDelete, setConfigToDelete] = useState<TwoFactorConfig | null>(null);
+  const [isDelete2FAModalShowing, setIsDelete2FAModalShowing] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showBackupCodesModal, setShowBackupCodesModal] = useState(false);
 
@@ -311,9 +467,26 @@ function TwoFactorSection() {
     toast.success('2FA method setup initiated!');
   };
 
+  const handleUpdate2FA = (configId: string | number, updates: any) => {
+    setTwoFactorConfigs(twoFactorConfigs.map((config) =>
+      config.id === configId
+        ? { ...config, ...updates, updatedAt: new Date().toISOString() }
+        : config
+    ));
+    toast.success('2FA method updated successfully!');
+  };
+
   const handleDelete2FA = (configId: string | number) => {
     setTwoFactorConfigs(twoFactorConfigs.filter((config) => config.id !== configId));
     toast.success('2FA method deleted successfully!');
+    setIsDelete2FAModalShowing(false);
+    setConfigToDelete(null);
+  };
+
+  const handleConfirmDelete2FA = () => {
+    if (configToDelete) {
+      handleDelete2FA(configToDelete.id);
+    }
   };
 
   const handleGenerateBackupCodes = (configId: string | number) => {
@@ -442,7 +615,7 @@ function TwoFactorSection() {
               placeholder="Search by method, label, phone, or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full text-[14px] ::placeholder-[12px] pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -474,9 +647,9 @@ function TwoFactorSection() {
             </div>
             <button
               onClick={() => setShowSetupModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="flex items-center gap-2 text-[14px] px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Setup 2FA
             </button>
           </div>
@@ -651,19 +824,37 @@ function TwoFactorSection() {
         />
       )}
 
-      {/* 2FA Details Modal */}
-      {selectedConfig && !showQRModal && !showBackupCodesModal && (
-        <TwoFactorDetailsModal
-          config={selectedConfig}
-          onClose={() => setSelectedConfig(null)}
+      {/* 2FA View Modal */}
+      {configToView && (
+        <TwoFactorViewModal
+          config={configToView}
+          onClose={() => setConfigToView(null)}
+        />
+      )}
+
+      {/* 2FA Edit Modal */}
+      {configToEdit && (
+        <TwoFactorEditModal
+          config={configToEdit}
+          onClose={() => setConfigToEdit(null)}
           onUpdate={(id, updates) => {
-            setTwoFactorConfigs(twoFactorConfigs.map((c) =>
-              c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
-            ));
-            toast.success('2FA method updated successfully!');
+            handleUpdate2FA(id, updates);
+            setConfigToEdit(null);
           }}
-          onDelete={handleDelete2FA}
           onGenerateBackupCodes={handleGenerateBackupCodes}
+        />
+      )}
+
+      {/* Delete 2FA Modal */}
+      {configToDelete && (
+        <Delete2FAModal
+          config={configToDelete}
+          onClose={() => {
+            setIsDelete2FAModalShowing(false);
+            setConfigToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete2FA}
+          isShowing={isDelete2FAModalShowing}
         />
       )}
 
@@ -736,7 +927,7 @@ function Setup2FAModal({ onClose, onSetup }: Setup2FAModalProps) {
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b z-50 border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Setup Two-Factor Authentication</h2>
           <button
             onClick={onClose}
@@ -775,7 +966,7 @@ function Setup2FAModal({ onClose, onSetup }: Setup2FAModalProps) {
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g., My Phone, Work Email"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
@@ -790,7 +981,7 @@ function Setup2FAModal({ onClose, onSetup }: Setup2FAModalProps) {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="e.g., +1 (555) 123-4567"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -806,7 +997,7 @@ function Setup2FAModal({ onClose, onSetup }: Setup2FAModalProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g., user@example.com"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -840,7 +1031,7 @@ function Setup2FAModal({ onClose, onSetup }: Setup2FAModalProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
             <button
               type="button"
               onClick={onClose}
@@ -861,16 +1052,15 @@ function Setup2FAModal({ onClose, onSetup }: Setup2FAModalProps) {
   );
 }
 
-// 2FA Details Modal
-interface TwoFactorDetailsModalProps {
+// Two Factor Edit Modal
+interface TwoFactorEditModalProps {
   config: TwoFactorConfig;
   onClose: () => void;
   onUpdate: (id: string | number, updates: any) => void;
-  onDelete: (id: string | number) => void;
   onGenerateBackupCodes: (id: string | number) => void;
 }
 
-function TwoFactorDetailsModal({ config, onClose, onUpdate, onDelete, onGenerateBackupCodes }: TwoFactorDetailsModalProps) {
+function TwoFactorEditModal({ config, onClose, onUpdate, onGenerateBackupCodes }: TwoFactorEditModalProps) {
   const [label, setLabel] = useState(config.label);
   const [phoneNumber, setPhoneNumber] = useState(config.phoneNumber || '');
   const [email, setEmail] = useState(config.email || '');
@@ -884,12 +1074,6 @@ function TwoFactorDetailsModal({ config, onClose, onUpdate, onDelete, onGenerate
     onClose();
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this 2FA method?')) {
-      onDelete(config.id);
-      onClose();
-    }
-  };
 
   const MethodIcon = getMethodIcon(config.method);
 
@@ -1038,12 +1222,6 @@ function TwoFactorDetailsModal({ config, onClose, onUpdate, onDelete, onGenerate
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
-              onClick={handleDelete}
-              className="px-4 py-2 text-red-600 dark:text-red-400 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              Delete
-            </button>
-            <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
@@ -1149,6 +1327,256 @@ function QRCodeModal({ config, onClose }: QRCodeModalProps) {
   );
 }
 
+// Two Factor View Modal (Read-only)
+interface TwoFactorViewModalProps {
+  config: TwoFactorConfig;
+  onClose: () => void;
+}
+
+function TwoFactorViewModal({ config, onClose }: TwoFactorViewModalProps) {
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">2FA Method Details</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{config.label}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[14px] text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Method
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {config.method === 'totp' ? 'Authenticator App' : config.method === 'sms' ? 'SMS' : config.method === 'email' ? 'Email' : 'Backup Code'}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Status
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px]">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  config.status === 'enabled'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    : config.status === 'pending'
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {config.status.charAt(0).toUpperCase() + config.status.slice(1)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Label
+            </label>
+            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+              {config.label}
+            </div>
+          </div>
+
+          {config.phoneNumber && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Phone Number
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {config.phoneNumber}
+              </div>
+            </div>
+          )}
+
+          {config.email && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Email
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {config.email}
+              </div>
+            </div>
+          )}
+
+          {config.lastUsed && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Last Used
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {new Date(config.lastUsed).toLocaleString()}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 px-6 pb-6 text-[14px]">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// SSO View Modal (Read-only)
+interface SSOViewModalProps {
+  sso: SSOConfig;
+  onClose: () => void;
+}
+
+function SSOViewModal({ sso, onClose }: SSOViewModalProps) {
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">SSO Configuration Details</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{sso.name}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[14px] text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Provider
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {sso.provider}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Status
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px]">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  sso.status === 'active'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    : sso.status === 'pending'
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {sso.status.charAt(0).toUpperCase() + sso.status.slice(1)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Name
+            </label>
+            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+              {sso.name}
+            </div>
+          </div>
+
+          {sso.clientId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Client ID
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {sso.clientId}
+              </div>
+            </div>
+          )}
+
+          {sso.domain && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Domain
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {sso.domain}
+              </div>
+            </div>
+          )}
+
+          {sso.redirectUri && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Redirect URI
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {sso.redirectUri}
+              </div>
+            </div>
+          )}
+
+          {sso.description && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {sso.description}
+              </div>
+            </div>
+          )}
+
+          {sso.enabledForUsers && sso.enabledForUsers.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Enabled For Users
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {sso.enabledForUsers.join(', ')}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 px-6 pb-6 text-[14px]">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Backup Codes Modal
 interface BackupCodesModalProps {
   config: TwoFactorConfig;
@@ -1228,7 +1656,7 @@ function BackupCodesModal({ config, onClose, onGenerateNew }: BackupCodesModalPr
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-3 text-[14px] pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={onGenerateNew}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
@@ -1302,8 +1730,11 @@ function SSOSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [providerFilter, setProviderFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedSSO, setSelectedSSO] = useState<SSOConfig | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [ssoToView, setSsoToView] = useState<SSOConfig | null>(null);
+  const [ssoToEdit, setSsoToEdit] = useState<SSOConfig | null>(null);
+  const [ssoToDelete, setSsoToDelete] = useState<SSOConfig | null>(null);
+  const [isDeleteSSOModalShowing, setIsDeleteSSOModalShowing] = useState(false);
 
   // Load SSO configs from localStorage
   const [ssoConfigs, setSsoConfigs] = useState<SSOConfig[]>(() => {
@@ -1425,6 +1856,14 @@ function SSOSection() {
   const handleDeleteSSO = (ssoId: string | number) => {
     setSsoConfigs(ssoConfigs.filter((sso) => sso.id !== ssoId));
     toast.success('SSO configuration deleted successfully!');
+    setIsDeleteSSOModalShowing(false);
+    setSsoToDelete(null);
+  };
+
+  const handleConfirmDeleteSSO = () => {
+    if (ssoToDelete) {
+      handleDeleteSSO(ssoToDelete.id);
+    }
   };
 
   const getProviderIcon = (provider: SSOProvider) => {
@@ -1549,7 +1988,7 @@ function SSOSection() {
               placeholder="Search by name, provider, or domain..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 pr-4 py-2 border text-[14px] text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -1583,9 +2022,9 @@ function SSOSection() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               New SSO
             </button>
           </div>
@@ -1638,7 +2077,7 @@ function SSOSection() {
                     <tr
                       key={sso.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                      onClick={() => setSelectedSSO(sso)}
+                      onClick={() => setSsoToView(sso)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -1678,18 +2117,31 @@ function SSOSection() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedSSO(sso);
+                              setSsoToView(sso);
                             }}
                             className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                            title="View"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteSSO(sso.id);
+                              setSsoToEdit(sso);
+                            }}
+                            className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSsoToDelete(sso);
+                              setIsDeleteSSOModalShowing(true);
                             }}
                             className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1712,13 +2164,33 @@ function SSOSection() {
         />
       )}
 
-      {/* SSO Details Modal */}
-      {selectedSSO && (
-        <SSODetailsModal
-          sso={selectedSSO}
-          onClose={() => setSelectedSSO(null)}
+      {/* SSO View Modal */}
+      {ssoToView && (
+        <SSOViewModal
+          sso={ssoToView}
+          onClose={() => setSsoToView(null)}
+        />
+      )}
+
+      {/* SSO Edit Modal */}
+      {ssoToEdit && (
+        <SSOEditModal
+          sso={ssoToEdit}
+          onClose={() => setSsoToEdit(null)}
           onUpdate={handleUpdateSSO}
-          onDelete={handleDeleteSSO}
+        />
+      )}
+
+      {/* Delete SSO Modal */}
+      {ssoToDelete && (
+        <DeleteSSOModal
+          sso={ssoToDelete}
+          onClose={() => {
+            setIsDeleteSSOModalShowing(false);
+            setSsoToDelete(null);
+          }}
+          onConfirm={handleConfirmDeleteSSO}
+          isShowing={isDeleteSSOModalShowing}
         />
       )}
     </div>
@@ -1795,8 +2267,8 @@ function CreateSSOModal({ onClose, onCreate }: CreateSSOModalProps) {
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create New SSO Configuration</h2>
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b z-50 border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">Create New SSO Configuration</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
@@ -1815,7 +2287,7 @@ function CreateSSOModal({ onClose, onCreate }: CreateSSOModalProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Google Workspace"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
@@ -1853,7 +2325,7 @@ function CreateSSOModal({ onClose, onCreate }: CreateSSOModalProps) {
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 placeholder="e.g., example.com"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -1908,7 +2380,7 @@ function CreateSSOModal({ onClose, onCreate }: CreateSSOModalProps) {
                   value={redirectUri}
                   onChange={(e) => setRedirectUri(e.target.value)}
                   placeholder="e.g., https://app.example.com/auth/callback"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full text-[14px] ::placeholder-[12px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
             </>
@@ -1934,7 +2406,7 @@ function CreateSSOModal({ onClose, onCreate }: CreateSSOModalProps) {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Enabled For Users
             </label>
-            <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
+            <div className="max-h-48 grid grid-cols-5 gap-2 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               {userGroups.map((group) => (
                 <label
                   key={group}
@@ -1963,11 +2435,11 @@ function CreateSSOModal({ onClose, onCreate }: CreateSSOModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the SSO configuration..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full text-[14px] ::placeholder-[12px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
             <button
               type="button"
               onClick={onClose}
@@ -1988,15 +2460,14 @@ function CreateSSOModal({ onClose, onCreate }: CreateSSOModalProps) {
   );
 }
 
-// SSO Details Modal
-interface SSODetailsModalProps {
+// SSO Edit Modal
+interface SSOEditModalProps {
   sso: SSOConfig;
   onClose: () => void;
   onUpdate: (ssoId: string | number, updates: any) => void;
-  onDelete: (ssoId: string | number) => void;
 }
 
-function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalProps) {
+function SSOEditModal({ sso, onClose, onUpdate }: SSOEditModalProps) {
   const [name, setName] = useState(sso.name);
   const [provider, setProvider] = useState<SSOProvider>(sso.provider);
   const [clientId, setClientId] = useState(sso.clientId || '');
@@ -2042,12 +2513,6 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
     onClose();
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this SSO configuration?')) {
-      onDelete(sso.id);
-      onClose();
-    }
-  };
 
   const getProviderIcon = (provider: SSOProvider) => {
     switch (provider) {
@@ -2092,7 +2557,7 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b z-50 border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">SSO Configuration Details</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{sso.name}</p>
@@ -2193,7 +2658,8 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
                     type={showSecret ? 'text' : 'password'}
                     value={clientSecret}
                     onChange={(e) => setClientSecret(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono text-sm"
+                    placeholder="••••••••••••••••••••"
+                    className="flex-1 px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono text-sm"
                   />
                   <button
                     type="button"
@@ -2223,7 +2689,8 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
                   type="url"
                   value={redirectUri}
                   onChange={(e) => setRedirectUri(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="e.g., https://example.com/auth/callback"
+                  className="w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
             </>
@@ -2238,7 +2705,8 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
                 type="url"
                 value={metadataUrl}
                 onChange={(e) => setMetadataUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="e.g., https://example.com/metadata.xml"
+                className="w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
           )}
@@ -2251,7 +2719,8 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
               type="text"
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              placeholder="e.g., example.com"
             />
           </div>
 
@@ -2259,7 +2728,7 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Enabled For Users
             </label>
-            <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
+            <div className="max-h-48 grid grid-cols-5 gap-2 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               {userGroups.map((group) => (
                 <label
                   key={group}
@@ -2287,7 +2756,8 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Describe the SSO configuration..."
+              className="w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
@@ -2308,13 +2778,7 @@ function SSODetailsModal({ sso, onClose, onUpdate, onDelete }: SSODetailsModalPr
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleDelete}
-              className="px-4 py-2 text-red-600 dark:text-red-400 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              Delete
-            </button>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"

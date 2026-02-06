@@ -547,7 +547,7 @@ function MultiBrandMarketSection() {
                   placeholder="Search by brand name, code, or description..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 ::placeholder-[12px] text-[14px] pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full pl-10 text-[14px] ::placeholder-[12px] pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -760,7 +760,7 @@ function MultiBrandMarketSection() {
                   placeholder="Search by market name, code, country, or region..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 ::placeholder-[12px] text-[14px] pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full pl-10 text-[14px] ::placeholder-[12px] pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -1006,7 +1006,7 @@ function CreateBrandModal({ onClose, onCreate, markets }: CreateBrandModalProps)
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Main Brand"
-              className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
@@ -1021,7 +1021,7 @@ function CreateBrandModal({ onClose, onCreate, markets }: CreateBrandModalProps)
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="e.g., MAIN"
-                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
                 required
               />
             </div>
@@ -1050,7 +1050,7 @@ function CreateBrandModal({ onClose, onCreate, markets }: CreateBrandModalProps)
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the brand..."
               rows={3}
-              className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
@@ -1318,7 +1318,7 @@ function BrandDetailsModal({ brand, onClose, onUpdate, markets }: BrandDetailsMo
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               placeholder="e.g., Main Brand"
             />
           </div>
@@ -1332,7 +1332,7 @@ function BrandDetailsModal({ brand, onClose, onUpdate, markets }: BrandDetailsMo
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
                 placeholder="e.g., MAIN"
               />
             </div>
@@ -1360,7 +1360,7 @@ function BrandDetailsModal({ brand, onClose, onUpdate, markets }: BrandDetailsMo
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full  px-3 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full  px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               placeholder="Describe the brand..."
             />
           </div>
@@ -1512,7 +1512,7 @@ function CreateMarketModal({ onClose, onCreate, brands }: CreateMarketModalProps
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., United States"
-              className="w-full px-3 ::placeholder-[12px] text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 text-[14px] ::placeholder-[12px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
@@ -1527,7 +1527,7 @@ function CreateMarketModal({ onClose, onCreate, brands }: CreateMarketModalProps
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="e.g., US"
-                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
                 required
               />
             </div>
@@ -1557,7 +1557,7 @@ function CreateMarketModal({ onClose, onCreate, brands }: CreateMarketModalProps
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 placeholder="e.g., North America"
-                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -1571,7 +1571,7 @@ function CreateMarketModal({ onClose, onCreate, brands }: CreateMarketModalProps
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 placeholder="e.g., United States"
-                className="w-full px-3 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -1744,7 +1744,7 @@ function MarketDetailsModal({ market, onClose, onUpdate, brands }: MarketDetails
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter market name"
-              className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
@@ -1758,7 +1758,7 @@ function MarketDetailsModal({ market, onClose, onUpdate, brands }: MarketDetails
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="Enter market code"
-                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white font-mono"
               />
             </div>
 
@@ -1787,7 +1787,7 @@ function MarketDetailsModal({ market, onClose, onUpdate, brands }: MarketDetails
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 placeholder="Enter region"
-                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
 
@@ -1800,7 +1800,7 @@ function MarketDetailsModal({ market, onClose, onUpdate, brands }: MarketDetails
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 placeholder="Enter country"
-                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -2093,7 +2093,7 @@ function LocalizationSection() {
               placeholder="Search by market name, language, or currency..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full ::placeholder-[12px] text-[14px] pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full text-[14px] ::placeholder-[12px] pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">

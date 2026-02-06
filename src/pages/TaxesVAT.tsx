@@ -16,6 +16,8 @@ import {
   X,
   Eye,
   CheckCircle,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -325,9 +327,9 @@ function VATReportsSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -389,7 +391,7 @@ function VATReportsSection() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -398,7 +400,7 @@ function VATReportsSection() {
               placeholder="Search by region..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 pr-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -732,6 +734,8 @@ function RegionRulesSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRule, setSelectedRule] = useState<any>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [ruleToDelete, setRuleToDelete] = useState<any>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Load region rules from localStorage (since there's no API endpoint yet)
   const [regionRules, setRegionRules] = useState<any[]>(() => {
@@ -833,9 +837,9 @@ function RegionRulesSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -894,7 +898,7 @@ function RegionRulesSection() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -903,14 +907,14 @@ function RegionRulesSection() {
               placeholder="Search by region, country, tax type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 pr-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4" />
             New Rule
           </button>
         </div>
@@ -1014,13 +1018,16 @@ function RegionRulesSection() {
                           className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1"
                         >
                           <Eye className="w-4 h-4" />
-                          View
                         </button>
                         <button
-                          onClick={() => handleDeleteRule(rule.id)}
+                          onClick={() => {
+                            setRuleToDelete(rule);
+                            setShowDeleteModal(true);
+                          }}
                           className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                          title="Delete Rule"
                         >
-                          <X className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -1046,6 +1053,23 @@ function RegionRulesSection() {
           rule={selectedRule}
           onClose={() => setSelectedRule(null)}
           onUpdate={handleUpdateRule}
+        />
+      )}
+
+      {/* Delete Rule Modal */}
+      {ruleToDelete && (
+        <DeleteRuleModal
+          rule={ruleToDelete}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setRuleToDelete(null);
+          }}
+          onConfirm={() => {
+            handleDeleteRule(ruleToDelete.id);
+            setShowDeleteModal(false);
+            setRuleToDelete(null);
+          }}
+          isShowing={showDeleteModal}
         />
       )}
     </div>
@@ -1114,7 +1138,7 @@ function CreateRuleModal({ onClose, onCreate }: CreateRuleModalProps) {
                 type="text"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="e.g., United Kingdom"
                 required
               />
@@ -1127,7 +1151,7 @@ function CreateRuleModal({ onClose, onCreate }: CreateRuleModalProps) {
                 type="text"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="e.g., GB, US, DE"
                 maxLength={2}
                 required
@@ -1162,7 +1186,7 @@ function CreateRuleModal({ onClose, onCreate }: CreateRuleModalProps) {
                 max="100"
                 value={taxRate}
                 onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="0.00"
               />
             </div>
@@ -1192,7 +1216,7 @@ function CreateRuleModal({ onClose, onCreate }: CreateRuleModalProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               placeholder="Optional description or notes about this tax rule..."
             />
           </div>
@@ -1423,6 +1447,67 @@ function RuleDetailsModal({ rule, onClose, onUpdate }: RuleDetailsModalProps) {
           >
             Save Changes
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Delete Rule Modal Component
+interface DeleteRuleModalProps {
+  rule: any;
+  onClose: () => void;
+  onConfirm: () => void;
+  isShowing: boolean;
+}
+
+function DeleteRuleModal({ rule, onClose, onConfirm, isShowing }: DeleteRuleModalProps) {
+  if (!isShowing) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" strokeWidth={2} />
+            </div>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-center">
+            Delete Region Rule
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-1 text-center">
+            Are you sure you want to delete the tax rule for
+          </p>
+          <p className="text-gray-900 dark:text-white font-semibold mb-4 text-center">
+            "{rule.region}" ({rule.country})?
+          </p>
+          <p className="text-sm text-red-600 dark:text-red-400 font-medium text-center mb-6">
+            This action cannot be undone.
+          </p>
+          <div className="flex items-center justify-end gap-3 text-[14px]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Rule
+            </button>
+          </div>
         </div>
       </div>
     </div>
