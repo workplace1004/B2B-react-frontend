@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Search, Plus, Shield, Globe, X, Pencil, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Calendar, Inbox } from 'lucide-react';
+import { Search, Plus, Shield, Globe, X, Edit, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Calendar, Inbox } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -383,7 +383,7 @@ function DigitalProductPassportSection() {
                           className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {
@@ -1281,7 +1281,7 @@ function ComplianceEvidenceSection() {
                           className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {

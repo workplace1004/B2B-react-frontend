@@ -5,7 +5,7 @@ import {
   FileText,
   Plus,
   X,
-  Pencil,
+  Edit,
   Search,
   Filter,
   DollarSign,
@@ -563,7 +563,7 @@ export default function B2BTerms() {
                             className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                             title="Edit Terms"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

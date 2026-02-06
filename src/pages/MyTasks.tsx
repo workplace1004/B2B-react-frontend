@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
-import { CheckSquare, Plus, X, Pencil, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Circle, Search, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { CheckSquare, Plus, X, Edit, Trash2, Calendar, Clock, AlertCircle, CheckCircle2, Circle, Search, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
 import { SkeletonPage } from '../components/Skeleton';
 
@@ -684,7 +684,7 @@ export default function MyTasks() {
                               className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
                               title="Edit"
                             >
-                              <Pencil className="w-4 h-4" />
+                              <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => openDeleteModal(task)}

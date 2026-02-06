@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Image, FileText, BookOpen, Search, Grid, List, Upload, X, Pencil, Trash2, Download, Eye, ChevronDown, Inbox } from 'lucide-react';
+import { Image, FileText, BookOpen, Search, Grid, List, Upload, X, Edit, Trash2, Download, Eye, ChevronDown, Inbox } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -357,7 +357,7 @@ function ImagesSection() {
                       className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
                       title="Edit"
                     >
-                      <Pencil className="w-4 h-4 text-gray-900" />
+                      <Edit className="w-4 h-4 text-gray-900" />
                     </button>
                     <button
                       onClick={() => {
@@ -468,7 +468,7 @@ function ImagesSection() {
                       className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                       title="Edit"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => {
@@ -757,7 +757,7 @@ function LookbooksSection() {
                           className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {
@@ -1063,7 +1063,7 @@ function BrandContentSection() {
                         className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
                         title="Edit"
                       >
-                        <Pencil className="w-4 h-4 text-gray-900" />
+                        <Edit className="w-4 h-4 text-gray-900" />
                       </button>
                       <button
                         onClick={() => {
@@ -1199,7 +1199,7 @@ function BrandContentSection() {
                           className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {

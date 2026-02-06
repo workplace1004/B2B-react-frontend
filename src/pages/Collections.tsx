@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
-import { Plus, Layers, X, ChevronDown, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { Plus, Layers, X, ChevronDown, Edit, Trash2, AlertTriangle, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -486,7 +486,7 @@ export default function Collections() {
                         className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                         title="Edit"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => {

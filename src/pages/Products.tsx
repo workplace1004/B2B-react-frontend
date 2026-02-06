@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
-import { Package, Plus, X, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Pencil, Trash2, AlertTriangle, Upload, Inbox, Eye, ChevronLeft } from 'lucide-react';
+import { Package, Plus, X, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Edit, Trash2, AlertTriangle, Upload, Inbox, Eye, ChevronLeft } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { generateEAN13 } from '../utils/ean';
 import { SkeletonPage } from '../components/Skeleton';
@@ -664,7 +664,7 @@ export default function Products() {
                                               className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                                               title="Edit"
                                             >
-                                              <Pencil className="w-4 h-4" />
+                                              <Edit className="w-4 h-4" />
                                             </button>
                                             <button
                                               onClick={() => {
@@ -748,7 +748,7 @@ export default function Products() {
                           className="p-2 bg-white dark:bg-gray-800 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 rounded-lg shadow-md hover:shadow-lg transition-all"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {
@@ -3314,7 +3314,7 @@ function AttributesTaxonomySection() {
                           }}
                           className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {
@@ -3370,7 +3370,7 @@ function AttributesTaxonomySection() {
                       }}
                       className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => {
@@ -3701,7 +3701,7 @@ function BundlesKitsSection() {
                         }}
                         className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => {

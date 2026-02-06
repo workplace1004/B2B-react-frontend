@@ -8,7 +8,7 @@ import {
   X,
   ChevronsLeft,
   ChevronsRight,
-  Pencil,
+  Edit,
   Trash2,
   ChevronDown,
   Search,
@@ -1520,7 +1520,7 @@ function ApprovalsModal({
                         className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                         title="Edit"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteApproval(approval.id!)}
@@ -1937,7 +1937,7 @@ function WIPTrackingModal({
                           className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteWIP(wip.id!)}
@@ -2437,7 +2437,7 @@ function BatchModal({
                             className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                             title="Edit"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteBatch(batch.id!)}

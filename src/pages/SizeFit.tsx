@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Ruler, Plus, X, Pencil, Trash2, Search, ChevronDown, Globe, ArrowLeftRight, Inbox, Languages } from 'lucide-react';
+import { Ruler, Plus, X, Edit, Trash2, Search, ChevronDown, Globe, ArrowLeftRight, Inbox, Languages } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -510,7 +510,7 @@ export default function SizeFit() {
                             className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                             title="Edit"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openDeleteModal(chart)}

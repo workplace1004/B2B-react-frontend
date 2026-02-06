@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { Barcode, Plus, Search, Pencil, Download, X, Check, AlertCircle, ChevronsLeft, ChevronsRight, ChevronDown, Inbox } from 'lucide-react';
+import { Barcode, Plus, Search, Edit, Download, X, Check, AlertCircle, ChevronsLeft, ChevronsRight, ChevronDown, Inbox } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -543,7 +543,7 @@ export default function SkuEanBarcodes() {
                           className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>

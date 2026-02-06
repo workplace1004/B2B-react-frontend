@@ -8,7 +8,7 @@ import {
   X,
   ChevronsLeft,
   ChevronsRight,
-  Pencil,
+  Edit,
   Trash2,
   AlertTriangle,
   ChevronDown,
@@ -810,7 +810,7 @@ export default function WarehousesLocations() {
                                 className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                                 title="Edit"
                               >
-                                <Pencil className="w-4 h-4" />
+                                <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => {
@@ -1851,7 +1851,7 @@ function BinsModal({
                             className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                             title="Edit"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteBin(bin.id!)}
@@ -2409,7 +2409,7 @@ function PutAwayRulesModal({
                         className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                         title="Edit"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteRule(rule.id!)}

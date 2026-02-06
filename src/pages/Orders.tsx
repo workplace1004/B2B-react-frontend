@@ -5,7 +5,7 @@ import {
   ShoppingCart,
   ChevronsLeft,
   ChevronsRight,
-  Pencil,
+  Edit,
   AlertTriangle,
   ChevronDown,
   Search,
@@ -825,7 +825,7 @@ export default function Orders() {
                                   className="text-gray-600 hover:text-gray-900 dark:text-gray-400 p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
                                   title="Edit"
                     >
-                                  <Pencil className="w-4 h-4" />
+                                  <Edit className="w-4 h-4" />
                     </button>
                   </div>
                             </td>

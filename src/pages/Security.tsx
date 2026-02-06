@@ -20,7 +20,7 @@ import {
   Lock,
   Unlock,
   Globe,
-  Pencil,
+  Edit,
   AlertTriangle,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
@@ -140,62 +140,57 @@ function Delete2FAModal({
   onConfirm: () => void;
   isShowing: boolean;
 }) {
+  if (!isShowing) return null;
+
   return (
     <>
       <div
-        className={`modal-backdrop fade ${isShowing ? 'show' : ''}`}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50"
         onClick={onClose}
       />
       <div
-        className={`modal fade ${isShowing ? 'show' : ''}`}
+        className="fixed inset-0 flex items-center justify-center z-50 p-4"
         onClick={onClose}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete2FAModalLabel"
-        tabIndex={-1}
       >
         <div
-          className="modal-dialog modal-dialog-centered"
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: '28rem' }}
         >
-          <div className="modal-content">
-            <div className="modal-body text-center py-8 px-6">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                  <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" strokeWidth={2} />
-                </div>
+          <div className="modal-body text-center py-8 px-6">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" strokeWidth={2} />
               </div>
-              <h5 id="delete2FAModalLabel" className="text-[16px] font-semibold text-gray-900 dark:text-white mb-2">
-                Delete 2FA Method
-              </h5>
-              <p className="text-gray-600 dark:text-gray-400 mb-1">
-                Are you sure you want to delete
-              </p>
-              <p className="text-gray-900 dark:text-white font-semibold mb-4">
-                "{config.label}"?
-              </p>
-              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                This action cannot be undone.
-              </p>
             </div>
-            <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3 px-6 pb-6 text-[14px]">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onConfirm}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete 2FA Method
-              </button>
-            </div>
+            <h5 id="delete2FAModalLabel" className="text-[16px] font-semibold text-gray-900 dark:text-white mb-2">
+              Delete 2FA Method
+            </h5>
+            <p className="text-gray-600 dark:text-gray-400 mb-1">
+              Are you sure you want to delete
+            </p>
+            <p className="text-gray-900 dark:text-white font-semibold mb-4">
+              "{config.label}"?
+            </p>
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+              This action cannot be undone.
+            </p>
+          </div>
+          <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3 px-6 pb-6 text-[14px]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete 2FA Method
+            </button>
           </div>
         </div>
       </div>
@@ -798,7 +793,8 @@ function TwoFactorSection() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete2FA(config.id);
+                              setConfigToDelete(config);
+                              setIsDelete2FAModalShowing(true);
                             }}
                             className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                             title="Delete"
@@ -2132,7 +2128,7 @@ function SSOSection() {
                             className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                             title="Edit"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => {

@@ -8,7 +8,7 @@ import {
   X,
   ChevronsLeft,
   ChevronsRight,
-  Pencil,
+  Edit,
   Trash2,
   AlertTriangle,
   ChevronDown,
@@ -738,7 +738,7 @@ export default function VendorsFactories() {
                             className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             title="Edit"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => {
@@ -1652,7 +1652,7 @@ function PriceHistoryModal({
                             className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                             title="Edit"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeletePrice(price.id!)}
@@ -2093,7 +2093,7 @@ function NegotiationNotesModal({
                         className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                         title="Edit"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteNote(note.id!)}

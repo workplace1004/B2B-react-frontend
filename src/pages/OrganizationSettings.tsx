@@ -1,11 +1,17 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import api from '../lib/api';
+import { SkeletonPage } from '../components/Skeleton';
 import {
   Building,
   Plus,
   Search,
   Filter,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Globe,
   Tag,
   Eye,
@@ -17,13 +23,13 @@ import {
   Ruler,
   MapPin,
   AlertTriangle,
-  Pencil,
+  Edit,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
 
 type TabType = 'multi-brand-market' | 'localization';
-type BrandStatus = 'active' | 'inactive';
-type MarketStatus = 'active' | 'inactive';
+type BrandStatus = 'active' | 'inactive' | 'ACTIVE' | 'INACTIVE';
+type MarketStatus = 'active' | 'inactive' | 'ACTIVE' | 'INACTIVE';
 type SizeSystem = 'US' | 'EU' | 'UK' | 'JP' | 'CN' | 'AU';
 
 interface Brand {
@@ -34,6 +40,7 @@ interface Brand {
   logo?: string;
   status: BrandStatus;
   marketIds: (string | number)[];
+  marketCount?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -49,6 +56,7 @@ interface Market {
   timezone: string;
   status: MarketStatus;
   brandIds: (string | number)[];
+  brandCount?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -81,64 +89,75 @@ function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdow
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [openAbove, setOpenAbove] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsOpen(false);
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  // Calculate dropdown position when opening or window changes
-  useEffect(() => {
+    // Calculate position based on available space and button position
     const calculatePosition = () => {
-      if (isOpen && buttonRef.current) {
-        const rect = buttonRef.current.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        // Calculate approximate dropdown height (each option is ~40px, add padding)
-        const optionHeight = 40;
-        const dropdownHeight = Math.min(options.length * optionHeight + 16, 300);
-        
-        // If not enough space below but enough space above, open upward
-        if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-          setOpenAbove(true);
-        } else {
-          setOpenAbove(false);
-        }
+      if (!buttonRef.current || !menuRef.current) return;
+      
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+      const menuHeight = Math.min(options.length * 40, 200); // Max 5 options visible
+      const menuWidth = buttonRect.width;
+      
+      // Use fixed positioning to escape modal overflow
+      const style: React.CSSProperties = {
+        position: 'fixed',
+        width: `${menuWidth}px`,
+        left: `${buttonRect.left}px`,
+        zIndex: 9999,
+      };
+      
+      // Position downward by default, upward if not enough space
+      if (spaceBelow >= menuHeight || spaceBelow >= spaceAbove) {
+        style.top = `${buttonRect.bottom + 4}px`;
+      } else {
+        style.bottom = `${window.innerHeight - buttonRect.top + 4}px`;
       }
+      
+      setMenuStyle(style);
     };
 
-    calculatePosition();
+    // Add event listener with a slight delay to avoid immediate closure when opening
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      calculatePosition();
+    }, 10);
+
+    // Recalculate on scroll or resize
+    window.addEventListener('scroll', calculatePosition, true);
+    window.addEventListener('resize', calculatePosition);
     
-    if (isOpen) {
-      window.addEventListener('resize', calculatePosition);
-      window.addEventListener('scroll', calculatePosition, true);
-      return () => {
-        window.removeEventListener('resize', calculatePosition);
-        window.removeEventListener('scroll', calculatePosition, true);
-      };
-    }
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', calculatePosition, true);
+      window.removeEventListener('resize', calculatePosition);
+    };
   }, [isOpen, options.length]);
 
   const selectedOption = options.find(opt => opt.value === value);
 
-  // Calculate max height based on number of options
-  // For small lists (6 or fewer), show all without scrolling
-  // For larger lists, use a reasonable max height
-  const maxHeight = options.length <= 6 ? 'none' : '300px';
-  const shouldScroll = options.length > 6;
+  // Calculate max height to show only 5 options at a time
+  // Each option is approximately 40px (py-2.5 = 10px top + 10px bottom + ~20px text)
+  const optionHeight = 40;
+  const visibleOptions = 5;
+  const maxHeight = `${visibleOptions * optionHeight}px`;
 
   return (
-    <div ref={dropdownRef} className="relative" style={{ zIndex: isOpen ? 10001 : 'auto', position: 'relative' }}>
+    <div ref={dropdownRef} className="relative">
       <button
         ref={buttonRef}
         type="button"
@@ -150,19 +169,16 @@ function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdow
       >
         <span>{selectedOption?.label || placeholder || 'Select...'}</span>
         <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isOpen && openAbove ? 'rotate-0' : isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''
+            }`}
         />
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <div 
-          className={`absolute z-50 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden ${
-            openAbove ? 'mb-1 bottom-full' : 'mt-1 top-full'
-          }`}
-          style={{
-            maxHeight: shouldScroll ? maxHeight : 'none',
-            overflowY: shouldScroll ? 'auto' : 'visible',
-          }}
+          ref={menuRef}
+          className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden overflow-y-auto"
+          style={{ ...menuStyle, maxHeight }}
         >
           {options.map((option) => (
             <button
@@ -180,7 +196,8 @@ function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdow
               {option.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -244,102 +261,55 @@ function MultiBrandMarketSection() {
   const [activeSubTab, setActiveSubTab] = useState<'brands' | 'markets'>('brands');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
-  const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+  const [brandToView, setBrandToView] = useState<Brand | null>(null);
+  const [brandToEdit, setBrandToEdit] = useState<Brand | null>(null);
+  const [marketToView, setMarketToView] = useState<Market | null>(null);
+  const [marketToEdit, setMarketToEdit] = useState<Market | null>(null);
   const [showCreateBrandModal, setShowCreateBrandModal] = useState(false);
   const [showCreateMarketModal, setShowCreateMarketModal] = useState(false);
   const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null);
   const [marketToDelete, setMarketToDelete] = useState<Market | null>(null);
   const [isDeleteBrandModalShowing, setIsDeleteBrandModalShowing] = useState(false);
   const [isDeleteMarketModalShowing, setIsDeleteMarketModalShowing] = useState(false);
+  const [brandsCurrentPage, setBrandsCurrentPage] = useState(1);
+  const [brandsItemsPerPage, setBrandsItemsPerPage] = useState(10);
+  const [marketsCurrentPage, setMarketsCurrentPage] = useState(1);
+  const [marketsItemsPerPage, setMarketsItemsPerPage] = useState(10);
 
-  // Load brands from localStorage
-  const [brands, setBrands] = useState<Brand[]>(() => {
-    const saved = localStorage.getItem('organization-brands');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default brands
-    return [
-      {
-        id: 1,
-        name: 'Main Brand',
-        code: 'MAIN',
-        description: 'Primary brand for the organization',
-        status: 'active' as BrandStatus,
-        marketIds: [1, 2],
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Premium Brand',
-        code: 'PREMIUM',
-        description: 'Premium product line',
-        status: 'active' as BrandStatus,
-        marketIds: [1],
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  const queryClient = useQueryClient();
+
+  // Fetch brands from API
+  const { data: brandsData, isLoading: brandsLoading } = useQuery({
+    queryKey: ['brands', statusFilter],
+    queryFn: async () => {
+      try {
+        const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+        const response = await api.get(`/brands?skip=0&take=1000${statusParam}`);
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching brands:', error);
+        return [];
+      }
+    },
   });
 
-  // Load markets from localStorage
-  const [markets, setMarkets] = useState<Market[]>(() => {
-    const saved = localStorage.getItem('organization-markets');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default markets
-    return [
-      {
-        id: 1,
-        name: 'United States',
-        code: 'US',
-        region: 'North America',
-        country: 'United States',
-        currency: 'USD',
-        language: 'en-US',
-        timezone: 'America/New_York',
-        status: 'active' as MarketStatus,
-        brandIds: [1, 2],
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'United Kingdom',
-        code: 'GB',
-        region: 'Europe',
-        country: 'United Kingdom',
-        currency: 'GBP',
-        language: 'en-GB',
-        timezone: 'Europe/London',
-        status: 'active' as MarketStatus,
-        brandIds: [1],
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: 'Germany',
-        code: 'DE',
-        region: 'Europe',
-        country: 'Germany',
-        currency: 'EUR',
-        language: 'de-DE',
-        timezone: 'Europe/Berlin',
-        status: 'active' as MarketStatus,
-        brandIds: [],
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  // Fetch markets from API
+  const { data: marketsData, isLoading: marketsLoading } = useQuery({
+    queryKey: ['markets', statusFilter],
+    queryFn: async () => {
+      try {
+        const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+        const response = await api.get(`/markets?skip=0&take=1000${statusParam}`);
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching markets:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('organization-brands', JSON.stringify(brands));
-  }, [brands]);
-
-  useEffect(() => {
-    localStorage.setItem('organization-markets', JSON.stringify(markets));
-  }, [markets]);
+  const brands: Brand[] = brandsData || [];
+  const markets: Market[] = marketsData || [];
 
   // Filter brands
   const filteredBrands = useMemo(() => {
@@ -357,12 +327,25 @@ function MultiBrandMarketSection() {
 
     // Filter by status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((brand) => brand.status === statusFilter);
+      filtered = filtered.filter((brand) => 
+        brand.status.toLowerCase() === statusFilter.toLowerCase()
+      );
     }
 
     // Sort by name
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [brands, searchQuery, statusFilter]);
+
+  // Brands pagination calculations
+  const brandsTotalPages = Math.max(1, Math.ceil(filteredBrands.length / brandsItemsPerPage));
+  const brandsStartIndex = (brandsCurrentPage - 1) * brandsItemsPerPage;
+  const brandsEndIndex = brandsStartIndex + brandsItemsPerPage;
+  const paginatedBrands = filteredBrands.slice(brandsStartIndex, brandsEndIndex);
+
+  // Reset brands page when filters change
+  useEffect(() => {
+    setBrandsCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   // Filter markets
   const filteredMarkets = useMemo(() => {
@@ -381,106 +364,198 @@ function MultiBrandMarketSection() {
 
     // Filter by status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((market) => market.status === statusFilter);
+      filtered = filtered.filter((market) => 
+        market.status.toLowerCase() === statusFilter.toLowerCase()
+      );
     }
 
     // Sort by name
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [markets, searchQuery, statusFilter]);
 
+  // Markets pagination calculations
+  const marketsTotalPages = Math.max(1, Math.ceil(filteredMarkets.length / marketsItemsPerPage));
+  const marketsStartIndex = (marketsCurrentPage - 1) * marketsItemsPerPage;
+  const marketsEndIndex = marketsStartIndex + marketsItemsPerPage;
+  const paginatedMarkets = filteredMarkets.slice(marketsStartIndex, marketsEndIndex);
+
+  // Reset markets page when filters change
+  useEffect(() => {
+    setMarketsCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   // Calculate summary metrics
   const brandsSummary = useMemo(() => {
     const total = brands.length;
-    const active = brands.filter((brand) => brand.status === 'active');
+    const active = brands.filter((brand) => brand.status?.toLowerCase() === 'active');
     return { total, active: active.length };
   }, [brands]);
 
   const marketsSummary = useMemo(() => {
     const total = markets.length;
-    const active = markets.filter((market) => market.status === 'active');
+    const active = markets.filter((market) => market.status?.toLowerCase() === 'active');
     return { total, active: active.length };
   }, [markets]);
 
+  // Create brand mutation
+  const createBrandMutation = useMutation({
+    mutationFn: async (brandData: any) => {
+      const response = await api.post('/brands', {
+        ...brandData,
+        status: brandData.status?.toUpperCase() || 'ACTIVE',
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      queryClient.invalidateQueries({ queryKey: ['markets'] });
+      setShowCreateBrandModal(false);
+      toast.success('Brand created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create brand');
+    },
+  });
+
+  // Update brand mutation
+  const updateBrandMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/brands/${id}`, {
+        ...updates,
+        status: updates.status?.toUpperCase(),
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      queryClient.invalidateQueries({ queryKey: ['markets'] });
+      toast.success('Brand updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update brand');
+    },
+  });
+
+  // Delete brand mutation
+  const deleteBrandMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/brands/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      queryClient.invalidateQueries({ queryKey: ['markets'] });
+      toast.success('Brand deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete brand');
+    },
+  });
+
+  // Create market mutation
+  const createMarketMutation = useMutation({
+    mutationFn: async (marketData: any) => {
+      const response = await api.post('/markets', {
+        ...marketData,
+        status: marketData.status?.toUpperCase() || 'ACTIVE',
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['markets'] });
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      setShowCreateMarketModal(false);
+      toast.success('Market created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create market');
+    },
+  });
+
+  // Update market mutation
+  const updateMarketMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/markets/${id}`, {
+        ...updates,
+        status: updates.status?.toUpperCase(),
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['markets'] });
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      toast.success('Market updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update market');
+    },
+  });
+
+  // Delete market mutation
+  const deleteMarketMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/markets/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['markets'] });
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+      toast.success('Market deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete market');
+    },
+  });
+
   const handleCreateBrand = (brandData: any) => {
-    const newBrand: Brand = {
-      id: Date.now(),
-      ...brandData,
-      createdAt: new Date().toISOString(),
-    };
-    setBrands([...brands, newBrand]);
-    setShowCreateBrandModal(false);
-    toast.success('Brand created successfully!');
+    createBrandMutation.mutate(brandData);
   };
 
   const handleUpdateBrand = (brandId: string | number, updates: any) => {
-    setBrands(brands.map((brand) =>
-      brand.id === brandId
-        ? { ...brand, ...updates, updatedAt: new Date().toISOString() }
-        : brand
-    ));
-    toast.success('Brand updated successfully!');
+    updateBrandMutation.mutate({ id: brandId, updates });
   };
 
   const handleDeleteBrand = (brandId: string | number) => {
-    setBrands(brands.filter((brand) => brand.id !== brandId));
-    // Remove brand from markets
-    setMarkets(markets.map((market) => ({
-      ...market,
-      brandIds: market.brandIds.filter((id) => id !== brandId),
-    })));
-    toast.success('Brand deleted successfully!');
-    setIsDeleteBrandModalShowing(false);
-    setBrandToDelete(null);
+    deleteBrandMutation.mutate(brandId);
   };
 
   const handleConfirmDeleteBrand = () => {
     if (brandToDelete) {
       handleDeleteBrand(brandToDelete.id);
+      setIsDeleteBrandModalShowing(false);
+      setBrandToDelete(null);
     }
   };
 
   const handleCreateMarket = (marketData: any) => {
-    const newMarket: Market = {
-      id: Date.now(),
-      ...marketData,
-      createdAt: new Date().toISOString(),
-    };
-    setMarkets([...markets, newMarket]);
-    setShowCreateMarketModal(false);
-    toast.success('Market created successfully!');
+    createMarketMutation.mutate(marketData);
   };
 
   const handleUpdateMarket = (marketId: string | number, updates: any) => {
-    setMarkets(markets.map((market) =>
-      market.id === marketId
-        ? { ...market, ...updates, updatedAt: new Date().toISOString() }
-        : market
-    ));
-    toast.success('Market updated successfully!');
+    updateMarketMutation.mutate({ id: marketId, updates });
   };
 
   const handleDeleteMarket = (marketId: string | number) => {
-    setMarkets(markets.filter((market) => market.id !== marketId));
-    // Remove market from brands
-    setBrands(brands.map((brand) => ({
-      ...brand,
-      marketIds: brand.marketIds.filter((id) => id !== marketId),
-    })));
-    toast.success('Market deleted successfully!');
-    setIsDeleteMarketModalShowing(false);
-    setMarketToDelete(null);
+    deleteMarketMutation.mutate(marketId);
   };
 
   const handleConfirmDeleteMarket = () => {
     if (marketToDelete) {
       handleDeleteMarket(marketToDelete.id);
+      setIsDeleteMarketModalShowing(false);
+      setMarketToDelete(null);
     }
   };
 
+  // Show loading state (after all hooks)
+  if (brandsLoading || marketsLoading) {
+    return <SkeletonPage />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
       {/* Sub-tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="mb-6">
         <nav className="flex space-x-8" aria-label="Sub Tabs">
           <button
             onClick={() => setActiveSubTab('brands')}
@@ -507,7 +582,7 @@ function MultiBrandMarketSection() {
       {activeSubTab === 'brands' && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -538,7 +613,7 @@ function MultiBrandMarketSection() {
           </div>
 
           {/* Filters and Actions */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex-1 relative w-full sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -575,7 +650,7 @@ function MultiBrandMarketSection() {
           </div>
 
           {/* Brands Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
@@ -614,11 +689,10 @@ function MultiBrandMarketSection() {
                       </td>
                     </tr>
                   ) : (
-                    filteredBrands.map((brand) => (
+                    paginatedBrands.map((brand) => (
                       <tr
                         key={brand.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                        onClick={() => setSelectedBrand(brand)}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
@@ -640,15 +714,15 @@ function MultiBrandMarketSection() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {brand.marketIds.length} market{brand.marketIds.length !== 1 ? 's' : ''}
+                            {brand.marketCount ?? brand.marketIds?.length ?? 0} market{(brand.marketCount ?? brand.marketIds?.length ?? 0) !== 1 ? 's' : ''}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${brand.status === 'active'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                            }`}>
-                            {brand.status}
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${brand.status?.toLowerCase() === 'active'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                          }`}>
+                            {brand.status?.toLowerCase()}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -656,11 +730,22 @@ function MultiBrandMarketSection() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedBrand(brand);
+                                setBrandToView(brand);
                               }}
                               className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                              title="View Brand"
                             >
                               <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBrandToEdit(brand);
+                              }}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                              title="Edit Brand"
+                            >
+                              <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => {
@@ -669,6 +754,7 @@ function MultiBrandMarketSection() {
                                 setIsDeleteBrandModalShowing(true);
                               }}
                               className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              title="Delete Brand"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -682,6 +768,102 @@ function MultiBrandMarketSection() {
             </div>
           </div>
 
+          {/* Brands Pagination */}
+          {filteredBrands.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing <span className="font-medium text-gray-900 dark:text-white">{brandsStartIndex + 1}</span> to{' '}
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {Math.min(brandsEndIndex, filteredBrands.length)}
+                  </span>{' '}
+                  of <span className="font-medium text-gray-900 dark:text-white">{filteredBrands.length}</span> results
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                    <CustomDropdown
+                      value={brandsItemsPerPage.toString()}
+                      onChange={(value) => {
+                        setBrandsItemsPerPage(Number(value));
+                        setBrandsCurrentPage(1);
+                      }}
+                      options={[
+                        { value: '5', label: '5' },
+                        { value: '10', label: '10' },
+                        { value: '25', label: '25' },
+                        { value: '50', label: '50' },
+                      ]}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setBrandsCurrentPage(1)}
+                      disabled={brandsCurrentPage === 1}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                      title="First page"
+                    >
+                      &lt;&lt;
+                    </button>
+                    <button
+                      onClick={() => setBrandsCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={brandsCurrentPage === 1}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                      title="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, brandsTotalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (brandsTotalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (brandsCurrentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (brandsCurrentPage >= brandsTotalPages - 2) {
+                        pageNum = brandsTotalPages - 4 + i;
+                      } else {
+                        pageNum = brandsCurrentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setBrandsCurrentPage(pageNum)}
+                          className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                            brandsCurrentPage === pageNum
+                              ? 'bg-primary-600 text-white border-primary-600'
+                              : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => setBrandsCurrentPage(p => Math.min(brandsTotalPages, p + 1))}
+                      disabled={brandsCurrentPage === brandsTotalPages}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                      title="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setBrandsCurrentPage(brandsTotalPages)}
+                      disabled={brandsCurrentPage === brandsTotalPages}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                      title="Last page"
+                    >
+                      &gt;&gt;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Create Brand Modal */}
           {showCreateBrandModal && (
             <CreateBrandModal
@@ -691,12 +873,24 @@ function MultiBrandMarketSection() {
             />
           )}
 
-          {/* Brand Details Modal */}
-          {selectedBrand && (
+          {/* Brand View Modal */}
+          {brandToView && (
+            <BrandViewModal
+              brand={brandToView}
+              onClose={() => setBrandToView(null)}
+              markets={markets}
+            />
+          )}
+
+          {/* Brand Edit Modal */}
+          {brandToEdit && (
             <BrandDetailsModal
-              brand={selectedBrand}
-              onClose={() => setSelectedBrand(null)}
-              onUpdate={handleUpdateBrand}
+              brand={brandToEdit}
+              onClose={() => setBrandToEdit(null)}
+              onUpdate={(id, updates) => {
+                handleUpdateBrand(id, updates);
+                setBrandToEdit(null);
+              }}
               markets={markets}
             />
           )}
@@ -720,7 +914,7 @@ function MultiBrandMarketSection() {
       {activeSubTab === 'markets' && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -751,7 +945,7 @@ function MultiBrandMarketSection() {
           </div>
 
           {/* Filters and Actions */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex-1 relative w-full sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -788,7 +982,7 @@ function MultiBrandMarketSection() {
           </div>
 
           {/* Markets Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
@@ -830,11 +1024,10 @@ function MultiBrandMarketSection() {
                       </td>
                     </tr>
                   ) : (
-                    filteredMarkets.map((market) => (
+                    paginatedMarkets.map((market) => (
                       <tr
                         key={market.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                        onClick={() => setSelectedMarket(market)}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
@@ -861,15 +1054,15 @@ function MultiBrandMarketSection() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {market.brandIds.length} brand{market.brandIds.length !== 1 ? 's' : ''}
+                            {market.brandCount ?? market.brandIds?.length ?? 0} brand{(market.brandCount ?? market.brandIds?.length ?? 0) !== 1 ? 's' : ''}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${market.status === 'active'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                            }`}>
-                            {market.status}
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${market.status?.toLowerCase() === 'active'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                          }`}>
+                            {market.status?.toLowerCase()}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -877,11 +1070,22 @@ function MultiBrandMarketSection() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedMarket(market);
+                                setMarketToView(market);
                               }}
                               className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                              title="View Market"
                             >
-                              <Pencil className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMarketToEdit(market);
+                              }}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                              title="Edit Market"
+                            >
+                              <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => {
@@ -890,6 +1094,7 @@ function MultiBrandMarketSection() {
                                 setIsDeleteMarketModalShowing(true);
                               }}
                               className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              title="Delete Market"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -903,6 +1108,102 @@ function MultiBrandMarketSection() {
             </div>
           </div>
 
+          {/* Markets Pagination */}
+          {filteredMarkets.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing <span className="font-medium text-gray-900 dark:text-white">{marketsStartIndex + 1}</span> to{' '}
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {Math.min(marketsEndIndex, filteredMarkets.length)}
+                  </span>{' '}
+                  of <span className="font-medium text-gray-900 dark:text-white">{filteredMarkets.length}</span> results
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                    <CustomDropdown
+                      value={marketsItemsPerPage.toString()}
+                      onChange={(value) => {
+                        setMarketsItemsPerPage(Number(value));
+                        setMarketsCurrentPage(1);
+                      }}
+                      options={[
+                        { value: '5', label: '5' },
+                        { value: '10', label: '10' },
+                        { value: '25', label: '25' },
+                        { value: '50', label: '50' },
+                      ]}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setMarketsCurrentPage(1)}
+                      disabled={marketsCurrentPage === 1}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                      title="First page"
+                    >
+                      &lt;&lt;
+                    </button>
+                    <button
+                      onClick={() => setMarketsCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={marketsCurrentPage === 1}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                      title="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, marketsTotalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (marketsTotalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (marketsCurrentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (marketsCurrentPage >= marketsTotalPages - 2) {
+                        pageNum = marketsTotalPages - 4 + i;
+                      } else {
+                        pageNum = marketsCurrentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setMarketsCurrentPage(pageNum)}
+                          className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                            marketsCurrentPage === pageNum
+                              ? 'bg-primary-600 text-white border-primary-600'
+                              : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => setMarketsCurrentPage(p => Math.min(marketsTotalPages, p + 1))}
+                      disabled={marketsCurrentPage === marketsTotalPages}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                      title="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setMarketsCurrentPage(marketsTotalPages)}
+                      disabled={marketsCurrentPage === marketsTotalPages}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                      title="Last page"
+                    >
+                      &gt;&gt;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Create Market Modal */}
           {showCreateMarketModal && (
             <CreateMarketModal
@@ -912,12 +1213,24 @@ function MultiBrandMarketSection() {
             />
           )}
 
-          {/* Market Details Modal */}
-          {selectedMarket && (
+          {/* Market View Modal */}
+          {marketToView && (
+            <MarketViewModal
+              market={marketToView}
+              onClose={() => setMarketToView(null)}
+              brands={brands}
+            />
+          )}
+
+          {/* Market Edit Modal */}
+          {marketToEdit && (
             <MarketDetailsModal
-              market={selectedMarket}
-              onClose={() => setSelectedMarket(null)}
-              onUpdate={handleUpdateMarket}
+              market={marketToEdit}
+              onClose={() => setMarketToEdit(null)}
+              onUpdate={(id, updates) => {
+                handleUpdateMarket(id, updates);
+                setMarketToEdit(null);
+              }}
               brands={brands}
             />
           )}
@@ -1253,6 +1566,81 @@ function DeleteMarketModal({
   );
 }
 
+// Delete Localization Modal Component
+function DeleteLocalizationModal({
+  localization,
+  onClose,
+  onConfirm,
+  isShowing,
+}: {
+  localization: Localization;
+  onClose: () => void;
+  onConfirm: () => void;
+  isShowing: boolean;
+}) {
+  return (
+    <>
+      <div
+        className={`modal-backdrop fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+      />
+      <div
+        className={`modal fade ${isShowing ? 'show' : ''}`}
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteLocalizationModalLabel"
+        tabIndex={-1}
+      >
+        <div
+          className="modal-dialog modal-dialog-centered"
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxWidth: '28rem' }}
+        >
+          <div className="modal-content">
+            <div className="modal-body text-center py-8 px-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" strokeWidth={2} />
+                </div>
+              </div>
+              <h5 id="deleteLocalizationModalLabel" className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Delete Localization
+              </h5>
+              <p className="text-gray-600 dark:text-gray-400 mb-1">
+                Are you sure you want to delete the localization for
+              </p>
+              <p className="text-gray-900 dark:text-white font-semibold mb-4">
+                "{localization.marketName}"?
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="modal-footer border-t border-gray-200 dark:border-gray-700 pt-4 flex items-center justify-end gap-3 px-6 pb-6 text-[14px]">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Localization
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // Brand Details Modal
 interface BrandDetailsModalProps {
   brand: Brand;
@@ -1265,8 +1653,8 @@ function BrandDetailsModal({ brand, onClose, onUpdate, markets }: BrandDetailsMo
   const [name, setName] = useState(brand.name);
   const [code, setCode] = useState(brand.code);
   const [description, setDescription] = useState(brand.description);
-  const [status, setStatus] = useState<BrandStatus>(brand.status);
-  const [selectedMarkets, setSelectedMarkets] = useState<(string | number)[]>(brand.marketIds);
+  const [status, setStatus] = useState<BrandStatus>((brand.status?.toLowerCase() || 'active') as BrandStatus);
+  const [selectedMarkets, setSelectedMarkets] = useState<(string | number)[]>(brand.marketIds || []);
 
   const toggleMarket = (marketId: string | number) => {
     setSelectedMarkets((prev) =>
@@ -1284,7 +1672,7 @@ function BrandDetailsModal({ brand, onClose, onUpdate, markets }: BrandDetailsMo
       status,
       marketIds: selectedMarkets,
     });
-    onClose();
+    // Modal will close after successful update
   };
 
   return (
@@ -1422,6 +1810,131 @@ function BrandDetailsModal({ brand, onClose, onUpdate, markets }: BrandDetailsMo
               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Brand View Modal (Read-only)
+interface BrandViewModalProps {
+  brand: Brand;
+  onClose: () => void;
+  markets: Market[];
+}
+
+function BrandViewModal({ brand, onClose, markets }: BrandViewModalProps) {
+  const brandMarkets = markets.filter((market) => brand.marketIds?.includes(market.id));
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">Brand Details</h2>
+            <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">{brand.name}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-[14px] font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Brand Name
+            </label>
+            <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+              {brand.name}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Brand Code
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono">
+                {brand.code}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Status
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${brand.status?.toLowerCase() === 'active'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {brand.status?.toLowerCase()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Description
+            </label>
+            <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white min-h-[80px]">
+              {brand.description || 'No description'}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Markets ({brandMarkets.length})
+            </label>
+            <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700">
+              {brandMarkets.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No markets assigned</p>
+              ) : (
+                brandMarkets.map((market) => (
+                  <div key={market.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span>{market.name} ({market.code})</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Created At</span>
+              <span className="text-gray-900 dark:text-white">
+                {new Date(brand.createdAt).toLocaleString()}
+              </span>
+            </div>
+            {brand.updatedAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Updated At</span>
+                <span className="text-gray-900 dark:text-white">
+                  {new Date(brand.updatedAt).toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
             </button>
           </div>
         </div>
@@ -1678,8 +2191,8 @@ function MarketDetailsModal({ market, onClose, onUpdate, brands }: MarketDetails
   const [currency, setCurrency] = useState(market.currency);
   const [language, setLanguage] = useState(market.language);
   const [timezone, setTimezone] = useState(market.timezone);
-  const [status, setStatus] = useState<MarketStatus>(market.status);
-  const [selectedBrands, setSelectedBrands] = useState<(string | number)[]>(market.brandIds);
+  const [status, setStatus] = useState<MarketStatus>((market.status?.toLowerCase() || 'active') as MarketStatus);
+  const [selectedBrands, setSelectedBrands] = useState<(string | number)[]>(market.brandIds || []);
 
   const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'ZAR'];
   const languages = ['en-US', 'en-GB', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'pt-BR', 'ja-JP', 'zh-CN', 'ko-KR'];
@@ -1709,7 +2222,7 @@ function MarketDetailsModal({ market, onClose, onUpdate, brands }: MarketDetails
       status,
       brandIds: selectedBrands,
     });
-    onClose();
+    // Modal will close after successful update
   };
 
   return (
@@ -1906,50 +2419,214 @@ function MarketDetailsModal({ market, onClose, onUpdate, brands }: MarketDetails
   );
 }
 
+// Market View Modal (Read-only)
+interface MarketViewModalProps {
+  market: Market;
+  onClose: () => void;
+  brands: Brand[];
+}
+
+function MarketViewModal({ market, onClose, brands }: MarketViewModalProps) {
+  const marketBrands = brands.filter((brand) => market.brandIds?.includes(brand.id));
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">Market Details</h2>
+            <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">{market.name}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Market Name
+            </label>
+            <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+              {market.name}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Market Code
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono">
+                {market.code}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Status
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${market.status?.toLowerCase() === 'active'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {market.status?.toLowerCase()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Region
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {market.region}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Country
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {market.country}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Currency
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {market.currency}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Language
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {market.language}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Timezone
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {market.timezone}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Brands ({marketBrands.length})
+            </label>
+            <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700">
+              {marketBrands.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No brands assigned</p>
+              ) : (
+                marketBrands.map((brand) => (
+                  <div key={brand.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <Tag className="w-4 h-4 text-gray-400" />
+                    <span>{brand.name} ({brand.code})</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Created At</span>
+              <span className="text-gray-900 dark:text-white">
+                {new Date(market.createdAt).toLocaleString()}
+              </span>
+            </div>
+            {market.updatedAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Updated At</span>
+                <span className="text-gray-900 dark:text-white">
+                  {new Date(market.updatedAt).toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Localization Section
 function LocalizationSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [marketFilter, setMarketFilter] = useState<string>('all');
-  const [selectedLocalization, setSelectedLocalization] = useState<Localization | null>(null);
+  const [localizationToView, setLocalizationToView] = useState<Localization | null>(null);
+  const [localizationToEdit, setLocalizationToEdit] = useState<Localization | null>(null);
+  const [localizationToDelete, setLocalizationToDelete] = useState<Localization | null>(null);
+  const [isDeleteLocalizationModalShowing, setIsDeleteLocalizationModalShowing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Get markets for localization
-  const markets = useMemo(() => {
-    const saved = localStorage.getItem('organization-markets');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return [];
-  }, []);
-
-  // Load localizations from localStorage
-  const [localizations, setLocalizations] = useState<Localization[]>(() => {
-    const saved = localStorage.getItem('organization-localizations');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Generate default localizations from markets
-    const defaultLocalizations: Localization[] = markets.map((market: Market) => ({
-      id: market.id,
-      marketId: market.id,
-      marketName: market.name,
-      language: market.language,
-      currency: market.currency,
-      dateFormat: 'MM/DD/YYYY',
-      timeFormat: '12h',
-      numberFormat: '1,234.56',
-      sizeSystem: 'US' as SizeSystem,
-      weightUnit: 'lb',
-      lengthUnit: 'in',
-      createdAt: new Date().toISOString(),
-    }));
-    return defaultLocalizations;
+  // Fetch markets from API for localization
+  const { data: marketsData, isLoading: marketsLoading } = useQuery({
+    queryKey: ['markets'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/markets?skip=0&take=1000');
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching markets:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('organization-localizations', JSON.stringify(localizations));
-  }, [localizations]);
+  const markets: Market[] = marketsData || [];
+
+  // Fetch localizations from API
+  const { data: localizationsData, isLoading: localizationsLoading } = useQuery({
+    queryKey: ['localizations'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/localizations?skip=0&take=1000');
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching localizations:', error);
+        return [];
+      }
+    },
+  });
+
+  const localizations: Localization[] = localizationsData || [];
 
   // Filter localizations
   const filteredLocalizations = useMemo(() => {
@@ -1974,6 +2651,17 @@ function LocalizationSection() {
     return filtered.sort((a, b) => a.marketName.localeCompare(b.marketName));
   }, [localizations, searchQuery, marketFilter]);
 
+  // Localization pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredLocalizations.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLocalizations = filteredLocalizations.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, marketFilter]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const total = localizations.length;
@@ -1989,43 +2677,89 @@ function LocalizationSection() {
     };
   }, [localizations]);
 
+  const queryClient = useQueryClient();
+
+  // Create localization mutation
+  const createLocalizationMutation = useMutation({
+    mutationFn: async (localizationData: any) => {
+      const response = await api.post('/localizations', {
+        ...localizationData,
+        sizeSystem: localizationData.sizeSystem?.toUpperCase() || 'US',
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['localizations'] });
+      setShowCreateModal(false);
+      toast.success('Localization created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create localization');
+    },
+  });
+
+  // Update localization mutation
+  const updateLocalizationMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/localizations/${id}`, {
+        ...updates,
+        sizeSystem: updates.sizeSystem?.toUpperCase(),
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['localizations'] });
+      toast.success('Localization updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update localization');
+    },
+  });
+
+  // Delete localization mutation
+  const deleteLocalizationMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/localizations/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['localizations'] });
+      toast.success('Localization deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete localization');
+    },
+  });
+
   const handleCreateLocalization = (localizationData: any) => {
-    const market = markets.find((m: Market) => m.id.toString() === localizationData.marketId);
-    const newLocalization: Localization = {
-      id: Date.now(),
-      ...localizationData,
-      marketName: market?.name || 'Unknown Market',
-      createdAt: new Date().toISOString(),
-    };
-    setLocalizations([...localizations, newLocalization]);
-    setShowCreateModal(false);
-    toast.success('Localization created successfully!');
+    createLocalizationMutation.mutate(localizationData);
   };
 
   const handleUpdateLocalization = (localizationId: string | number, updates: any) => {
-    const market = markets.find((m: Market) => m.id.toString() === updates.marketId);
-    setLocalizations(localizations.map((loc) =>
-      loc.id === localizationId
-        ? {
-          ...loc,
-          ...updates,
-          marketName: market?.name || loc.marketName,
-          updatedAt: new Date().toISOString(),
-        }
-        : loc
-    ));
-    toast.success('Localization updated successfully!');
+    updateLocalizationMutation.mutate({ id: localizationId, updates });
   };
 
   const handleDeleteLocalization = (localizationId: string | number) => {
-    setLocalizations(localizations.filter((loc) => loc.id !== localizationId));
-    toast.success('Localization deleted successfully!');
+    deleteLocalizationMutation.mutate(localizationId);
   };
 
+  const handleConfirmDeleteLocalization = () => {
+    if (localizationToDelete) {
+      handleDeleteLocalization(localizationToDelete.id);
+      setIsDeleteLocalizationModalShowing(false);
+      setLocalizationToDelete(null);
+    }
+  };
+
+  // Show loading state (after all hooks)
+  if (marketsLoading || localizationsLoading) {
+    return <SkeletonPage />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -2084,7 +2818,7 @@ function LocalizationSection() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -2123,7 +2857,7 @@ function LocalizationSection() {
       </div>
 
       {/* Localizations Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -2165,11 +2899,10 @@ function LocalizationSection() {
                   </td>
                 </tr>
               ) : (
-                filteredLocalizations.map((localization) => (
+                paginatedLocalizations.map((localization) => (
                   <tr
                     key={localization.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => setSelectedLocalization(localization)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
@@ -2218,18 +2951,31 @@ function LocalizationSection() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedLocalization(localization);
+                            setLocalizationToView(localization);
                           }}
                           className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                          title="View Localization"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteLocalization(localization.id);
+                            setLocalizationToEdit(localization);
+                          }}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          title="Edit Localization"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLocalizationToDelete(localization);
+                            setIsDeleteLocalizationModalShowing(true);
                           }}
                           className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                          title="Delete Localization"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -2243,6 +2989,102 @@ function LocalizationSection() {
         </div>
       </div>
 
+      {/* Localization Pagination */}
+      {filteredLocalizations.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredLocalizations.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredLocalizations.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create Localization Modal */}
       {showCreateModal && (
         <CreateLocalizationModal
@@ -2252,14 +3094,42 @@ function LocalizationSection() {
         />
       )}
 
-      {/* Localization Details Modal */}
-      {selectedLocalization && (
-        <LocalizationDetailsModal
-          localization={selectedLocalization}
-          onClose={() => setSelectedLocalization(null)}
-          onUpdate={handleUpdateLocalization}
-          onDelete={handleDeleteLocalization}
+      {/* Localization View Modal */}
+      {localizationToView && (
+        <LocalizationViewModal
+          localization={localizationToView}
+          onClose={() => setLocalizationToView(null)}
           markets={markets}
+        />
+      )}
+
+      {/* Localization Edit Modal */}
+      {localizationToEdit && (
+        <LocalizationDetailsModal
+          localization={localizationToEdit}
+          onClose={() => setLocalizationToEdit(null)}
+          onUpdate={(id, updates) => {
+            handleUpdateLocalization(id, updates);
+            setLocalizationToEdit(null);
+          }}
+          onDelete={(id) => {
+            handleDeleteLocalization(id);
+            setLocalizationToEdit(null);
+          }}
+          markets={markets}
+        />
+      )}
+
+      {/* Delete Localization Modal */}
+      {localizationToDelete && (
+        <DeleteLocalizationModal
+          localization={localizationToDelete}
+          onClose={() => {
+            setIsDeleteLocalizationModalShowing(false);
+            setLocalizationToDelete(null);
+          }}
+          onConfirm={handleConfirmDeleteLocalization}
+          isShowing={isDeleteLocalizationModalShowing}
         />
       )}
     </div>
@@ -2300,7 +3170,7 @@ function CreateLocalizationModal({ onClose, onCreate, markets }: CreateLocalizat
       return;
     }
     onCreate({
-      marketId,
+      marketId: parseInt(marketId),
       language,
       currency,
       dateFormat,
@@ -2441,7 +3311,7 @@ function CreateLocalizationModal({ onClose, onCreate, markets }: CreateLocalizat
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex text-[14px] items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
@@ -2463,6 +3333,156 @@ function CreateLocalizationModal({ onClose, onCreate, markets }: CreateLocalizat
 }
 
 // Localization Details Modal
+interface LocalizationViewModalProps {
+  localization: Localization;
+  onClose: () => void;
+  markets: Market[];
+}
+
+function LocalizationViewModal({ localization, onClose, markets }: LocalizationViewModalProps) {
+  const market = markets.find((m) => m.id.toString() === localization.marketId.toString());
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">View Localization</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{localization.marketName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Market
+            </label>
+            <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+              {market ? `${market.name} (${market.code})` : localization.marketName}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Language
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.language}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Currency
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.currency}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Date Format
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.dateFormat}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Time Format
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.timeFormat}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Number Format
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.numberFormat}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Size System
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.sizeSystem}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Weight Unit
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.weightUnit}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Length Unit
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {localization.lengthUnit}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Created At</span>
+              <span className="text-gray-900 dark:text-white">
+                {new Date(localization.createdAt).toLocaleString()}
+              </span>
+            </div>
+            {localization.updatedAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Updated At</span>
+                <span className="text-gray-900 dark:text-white">
+                  {new Date(localization.updatedAt).toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface LocalizationDetailsModalProps {
   localization: Localization;
   onClose: () => void;
@@ -2471,7 +3491,7 @@ interface LocalizationDetailsModalProps {
   markets: Market[];
 }
 
-function LocalizationDetailsModal({ localization, onClose, onUpdate, onDelete, markets }: LocalizationDetailsModalProps) {
+function LocalizationDetailsModal({ localization, onClose, onUpdate, markets }: LocalizationDetailsModalProps) {
   const [marketId, setMarketId] = useState(localization.marketId.toString());
   const [language, setLanguage] = useState(localization.language);
   const [currency, setCurrency] = useState(localization.currency);
@@ -2493,7 +3513,7 @@ function LocalizationDetailsModal({ localization, onClose, onUpdate, onDelete, m
 
   const handleSave = () => {
     onUpdate(localization.id, {
-      marketId,
+      marketId: parseInt(marketId),
       language,
       currency,
       dateFormat,
@@ -2503,12 +3523,7 @@ function LocalizationDetailsModal({ localization, onClose, onUpdate, onDelete, m
       weightUnit,
       lengthUnit,
     });
-    onClose();
-  };
-
-  const handleDelete = () => {
-    onDelete(localization.id);
-    onClose();
+    // Modal will close after successful update
   };
 
   return (
@@ -2522,7 +3537,7 @@ function LocalizationDetailsModal({ localization, onClose, onUpdate, onDelete, m
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Localization Details</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Localization</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{localization.marketName}</p>
           </div>
           <button
@@ -2659,13 +3674,7 @@ function LocalizationDetailsModal({ localization, onClose, onUpdate, onDelete, m
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={handleDelete}
-              className="px-4 py-2 text-red-600 dark:text-red-400 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              Delete
-            </button>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"

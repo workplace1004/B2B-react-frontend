@@ -8,7 +8,7 @@ import {
   X,
   ChevronsLeft,
   ChevronsRight,
-  Pencil,
+  Edit,
   Trash2,
   AlertTriangle,
   ChevronDown,
@@ -713,7 +713,7 @@ export default function Customers() {
                             className="p-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                             title="Edit"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => {
@@ -2032,7 +2032,7 @@ function ContactManagementModal({
                               className="p-1.5 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                               title="Edit"
                             >
-                              <Pencil className="w-4 h-4" />
+                              <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteContact(contact.id!)}

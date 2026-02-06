@@ -1,10 +1,15 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import api from '../lib/api';
+import { SkeletonPage } from '../components/Skeleton';
 import {
   Plus,
   Search,
   Filter,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   X,
   CheckCircle,
@@ -12,7 +17,7 @@ import {
   Hash,
   Receipt,
   Warehouse,
-  Pencil,
+  Edit,
   AlertTriangle,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
@@ -200,64 +205,32 @@ function SKUEANRulesSection() {
   const [ruleToEdit, setRuleToEdit] = useState<NumberingRule | null>(null);
   const [ruleToDelete, setRuleToDelete] = useState<NumberingRule | null>(null);
   const [isDeleteRuleModalShowing, setIsDeleteRuleModalShowing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Load rules from localStorage
-  const [rules, setRules] = useState<NumberingRule[]>(() => {
-    const saved = localStorage.getItem('system-settings-numbering-rules');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default rules
-    return [
-      {
-        id: 1,
-        name: 'Standard SKU Rule',
-        type: 'sku' as RuleType,
-        prefix: 'SKU',
-        suffix: '',
-        length: 8,
-        sequenceStart: 1000,
-        currentSequence: 1542,
-        format: '{prefix}-{sequence}',
-        status: 'active' as RuleStatus,
-        description: 'Standard SKU numbering rule',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'EAN-13 Barcode Rule',
-        type: 'ean' as RuleType,
-        prefix: '',
-        suffix: '',
-        length: 13,
-        sequenceStart: 1000000000000,
-        currentSequence: 1000000001234,
-        format: '{sequence}',
-        status: 'active' as RuleStatus,
-        description: 'EAN-13 barcode numbering rule',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: 'Product Barcode Rule',
-        type: 'barcode' as RuleType,
-        prefix: 'PRD',
-        suffix: '',
-        length: 10,
-        sequenceStart: 1,
-        currentSequence: 456,
-        format: '{prefix}-{sequence}',
-        status: 'inactive' as RuleStatus,
-        description: 'Product barcode numbering rule',
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  const queryClient = useQueryClient();
+
+  // Fetch numbering rules from API
+  const { data: rulesData, isLoading: rulesLoading } = useQuery({
+    queryKey: ['numbering-rules', typeFilter, statusFilter],
+    queryFn: async () => {
+      try {
+        const typeParam = typeFilter !== 'all' ? `&type=${typeFilter}` : '';
+        const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+        const response = await api.get(`/numbering-rules?skip=0&take=1000${typeParam}${statusParam}`);
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching numbering rules:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('system-settings-numbering-rules', JSON.stringify(rules));
-  }, [rules]);
+  const rules: NumberingRule[] = (rulesData || []).map((rule: any) => ({
+    ...rule,
+    type: rule.type?.toLowerCase() || 'sku',
+    status: rule.status?.toLowerCase() || 'active',
+  }));
 
   // Filter rules
   const filteredRules = useMemo(() => {
@@ -288,6 +261,17 @@ function SKUEANRulesSection() {
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [rules, searchQuery, typeFilter, statusFilter]);
 
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredRules.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRules = filteredRules.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter, statusFilter]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const total = rules.length;
@@ -303,39 +287,84 @@ function SKUEANRulesSection() {
     };
   }, [rules]);
 
+  // Create numbering rule mutation
+  const createRuleMutation = useMutation({
+    mutationFn: async (ruleData: any) => {
+      const response = await api.post('/numbering-rules', {
+        ...ruleData,
+        type: ruleData.type?.toUpperCase() || 'SKU',
+        status: ruleData.status?.toUpperCase() || 'ACTIVE',
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['numbering-rules'] });
+      setShowCreateModal(false);
+      toast.success('Numbering rule created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create numbering rule');
+    },
+  });
+
+  // Update numbering rule mutation
+  const updateRuleMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/numbering-rules/${id}`, {
+        ...updates,
+        type: updates.type?.toUpperCase(),
+        status: updates.status?.toUpperCase(),
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['numbering-rules'] });
+      toast.success('Numbering rule updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update numbering rule');
+    },
+  });
+
+  // Delete numbering rule mutation
+  const deleteRuleMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/numbering-rules/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['numbering-rules'] });
+      toast.success('Numbering rule deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete numbering rule');
+    },
+  });
+
   const handleCreateRule = (ruleData: any) => {
-    const newRule: NumberingRule = {
-      id: Date.now(),
-      ...ruleData,
-      currentSequence: ruleData.sequenceStart,
-      createdAt: new Date().toISOString(),
-    };
-    setRules([...rules, newRule]);
-    setShowCreateModal(false);
-    toast.success('Numbering rule created successfully!');
+    createRuleMutation.mutate(ruleData);
   };
 
   const handleUpdateRule = (ruleId: string | number, updates: any) => {
-    setRules(rules.map((rule) =>
-      rule.id === ruleId
-        ? { ...rule, ...updates, updatedAt: new Date().toISOString() }
-        : rule
-    ));
-    toast.success('Numbering rule updated successfully!');
+    updateRuleMutation.mutate({ id: ruleId, updates });
   };
 
   const handleDeleteRule = (ruleId: string | number) => {
-    setRules(rules.filter((rule) => rule.id !== ruleId));
-    toast.success('Numbering rule deleted successfully!');
-    setIsDeleteRuleModalShowing(false);
-    setRuleToDelete(null);
+    deleteRuleMutation.mutate(ruleId);
   };
 
   const handleConfirmDeleteRule = () => {
     if (ruleToDelete) {
       handleDeleteRule(ruleToDelete.id);
+      setIsDeleteRuleModalShowing(false);
+      setRuleToDelete(null);
     }
   };
+
+  // Show loading state (after all hooks)
+  if (rulesLoading) {
+    return <SkeletonPage />;
+  }
 
   const generateExample = (rule: NumberingRule) => {
     const sequence = rule.currentSequence.toString().padStart(rule.length - (rule.prefix.length + rule.suffix.length), '0');
@@ -346,9 +375,9 @@ function SKUEANRulesSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -407,7 +436,7 @@ function SKUEANRulesSection() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -456,7 +485,7 @@ function SKUEANRulesSection() {
       </div>
 
       {/* Rules Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -498,11 +527,10 @@ function SKUEANRulesSection() {
                   </td>
                 </tr>
               ) : (
-                filteredRules.map((rule) => (
+                paginatedRules.map((rule) => (
                   <tr
                     key={rule.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => setRuleToView(rule)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -566,10 +594,10 @@ function SKUEANRulesSection() {
                             e.stopPropagation();
                             setRuleToEdit(rule);
                           }}
-                          className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -591,6 +619,102 @@ function SKUEANRulesSection() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredRules.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredRules.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredRules.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Rule Modal */}
       {showCreateModal && (
@@ -1079,7 +1203,7 @@ function RuleEditModal({ rule, onClose, onUpdate }: RuleEditModalProps) {
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="px-6 py-3 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Rule Name
@@ -1331,54 +1455,27 @@ function TaxDefaultsSection() {
   const [taxToEdit, setTaxToEdit] = useState<TaxDefault | null>(null);
   const [taxToDelete, setTaxToDelete] = useState<TaxDefault | null>(null);
   const [isDeleteTaxModalShowing, setIsDeleteTaxModalShowing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Load tax defaults from localStorage
-  const [taxDefaults, setTaxDefaults] = useState<TaxDefault[]>(() => {
-    const saved = localStorage.getItem('system-settings-tax-defaults');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default tax defaults
-    return [
-      {
-        id: 1,
-        name: 'Standard VAT',
-        type: 'vat' as TaxType,
-        rate: 20.0,
-        country: 'United Kingdom',
-        region: 'England',
-        isDefault: true,
-        description: 'Standard VAT rate for UK',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'US Sales Tax',
-        type: 'sales-tax' as TaxType,
-        rate: 8.5,
-        country: 'United States',
-        region: 'California',
-        isDefault: false,
-        description: 'Sales tax for California',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: 'GST Australia',
-        type: 'gst' as TaxType,
-        rate: 10.0,
-        country: 'Australia',
-        isDefault: false,
-        description: 'GST for Australia',
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  const queryClient = useQueryClient();
+
+  // Fetch tax defaults from API
+  const { data: taxDefaultsData, isLoading: taxDefaultsLoading } = useQuery({
+    queryKey: ['tax-defaults', typeFilter],
+    queryFn: async () => {
+      try {
+        const typeParam = typeFilter !== 'all' ? `&type=${typeFilter}` : '';
+        const response = await api.get(`/tax-defaults?skip=0&take=1000${typeParam}`);
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching tax defaults:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('system-settings-tax-defaults', JSON.stringify(taxDefaults));
-  }, [taxDefaults]);
+  const taxDefaults: TaxDefault[] = taxDefaultsData || [];
 
   // Filter tax defaults
   const filteredTaxes = useMemo(() => {
@@ -1403,6 +1500,17 @@ function TaxDefaultsSection() {
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [taxDefaults, searchQuery, typeFilter]);
 
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredTaxes.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTaxes = filteredTaxes.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const total = taxDefaults.length;
@@ -1418,54 +1526,87 @@ function TaxDefaultsSection() {
     };
   }, [taxDefaults]);
 
+  // Create tax default mutation
+  const createTaxMutation = useMutation({
+    mutationFn: async (taxData: any) => {
+      const response = await api.post('/tax-defaults', {
+        ...taxData,
+        type: taxData.type?.toUpperCase().replace('-', '_') || 'VAT',
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tax-defaults'] });
+      setShowCreateModal(false);
+      toast.success('Tax default created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create tax default');
+    },
+  });
+
+  // Update tax default mutation
+  const updateTaxMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/tax-defaults/${id}`, {
+        ...updates,
+        type: updates.type?.toUpperCase().replace('-', '_'),
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tax-defaults'] });
+      toast.success('Tax default updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update tax default');
+    },
+  });
+
+  // Delete tax default mutation
+  const deleteTaxMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/tax-defaults/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tax-defaults'] });
+      toast.success('Tax default deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete tax default');
+    },
+  });
+
   const handleCreateTax = (taxData: any) => {
-    // If this is set as default, unset other defaults
-    if (taxData.isDefault) {
-      setTaxDefaults(taxDefaults.map((tax) => ({ ...tax, isDefault: false })));
-    }
-    const newTax: TaxDefault = {
-      id: Date.now(),
-      ...taxData,
-      createdAt: new Date().toISOString(),
-    };
-    setTaxDefaults([...taxDefaults, newTax]);
-    setShowCreateModal(false);
-    toast.success('Tax default created successfully!');
+    createTaxMutation.mutate(taxData);
   };
 
   const handleUpdateTax = (taxId: string | number, updates: any) => {
-    // If this is set as default, unset other defaults
-    if (updates.isDefault) {
-      setTaxDefaults(taxDefaults.map((tax) =>
-        tax.id === taxId ? { ...tax, ...updates } : { ...tax, isDefault: false }
-      ));
-    } else {
-      setTaxDefaults(taxDefaults.map((tax) =>
-        tax.id === taxId
-          ? { ...tax, ...updates, updatedAt: new Date().toISOString() }
-          : tax
-      ));
-    }
-    toast.success('Tax default updated successfully!');
+    updateTaxMutation.mutate({ id: taxId, updates });
   };
 
   const handleDeleteTax = (taxId: string | number) => {
-    setTaxDefaults(taxDefaults.filter((tax) => tax.id !== taxId));
-    toast.success('Tax default deleted successfully!');
-    setIsDeleteTaxModalShowing(false);
-    setTaxToDelete(null);
+    deleteTaxMutation.mutate(taxId);
   };
 
   const handleConfirmDeleteTax = () => {
     if (taxToDelete) {
       handleDeleteTax(taxToDelete.id);
+      setIsDeleteTaxModalShowing(false);
+      setTaxToDelete(null);
     }
   };
 
+  // Show loading state (after all hooks)
+  if (taxDefaultsLoading) {
+    return <SkeletonPage />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -1524,7 +1665,7 @@ function TaxDefaultsSection() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1562,7 +1703,7 @@ function TaxDefaultsSection() {
       </div>
 
       {/* Tax Defaults Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -1604,11 +1745,10 @@ function TaxDefaultsSection() {
                   </td>
                 </tr>
               ) : (
-                filteredTaxes.map((tax) => (
+                paginatedTaxes.map((tax) => (
                   <tr
                     key={tax.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => setTaxToView(tax)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -1672,10 +1812,10 @@ function TaxDefaultsSection() {
                             e.stopPropagation();
                             setTaxToEdit(tax);
                           }}
-                          className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -1697,6 +1837,102 @@ function TaxDefaultsSection() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredTaxes.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredTaxes.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredTaxes.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Tax Default Modal */}
       {showCreateModal && (
@@ -1853,10 +2089,7 @@ function CreateTaxModal({ onClose, onCreate }: CreateTaxModalProps) {
               <CustomDropdown
                 value={country}
                 onChange={setCountry}
-                options={[
-                  { value: '', label: 'Select country...' },
-                  ...countries.map((c) => ({ value: c, label: c })),
-                ]}
+                options={countries.map((c) => ({ value: c, label: c }))}
                 placeholder="Select country"
               />
             </div>
@@ -2325,52 +2558,30 @@ function WarehouseDefaultsSection() {
   const [warehouseToEdit, setWarehouseToEdit] = useState<WarehouseDefault | null>(null);
   const [warehouseToDelete, setWarehouseToDelete] = useState<WarehouseDefault | null>(null);
   const [isDeleteWarehouseModalShowing, setIsDeleteWarehouseModalShowing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Load warehouse defaults from localStorage
-  const [warehouses, setWarehouses] = useState<WarehouseDefault[]>(() => {
-    const saved = localStorage.getItem('system-settings-warehouse-defaults');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default warehouses
-    return [
-      {
-        id: 1,
-        name: 'Main Warehouse',
-        code: 'WH-001',
-        address: '123 Industrial Blvd',
-        city: 'New York',
-        state: 'NY',
-        country: 'United States',
-        postalCode: '10001',
-        isDefault: true,
-        status: 'active' as WarehouseStatus,
-        capacity: 10000,
-        description: 'Primary warehouse for inventory storage',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'West Coast Distribution',
-        code: 'WH-002',
-        address: '456 Commerce St',
-        city: 'Los Angeles',
-        state: 'CA',
-        country: 'United States',
-        postalCode: '90001',
-        isDefault: false,
-        status: 'active' as WarehouseStatus,
-        capacity: 5000,
-        description: 'West coast distribution center',
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  const queryClient = useQueryClient();
+
+  // Fetch warehouse defaults from API
+  const { data: warehousesData, isLoading: warehousesLoading } = useQuery({
+    queryKey: ['warehouse-defaults', statusFilter],
+    queryFn: async () => {
+      try {
+        const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+        const response = await api.get(`/warehouse-defaults?skip=0&take=1000${statusParam}`);
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching warehouse defaults:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('system-settings-warehouse-defaults', JSON.stringify(warehouses));
-  }, [warehouses]);
+  const warehouses: WarehouseDefault[] = (warehousesData || []).map((warehouse: any) => ({
+    ...warehouse,
+    status: warehouse.status?.toLowerCase() || 'active',
+  }));
 
   // Filter warehouses
   const filteredWarehouses = useMemo(() => {
@@ -2396,6 +2607,17 @@ function WarehouseDefaultsSection() {
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [warehouses, searchQuery, statusFilter]);
 
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredWarehouses.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedWarehouses = filteredWarehouses.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const total = warehouses.length;
@@ -2411,54 +2633,87 @@ function WarehouseDefaultsSection() {
     };
   }, [warehouses]);
 
+  // Create warehouse default mutation
+  const createWarehouseMutation = useMutation({
+    mutationFn: async (warehouseData: any) => {
+      const response = await api.post('/warehouse-defaults', {
+        ...warehouseData,
+        status: warehouseData.status?.toUpperCase() || 'ACTIVE',
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouse-defaults'] });
+      setShowCreateModal(false);
+      toast.success('Warehouse default created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create warehouse default');
+    },
+  });
+
+  // Update warehouse default mutation
+  const updateWarehouseMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/warehouse-defaults/${id}`, {
+        ...updates,
+        status: updates.status?.toUpperCase(),
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouse-defaults'] });
+      toast.success('Warehouse default updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update warehouse default');
+    },
+  });
+
+  // Delete warehouse default mutation
+  const deleteWarehouseMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/warehouse-defaults/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouse-defaults'] });
+      toast.success('Warehouse default deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete warehouse default');
+    },
+  });
+
   const handleCreateWarehouse = (warehouseData: any) => {
-    // If this is set as default, unset other defaults
-    if (warehouseData.isDefault) {
-      setWarehouses(warehouses.map((warehouse) => ({ ...warehouse, isDefault: false })));
-    }
-    const newWarehouse: WarehouseDefault = {
-      id: Date.now(),
-      ...warehouseData,
-      createdAt: new Date().toISOString(),
-    };
-    setWarehouses([...warehouses, newWarehouse]);
-    setShowCreateModal(false);
-    toast.success('Warehouse default created successfully!');
+    createWarehouseMutation.mutate(warehouseData);
   };
 
   const handleUpdateWarehouse = (warehouseId: string | number, updates: any) => {
-    // If this is set as default, unset other defaults
-    if (updates.isDefault) {
-      setWarehouses(warehouses.map((warehouse) =>
-        warehouse.id === warehouseId ? { ...warehouse, ...updates } : { ...warehouse, isDefault: false }
-      ));
-    } else {
-      setWarehouses(warehouses.map((warehouse) =>
-        warehouse.id === warehouseId
-          ? { ...warehouse, ...updates, updatedAt: new Date().toISOString() }
-          : warehouse
-      ));
-    }
-    toast.success('Warehouse default updated successfully!');
+    updateWarehouseMutation.mutate({ id: warehouseId, updates });
   };
 
   const handleDeleteWarehouse = (warehouseId: string | number) => {
-    setWarehouses(warehouses.filter((warehouse) => warehouse.id !== warehouseId));
-    toast.success('Warehouse default deleted successfully!');
-    setIsDeleteWarehouseModalShowing(false);
-    setWarehouseToDelete(null);
+    deleteWarehouseMutation.mutate(warehouseId);
   };
 
   const handleConfirmDeleteWarehouse = () => {
     if (warehouseToDelete) {
       handleDeleteWarehouse(warehouseToDelete.id);
+      setIsDeleteWarehouseModalShowing(false);
+      setWarehouseToDelete(null);
     }
   };
 
+  // Show loading state (after all hooks)
+  if (warehousesLoading) {
+    return <SkeletonPage />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -2517,7 +2772,7 @@ function WarehouseDefaultsSection() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -2554,7 +2809,7 @@ function WarehouseDefaultsSection() {
       </div>
 
       {/* Warehouses Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -2596,11 +2851,10 @@ function WarehouseDefaultsSection() {
                   </td>
                 </tr>
               ) : (
-                filteredWarehouses.map((warehouse) => (
+                paginatedWarehouses.map((warehouse) => (
                   <tr
                     key={warehouse.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => setWarehouseToView(warehouse)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -2665,10 +2919,10 @@ function WarehouseDefaultsSection() {
                             e.stopPropagation();
                             setWarehouseToEdit(warehouse);
                           }}
-                          className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -2690,6 +2944,102 @@ function WarehouseDefaultsSection() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredWarehouses.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredWarehouses.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredWarehouses.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Warehouse Modal */}
       {showCreateModal && (
@@ -2893,10 +3243,7 @@ function CreateWarehouseModal({ onClose, onCreate }: CreateWarehouseModalProps) 
               <CustomDropdown
                 value={country}
                 onChange={setCountry}
-                options={[
-                  { value: '', label: 'Select country...' },
-                  ...countries.map((c) => ({ value: c, label: c })),
-                ]}
+                options={countries.map((c) => ({ value: c, label: c }))}
                 placeholder="Select country"
               />
             </div>

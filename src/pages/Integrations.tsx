@@ -1,11 +1,17 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import api from '../lib/api';
+import { SkeletonPage } from '../components/Skeleton';
 import {
   Link2,
   Plus,
   Search,
   Filter,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   X,
   CheckCircle,
@@ -22,7 +28,7 @@ import {
   RefreshCw,
   Trash2,
   Copy,
-  Pencil,
+  Edit,
   AlertTriangle,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
@@ -49,7 +55,7 @@ interface ApiKey {
   id: string | number;
   name: string;
   key: string;
-  type: 'api-key' | 'webhook';
+  type: 'api-key' | 'webhook' | 'API_KEY' | 'WEBHOOK';
   description: string;
   permissions: string[];
   lastUsed?: string;
@@ -79,28 +85,84 @@ interface CustomDropdownProps {
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
   placeholder?: string;
+  className?: string;
 }
 
-function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdownProps) {
+function CustomDropdown({ value, onChange, options, placeholder, className }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    // Calculate position based on available space and button position
+    const calculatePosition = () => {
+      if (!buttonRef.current || !menuRef.current) return;
+      
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+      const menuHeight = Math.min(options.length * 40, 200); // Max 5 options visible
+      const menuWidth = buttonRect.width;
+      
+      // Use fixed positioning to escape modal overflow
+      const style: React.CSSProperties = {
+        position: 'fixed',
+        width: `${menuWidth}px`,
+        left: `${buttonRect.left}px`,
+        zIndex: 9999,
+      };
+      
+      // Position downward by default, upward if not enough space
+      if (spaceBelow >= menuHeight || spaceBelow >= spaceAbove) {
+        style.top = `${buttonRect.bottom + 4}px`;
+      } else {
+        style.bottom = `${window.innerHeight - buttonRect.top + 4}px`;
+      }
+      
+      setMenuStyle(style);
+    };
+
+    // Add event listener with a slight delay to avoid immediate closure when opening
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      calculatePosition();
+    }, 10);
+
+    // Recalculate on scroll or resize
+    window.addEventListener('scroll', calculatePosition, true);
+    window.addEventListener('resize', calculatePosition);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', calculatePosition, true);
+      window.removeEventListener('resize', calculatePosition);
+    };
+  }, [isOpen, options.length]);
 
   const selectedOption = options.find(opt => opt.value === value);
 
+  // Calculate max height to show only 5 options at a time
+  // Each option is approximately 40px (py-2.5 = 10px top + 10px bottom + ~20px text)
+  const optionHeight = 40;
+  const visibleOptions = 5;
+  const maxHeight = `${visibleOptions * optionHeight}px`;
+
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className={`relative ${className || ''}`}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm flex items-center justify-between cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${isOpen
@@ -115,8 +177,12 @@ function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdow
         />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden max-h-[200px] overflow-y-auto">
+      {isOpen && createPortal(
+        <div 
+          ref={menuRef}
+          className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden overflow-y-auto"
+          style={{ ...menuStyle, maxHeight }}
+        >
           {options.map((option) => (
             <button
               key={option.value}
@@ -133,7 +199,8 @@ function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdow
               {option.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -196,11 +263,16 @@ export default function Integrations() {
 
 // Connected Channels Section
 function ConnectedChannelsSection() {
-  const [searchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter] = useState<string>('all');
   const [statusFilter] = useState<string>('all');
-  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const [channelToView, setChannelToView] = useState<Channel | null>(null);
+  const [channelToEdit, setChannelToEdit] = useState<Channel | null>(null);
+  const [channelToDelete, setChannelToDelete] = useState<Channel | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Load channels from localStorage
   const [channels, setChannels] = useState<Channel[]>(() => {
@@ -292,6 +364,17 @@ function ConnectedChannelsSection() {
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [channels, searchQuery, typeFilter, statusFilter]);
 
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredChannels.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedChannels = filteredChannels.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter, statusFilter]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const total = channels.length;
@@ -382,9 +465,9 @@ function ConnectedChannelsSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -442,8 +525,31 @@ function ConnectedChannelsSection() {
         </div>
       </div>
 
+      {/* Search and Actions Bar */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by channel name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 text-[14px] px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Channel
+          </button>
+        </div>
+      </div>
+
       {/* Channels Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -482,13 +588,12 @@ function ConnectedChannelsSection() {
                   </td>
                 </tr>
               ) : (
-                filteredChannels.map((channel) => {
+                paginatedChannels.map((channel) => {
                   const TypeIcon = getTypeIcon(channel.type);
                   return (
                     <tr
                       key={channel.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                      onClick={() => setSelectedChannel(channel)}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -530,18 +635,31 @@ function ConnectedChannelsSection() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedChannel(channel);
+                              setChannelToView(channel);
                             }}
                             className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                            title="View Channel"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteChannel(channel.id);
+                              setChannelToEdit(channel);
+                            }}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            title="Edit Channel"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setChannelToDelete(channel);
+                              setShowDeleteModal(true);
                             }}
                             className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                            title="Delete Channel"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -556,6 +674,103 @@ function ConnectedChannelsSection() {
         </div>
       </div>
 
+      {/* Pagination */}
+      {filteredChannels.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredChannels.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredChannels.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                  className="min-w-[80px]"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create Channel Modal */}
       {showCreateModal && (
         <CreateChannelModal
@@ -564,13 +779,43 @@ function ConnectedChannelsSection() {
         />
       )}
 
-      {/* Channel Details Modal */}
-      {selectedChannel && (
+      {/* Channel View Modal */}
+      {channelToView && (
+        <ChannelViewModal
+          channel={channelToView}
+          onClose={() => setChannelToView(null)}
+        />
+      )}
+
+      {/* Channel Edit Modal */}
+      {channelToEdit && (
         <ChannelDetailsModal
-          channel={selectedChannel}
-          onClose={() => setSelectedChannel(null)}
-          onUpdate={handleUpdateChannel}
-          onDelete={handleDeleteChannel}
+          channel={channelToEdit}
+          onClose={() => setChannelToEdit(null)}
+          onUpdate={(id, updates) => {
+            handleUpdateChannel(id, updates);
+            setChannelToEdit(null);
+          }}
+          onDelete={(id: string | number) => {
+            handleDeleteChannel(id);
+            setChannelToEdit(null);
+          }}
+        />
+      )}
+
+      {/* Delete Channel Modal */}
+      {showDeleteModal && channelToDelete && (
+        <DeleteChannelModal
+          channel={channelToDelete}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setChannelToDelete(null);
+          }}
+          onDelete={(id: string | number) => {
+            handleDeleteChannel(id);
+            setShowDeleteModal(false);
+            setChannelToDelete(null);
+          }}
         />
       )}
     </div>
@@ -676,7 +921,6 @@ function CreateChannelModal({ onClose, onCreate }: CreateChannelModalProps) {
                 value={provider}
                 onChange={setProvider}
                 options={[
-                  { value: '', label: 'Select provider...' },
                   ...(providers[type] || []).map((p) => ({ value: p, label: p })),
                 ]}
                 placeholder="Select provider"
@@ -743,6 +987,221 @@ function CreateChannelModal({ onClose, onCreate }: CreateChannelModalProps) {
 }
 
 // Channel Details Modal
+interface ChannelViewModalProps {
+  channel: Channel;
+  onClose: () => void;
+}
+
+function ChannelViewModal({ channel, onClose }: ChannelViewModalProps) {
+  const getTypeColor = (type: ChannelType) => {
+    switch (type) {
+      case 'ecommerce':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'pos':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'marketplace':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case '3pl':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'shipping':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  const getStatusColor = (status: ConnectionStatus) => {
+    switch (status) {
+      case 'connected':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'error':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      case 'disconnected':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">View Channel</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{channel.name}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Channel Name
+            </label>
+            <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+              {channel.name}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Channel Type
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(channel.type)}`}>
+                  {channel.type}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Provider
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {channel.provider}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Status
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(channel.status)}`}>
+                  {channel.status}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Sync Frequency
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {channel.syncFrequency ? `Every ${channel.syncFrequency}` : 'Not set'}
+              </div>
+            </div>
+          </div>
+
+          {channel.lastSync && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Last Sync
+              </label>
+              <div className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+                {new Date(channel.lastSync).toLocaleString()}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Created At</span>
+              <span className="text-gray-900 dark:text-white">
+                {new Date(channel.createdAt).toLocaleString()}
+              </span>
+            </div>
+            {channel.updatedAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Updated At</span>
+                <span className="text-gray-900 dark:text-white">
+                  {new Date(channel.updatedAt).toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DeleteChannelModalProps {
+  channel: Channel;
+  onClose: () => void;
+  onDelete: (channelId: string | number) => void;
+}
+
+function DeleteChannelModal({ channel, onClose, onDelete }: DeleteChannelModalProps) {
+  const handleDelete = () => {
+    onDelete(channel.id);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Delete Channel</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                This action cannot be undone
+              </p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete the channel <span className="font-semibold">{channel.name}</span>? This will permanently remove all associated data.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete Channel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface ChannelDetailsModalProps {
   channel: Channel;
   onClose: () => void;
@@ -750,7 +1209,7 @@ interface ChannelDetailsModalProps {
   onDelete: (channelId: string | number) => void;
 }
 
-function ChannelDetailsModal({ channel, onClose, onUpdate, onDelete }: ChannelDetailsModalProps) {
+function ChannelDetailsModal({ channel, onClose, onUpdate }: ChannelDetailsModalProps) {
   const [name, setName] = useState(channel.name);
   const [type, setType] = useState<ChannelType>(channel.type);
   const [provider, setProvider] = useState(channel.provider);
@@ -776,13 +1235,6 @@ function ChannelDetailsModal({ channel, onClose, onUpdate, onDelete }: ChannelDe
     onClose();
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this channel?')) {
-      onDelete(channel.id);
-      onClose();
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -794,7 +1246,7 @@ function ChannelDetailsModal({ channel, onClose, onUpdate, onDelete }: ChannelDe
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Channel Details</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Channel</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{channel.name}</p>
           </div>
           <button
@@ -848,7 +1300,6 @@ function ChannelDetailsModal({ channel, onClose, onUpdate, onDelete }: ChannelDe
                 value={provider}
                 onChange={setProvider}
                 options={[
-                  { value: '', label: 'Select provider...' },
                   ...(providers[type] || []).map((p) => ({ value: p, label: p })),
                 ]}
                 placeholder="Select provider"
@@ -923,12 +1374,6 @@ function ChannelDetailsModal({ channel, onClose, onUpdate, onDelete }: ChannelDe
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
-              onClick={handleDelete}
-              className="px-4 py-2 text-red-600 dark:text-red-400 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            >
-              Delete
-            </button>
-            <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
@@ -956,44 +1401,30 @@ function ApiKeysWebhooksSection() {
   const [keyToView, setKeyToView] = useState<ApiKey | null>(null);
   const [keyToDelete, setKeyToDelete] = useState<ApiKey | null>(null);
   const [isDeleteKeyModalShowing, setIsDeleteKeyModalShowing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Load API keys from localStorage
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>(() => {
-    const saved = localStorage.getItem('integration-api-keys');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default API keys
-    return [
-      {
-        id: 1,
-        name: 'Shopify API Key',
-        key: 'shp_1234567890abcdef',
-        type: 'api-key' as const,
-        description: 'API key for Shopify integration',
-        permissions: ['read_products', 'write_orders'],
-        lastUsed: new Date(Date.now() - 3600000).toISOString(),
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Order Webhook',
-        key: 'wh_9876543210fedcba',
-        type: 'webhook' as const,
-        description: 'Webhook for order notifications',
-        permissions: ['receive_orders'],
-        lastUsed: new Date(Date.now() - 1800000).toISOString(),
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  const queryClient = useQueryClient();
+
+  // Fetch API keys from API
+  const { data: apiKeysData, isLoading: apiKeysLoading } = useQuery({
+    queryKey: ['api-keys', typeFilter],
+    queryFn: async () => {
+      try {
+        const typeParam = typeFilter !== 'all' ? `&type=${typeFilter}` : '';
+        const response = await api.get(`/api-keys?skip=0&take=1000${typeParam}`);
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching API keys:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('integration-api-keys', JSON.stringify(apiKeys));
-  }, [apiKeys]);
+  const apiKeys: ApiKey[] = (apiKeysData || []).map((key: any) => ({
+    ...key,
+    type: key.type === 'API_KEY' ? 'api-key' : key.type === 'WEBHOOK' ? 'webhook' : key.type,
+  }));
 
   // Filter API keys
   const filteredKeys = useMemo(() => {
@@ -1011,18 +1442,41 @@ function ApiKeysWebhooksSection() {
 
     // Filter by type
     if (typeFilter !== 'all') {
-      filtered = filtered.filter((key) => key.type === typeFilter);
+      filtered = filtered.filter((key) => {
+        const keyType = key.type?.toLowerCase();
+        const filterType = typeFilter.toLowerCase();
+        return keyType === filterType || 
+               (keyType === 'api_key' && filterType === 'api-key') ||
+               (keyType === 'webhook' && filterType === 'webhook');
+      });
     }
 
     // Sort by name
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [apiKeys, searchQuery, typeFilter]);
 
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredKeys.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedKeys = filteredKeys.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const total = apiKeys.length;
-    const apiKeysCount = apiKeys.filter((key) => key.type === 'api-key');
-    const webhooksCount = apiKeys.filter((key) => key.type === 'webhook');
+    const apiKeysCount = apiKeys.filter((key) => {
+      const type = key.type?.toLowerCase();
+      return type === 'api-key' || type === 'api_key';
+    });
+    const webhooksCount = apiKeys.filter((key) => {
+      const type = key.type?.toLowerCase();
+      return type === 'webhook';
+    });
     const active = apiKeys.filter((key) => key.isActive);
 
     return {
@@ -1033,39 +1487,81 @@ function ApiKeysWebhooksSection() {
     };
   }, [apiKeys]);
 
-  const handleCreateKey = (keyData: any) => {
-    const newKey: ApiKey = {
-      id: Date.now(),
-      ...keyData,
-      key: keyData.type === 'api-key'
+  // Create API key mutation
+  const createApiKeyMutation = useMutation({
+    mutationFn: async (keyData: any) => {
+      // Generate key if not provided
+      const generatedKey = keyData.key || (keyData.type === 'api-key'
         ? `api_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`
-        : `wh_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
-      createdAt: new Date().toISOString(),
-    };
-    setApiKeys([...apiKeys, newKey]);
-    setShowCreateModal(false);
-    toast.success(`${keyData.type === 'api-key' ? 'API Key' : 'Webhook'} created successfully!`);
+        : `wh_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`);
+
+      const response = await api.post('/api-keys', {
+        ...keyData,
+        key: generatedKey,
+        type: keyData.type === 'api-key' ? 'API_KEY' : 'WEBHOOK',
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      setShowCreateModal(false);
+      toast.success('API key created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create API key');
+    },
+  });
+
+  // Update API key mutation
+  const updateApiKeyMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/api-keys/${id}`, {
+        ...updates,
+        type: updates.type === 'api-key' ? 'API_KEY' : updates.type === 'webhook' ? 'WEBHOOK' : updates.type,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      toast.success('API key updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update API key');
+    },
+  });
+
+  // Delete API key mutation
+  const deleteApiKeyMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/api-keys/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      toast.success('API key deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete API key');
+    },
+  });
+
+  const handleCreateKey = (keyData: any) => {
+    createApiKeyMutation.mutate(keyData);
   };
 
   const handleUpdateKey = (keyId: string | number, updates: any) => {
-    setApiKeys(apiKeys.map((key) =>
-      key.id === keyId
-        ? { ...key, ...updates, updatedAt: new Date().toISOString() }
-        : key
-    ));
-    toast.success('Key updated successfully!');
+    updateApiKeyMutation.mutate({ id: keyId, updates });
   };
 
   const handleDeleteKey = (keyId: string | number) => {
-    setApiKeys(apiKeys.filter((key) => key.id !== keyId));
-    toast.success('Key deleted successfully!');
-    setIsDeleteKeyModalShowing(false);
-    setKeyToDelete(null);
+    deleteApiKeyMutation.mutate(keyId);
   };
 
   const handleConfirmDeleteKey = () => {
     if (keyToDelete) {
       handleDeleteKey(keyToDelete.id);
+      setIsDeleteKeyModalShowing(false);
+      setKeyToDelete(null);
     }
   };
 
@@ -1074,10 +1570,15 @@ function ApiKeysWebhooksSection() {
     toast.success('Key copied to clipboard!');
   };
 
+  // Show loading state (after all hooks)
+  if (apiKeysLoading) {
+    return <SkeletonPage />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -1136,7 +1637,7 @@ function ApiKeysWebhooksSection() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1173,7 +1674,7 @@ function ApiKeysWebhooksSection() {
       </div>
 
       {/* API Keys Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -1215,7 +1716,7 @@ function ApiKeysWebhooksSection() {
                   </td>
                 </tr>
               ) : (
-                filteredKeys.map((key) => (
+                paginatedKeys.map((key) => (
                   <tr
                     key={key.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
@@ -1293,10 +1794,10 @@ function ApiKeysWebhooksSection() {
                             e.stopPropagation();
                             setKeyToEdit(key);
                           }}
-                          className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -1318,6 +1819,103 @@ function ApiKeysWebhooksSection() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredKeys.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredKeys.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredKeys.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                  className="min-w-[80px]"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create API Key Modal */}
       {showCreateModal && (
@@ -1994,49 +2592,29 @@ function SyncHealthSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedHealth, setSelectedHealth] = useState<SyncHealth | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const queryClient = useQueryClient();
 
-  // Get channels for sync health
-  const channels = useMemo(() => {
-    const saved = localStorage.getItem('integration-channels');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return [];
-  }, []);
-
-  // Load sync health from localStorage
-  const [syncHealth, setSyncHealth] = useState<SyncHealth[]>(() => {
-    const saved = localStorage.getItem('integration-sync-health');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Generate default sync health from channels
-    const now = new Date();
-    const defaultHealth: SyncHealth[] = channels.map((channel: Channel, index: number) => {
-      const statuses: SyncStatus[] = ['healthy', 'warning', 'error', 'syncing'];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const lastSync = new Date(now.getTime() - (index + 1) * 3600000);
-      return {
-        id: channel.id,
-        channelId: channel.id,
-        channelName: channel.name,
-        status,
-        lastSync: lastSync.toISOString(),
-        nextSync: status === 'syncing' ? undefined : new Date(lastSync.getTime() + 3600000).toISOString(),
-        recordsSynced: Math.floor(Math.random() * 1000),
-        recordsFailed: status === 'error' ? Math.floor(Math.random() * 50) : 0,
-        syncDuration: status === 'syncing' ? undefined : Math.floor(Math.random() * 300),
-        errorMessage: status === 'error' ? 'Connection timeout' : undefined,
-        createdAt: new Date().toISOString(),
-      };
-    });
-    return defaultHealth;
+  // Fetch sync health from API
+  const { data: syncHealthData, isLoading: syncHealthLoading } = useQuery({
+    queryKey: ['sync-health', statusFilter],
+    queryFn: async () => {
+      try {
+        const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+        const response = await api.get(`/sync-health?skip=0&take=1000${statusParam}`);
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching sync health:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('integration-sync-health', JSON.stringify(syncHealth));
-  }, [syncHealth]);
+  const syncHealth: SyncHealth[] = (syncHealthData || []).map((health: any) => ({
+    ...health,
+    status: health.status?.toLowerCase() || 'healthy',
+  }));
 
   // Filter sync health
   const filteredHealth = useMemo(() => {
@@ -2060,6 +2638,17 @@ function SyncHealthSection() {
       new Date(b.lastSync).getTime() - new Date(a.lastSync).getTime()
     );
   }, [syncHealth, searchQuery, statusFilter]);
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredHealth.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedHealth = filteredHealth.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
@@ -2110,10 +2699,15 @@ function SyncHealthSection() {
     }
   };
 
+  // Show loading state (after all hooks)
+  if (syncHealthLoading) {
+    return <SkeletonPage />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -2186,7 +2780,7 @@ function SyncHealthSection() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -2216,12 +2810,7 @@ function SyncHealthSection() {
             <button
               onClick={() => {
                 // Refresh sync health
-                const now = new Date();
-                setSyncHealth(syncHealth.map((health) => ({
-                  ...health,
-                  lastSync: now.toISOString(),
-                  recordsSynced: health.recordsSynced + Math.floor(Math.random() * 100),
-                })));
+                queryClient.invalidateQueries({ queryKey: ['sync-health'] });
                 toast.success('Sync health refreshed');
               }}
               className="flex items-center gap-2 text-[14px] px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
@@ -2234,7 +2823,7 @@ function SyncHealthSection() {
       </div>
 
       {/* Sync Health Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -2276,7 +2865,7 @@ function SyncHealthSection() {
                   </td>
                 </tr>
               ) : (
-                filteredHealth.map((health) => {
+                paginatedHealth.map((health) => {
                   const StatusIcon = getStatusIcon(health.status);
                   return (
                     <tr
@@ -2343,6 +2932,103 @@ function SyncHealthSection() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredHealth.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredHealth.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredHealth.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                  className="min-w-[80px]"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sync Health Details Modal */}
       {selectedHealth && (

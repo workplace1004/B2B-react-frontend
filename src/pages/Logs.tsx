@@ -1,9 +1,13 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import api from '../lib/api';
 import {
   FileText,
   Search,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   X,
   CheckCircle,
@@ -201,65 +205,77 @@ function AuditLogsSection() {
   const [successFilter, setSuccessFilter] = useState<string>('all');
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [dateRange, setDateRange] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Load audit logs from localStorage
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const saved = localStorage.getItem('logs-audit-logs');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Generate default audit logs
-    const logs: AuditLog[] = [];
-    const actions: AuditLogAction[] = ['create', 'update', 'delete', 'view', 'export', 'import', 'login', 'logout'];
-    const entities: AuditLogEntity[] = ['product', 'order', 'customer', 'inventory', 'user', 'role', 'settings', 'integration'];
-    const users = [
-      { id: 1, name: 'John Doe', email: 'john@example.com' },
-      { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-      { id: 3, name: 'Bob Johnson', email: 'bob@example.com' },
-      { id: 4, name: 'Alice Williams', email: 'alice@example.com' },
-    ];
-    const now = new Date();
-    
-    for (let i = 0; i < 50; i++) {
-      const date = new Date(now);
-      date.setHours(date.getHours() - Math.floor(i / 2));
-      date.setMinutes(date.getMinutes() - (i % 2) * 30);
-      const user = users[Math.floor(Math.random() * users.length)];
-      const action = actions[Math.floor(Math.random() * actions.length)];
-      const entity = entities[Math.floor(Math.random() * entities.length)];
-      const success = Math.random() > 0.1; // 90% success rate
-      
-      logs.push({
-        id: i + 1,
-        action,
-        entity,
-        entityId: Math.floor(Math.random() * 1000) + 1,
-        entityName: `${entity.charAt(0).toUpperCase() + entity.slice(1)} #${Math.floor(Math.random() * 1000) + 1}`,
-        userId: user.id,
-        userName: user.name,
-        userEmail: user.email,
-        ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        changes: action === 'update' ? {
-          status: { old: 'pending', new: 'completed' },
-          quantity: { old: 10, new: 15 },
-        } : undefined,
-        metadata: {
-          browser: 'Chrome',
-          os: 'Windows',
-        },
-        timestamp: date.toISOString(),
-        success,
-        errorMessage: success ? undefined : 'Operation failed due to validation error',
-      });
-    }
-    return logs;
+  // Fetch audit logs from API
+  const { data: auditLogsData, isLoading: auditLogsLoading } = useQuery({
+    queryKey: ['audit-logs', 'detailed'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/audit-logs?skip=0&take=1000');
+        return response.data?.data || [];
+      } catch (error) {
+        console.error('Error fetching audit logs:', error);
+        return [];
+      }
+    },
   });
 
-  // Save to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('logs-audit-logs', JSON.stringify(auditLogs));
-  }, [auditLogs]);
+  // Transform API data to match AuditLog interface
+  const auditLogs: AuditLog[] = useMemo(() => {
+    if (!auditLogsData || !Array.isArray(auditLogsData)) {
+      return [];
+    }
+
+    return auditLogsData.map((log: any) => {
+      // Map action from enum to lowercase
+      const actionMap: Record<string, AuditLogAction> = {
+        CREATE: 'create',
+        UPDATE: 'update',
+        DELETE: 'delete',
+        VIEW: 'view',
+        EXPORT: 'export',
+      };
+      const action = actionMap[log.action] || log.action.toLowerCase() as AuditLogAction;
+
+      // Map entity type to entity enum
+      const entityMap: Record<string, AuditLogEntity> = {
+        Product: 'product',
+        Order: 'order',
+        Customer: 'customer',
+        Inventory: 'inventory',
+        User: 'user',
+        Role: 'role',
+        Settings: 'settings',
+        Integration: 'integration',
+      };
+      const entity = entityMap[log.entityType] || log.entityType.toLowerCase() as AuditLogEntity;
+
+      // Get user info
+      const userName = log.user
+        ? `${log.user.firstName || ''} ${log.user.lastName || ''}`.trim() || log.user.email || 'System'
+        : 'System';
+
+      return {
+        id: log.id,
+        action,
+        entity,
+        entityId: log.entityId || 0,
+        entityName: log.entityId ? `${log.entityType} #${log.entityId}` : log.entityType,
+        userId: log.userId,
+        userName,
+        userEmail: log.user?.email || '',
+        ipAddress: log.ipAddress || '',
+        userAgent: log.userAgent || '',
+        changes: log.changes || undefined,
+        metadata: log.metadata || undefined,
+        timestamp: log.createdAt,
+        success: true, // API doesn't have success field, assume true
+        errorMessage: undefined,
+      };
+    });
+  }, [auditLogsData]);
 
   // Filter audit logs
   const filteredLogs = useMemo(() => {
@@ -326,6 +342,17 @@ function AuditLogsSection() {
     );
   }, [auditLogs, searchQuery, actionFilter, entityFilter, userFilter, successFilter, dateRange]);
 
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, actionFilter, entityFilter, userFilter, successFilter, dateRange]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const total = auditLogs.length;
@@ -347,9 +374,9 @@ function AuditLogsSection() {
     };
   }, [auditLogs]);
 
-  const handleDeleteLog = (logId: string | number) => {
-    setAuditLogs(auditLogs.filter((log) => log.id !== logId));
-    toast.success('Audit log deleted successfully!');
+  const handleDeleteLog = (_logId: string | number) => {
+    // Audit logs are immutable for compliance and security reasons
+    toast.error('Audit logs cannot be deleted for compliance and security reasons.');
   };
 
   const handleExportLogs = () => {
@@ -456,6 +483,17 @@ function AuditLogsSection() {
     });
     return Array.from(users.values());
   }, [auditLogs]);
+
+  if (auditLogsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading audit logs...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -694,7 +732,7 @@ function AuditLogsSection() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredLogs.length === 0 ? (
+              {paginatedLogs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                     <div className="flex flex-col items-center gap-2">
@@ -704,7 +742,7 @@ function AuditLogsSection() {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => {
+                paginatedLogs.map((log) => {
                   const ActionIcon = getActionIcon(log.action);
                   const EntityIcon = getEntityIcon(log.entity);
                   const timestamp = new Date(log.timestamp);
@@ -793,6 +831,102 @@ function AuditLogsSection() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredLogs.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span className="font-medium text-gray-900 dark:text-white">{startIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {Math.min(endIndex, filteredLogs.length)}
+              </span>{' '}
+              of <span className="font-medium text-gray-900 dark:text-white">{filteredLogs.length}</span> results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Items per page:</span>
+                <CustomDropdown
+                  value={itemsPerPage.toString()}
+                  onChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: '5', label: '5' },
+                    { value: '10', label: '10' },
+                    { value: '25', label: '25' },
+                    { value: '50', label: '50' },
+                  ]}
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="First page"
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-gray-900 dark:text-white"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
+                  title="Last page"
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Log Detail Modal */}
       {selectedLog && (

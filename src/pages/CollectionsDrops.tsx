@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, TrendingUp, Layers, Calendar as CalendarIcon, BarChart3, X, Pencil, Trash2, AlertTriangle, Inbox, ChevronDown, ChevronLeft, ChevronRight, Package, ArrowUp, ArrowDown, GripVertical, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Plus, TrendingUp, Layers, Calendar as CalendarIcon, BarChart3, X, Edit, Trash2, AlertTriangle, Inbox, ChevronDown, ChevronLeft, ChevronRight, Package, ArrowUp, ArrowDown, GripVertical, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -1265,7 +1265,7 @@ function DraggableCollectionCard({
             }}
             className="p-1 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
           >
-            <Pencil className="w-3 h-3" />
+            <Edit className="w-3 h-3" />
           </button>
           <button
             onClick={(e) => {

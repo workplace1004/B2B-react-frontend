@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { FileText, Receipt, Plus, Search, X, Pencil, Trash2, Eye, Download, Send, ChevronDown, Inbox, Package, Calendar, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
+import { FileText, Receipt, Plus, Search, X, Edit, Trash2, Eye, Download, Send, ChevronDown, Inbox, Package, Calendar, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
@@ -426,7 +426,7 @@ function QuoteBuilderSection() {
                           className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => {

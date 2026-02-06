@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
   Plus,
@@ -18,6 +18,7 @@ import {
   Users as UsersIcon,
   Edit,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -258,106 +259,30 @@ export default function Users() {
 function RoleBasedAccessSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [roleToEdit, setRoleToEdit] = useState<Role | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Fetch users to calculate user counts per role
-  const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['users', 'roles'],
+  const queryClient = useQueryClient();
+
+  // Fetch roles from API
+  const { data: rolesData, isLoading: rolesLoading } = useQuery({
+    queryKey: ['roles'],
     queryFn: async () => {
       try {
-        const response = await api.get('/users?skip=0&take=1000');
+        const response = await api.get('/roles?skip=0&take=1000');
         return response.data?.data || [];
       } catch (error) {
+        console.error('Error fetching roles:', error);
         return [];
       }
     },
   });
 
-  // Load roles from localStorage
-  const [roles, setRoles] = useState<Role[]>(() => {
-    const saved = localStorage.getItem('user-roles');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default roles
-    return [
-      {
-        id: 1,
-        name: 'Admin',
-        description: 'Full system access with all permissions',
-        permissions: ['*'],
-        userCount: 0,
-        isSystemRole: true,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Manager',
-        description: 'Management access with most permissions',
-        permissions: [
-          'inventory:view', 'inventory:create', 'inventory:edit', 'inventory:export',
-          'orders:view', 'orders:create', 'orders:edit', 'orders:export',
-          'customers:view', 'customers:create', 'customers:edit',
-          'reports:view', 'reports:export',
-        ],
-        userCount: 0,
-        isSystemRole: true,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: 'User',
-        description: 'Standard user with limited permissions',
-        permissions: [
-          'inventory:view', 'inventory:export',
-          'orders:view', 'orders:create',
-          'customers:view',
-        ],
-        userCount: 0,
-        isSystemRole: true,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 4,
-        name: 'Viewer',
-        description: 'Read-only access',
-        permissions: [
-          'inventory:view',
-          'orders:view',
-          'customers:view',
-          'reports:view',
-        ],
-        userCount: 0,
-        isSystemRole: false,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-  });
-
-  // Save roles to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('user-roles', JSON.stringify(roles));
-  }, [roles]);
-
-  // Update user counts based on actual users
-  useEffect(() => {
-    if (usersData && Array.isArray(usersData)) {
-      const roleUserCounts = new Map<string, number>();
-      usersData.forEach((user: any) => {
-        const roleName = user.role || 'User';
-        roleUserCounts.set(roleName, (roleUserCounts.get(roleName) || 0) + 1);
-      });
-
-      setRoles(prevRoles =>
-        prevRoles.map(role => ({
-          ...role,
-          userCount: roleUserCounts.get(role.name) || 0,
-        }))
-      );
-    }
-  }, [usersData]);
+  const roles: Role[] = rolesData || [];
 
   // Filter roles
   const filteredRoles = useMemo(() => {
@@ -407,50 +332,75 @@ function RoleBasedAccessSection() {
     };
   }, [filteredRoles]);
 
+  // Create role mutation
+  const createRoleMutation = useMutation({
+    mutationFn: async (roleData: any) => {
+      const response = await api.post('/roles', {
+        ...roleData,
+        isSystemRole: false,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      setShowCreateModal(false);
+      toast.success('Role created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create role');
+    },
+  });
+
+  // Update role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string | number; updates: any }) => {
+      const response = await api.patch(`/roles/${id}`, updates);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast.success('Role updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update role');
+    },
+  });
+
+  // Delete role mutation
+  const deleteRoleMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.delete(`/roles/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast.success('Role deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete role');
+    },
+  });
+
   const handleCreateRole = (roleData: any) => {
-    const newRole: Role = {
-      id: Date.now(),
-      ...roleData,
-      userCount: 0,
-      isSystemRole: false,
-      createdAt: new Date().toISOString(),
-    };
-    setRoles([...roles, newRole]);
-    setShowCreateModal(false);
-    toast.success('Role created successfully!');
+    createRoleMutation.mutate(roleData);
   };
 
   const handleUpdateRole = (roleId: string | number, updates: any) => {
-    setRoles(roles.map((role) =>
-      role.id === roleId
-        ? { ...role, ...updates, updatedAt: new Date().toISOString() }
-        : role
-    ));
-    toast.success('Role updated successfully!');
+    updateRoleMutation.mutate({ id: roleId, updates });
   };
 
   const handleDeleteRole = (roleId: string | number) => {
-    const role = roles.find((r) => r.id === roleId);
-    if (role?.isSystemRole) {
-      toast.error('Cannot delete system roles');
-      return;
-    }
-    if (role?.userCount && role.userCount > 0) {
-      toast.error('Cannot delete role with assigned users');
-      return;
-    }
-    setRoles(roles.filter((role) => role.id !== roleId));
-    toast.success('Role deleted successfully!');
+    deleteRoleMutation.mutate(roleId);
   };
 
-  if (usersLoading) {
+  if (rolesLoading) {
     return <SkeletonPage />;
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -509,7 +459,7 @@ function RoleBasedAccessSection() {
       </div>
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 relative w-full sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -532,7 +482,7 @@ function RoleBasedAccessSection() {
       </div>
 
       {/* Roles Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -574,8 +524,7 @@ function RoleBasedAccessSection() {
                 paginatedRoles.map((role) => (
                   <tr
                     key={role.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                    onClick={() => setSelectedRole(role)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
@@ -620,19 +569,34 @@ function RoleBasedAccessSection() {
                             setSelectedRole(role);
                           }}
                           className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                          title="View Role"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         {!role.isSystemRole && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteRole(role.id);
-                            }}
-                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRoleToEdit(role);
+                              }}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                              title="Edit Role"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRoleToDelete(role);
+                                setShowDeleteModal(true);
+                              }}
+                              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              title="Delete Role"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -749,13 +713,42 @@ function RoleBasedAccessSection() {
         />
       )}
 
-      {/* Role Details Modal */}
+      {/* Role View Modal */}
       {selectedRole && (
-        <RoleDetailsModal
+        <RoleViewModal
           role={selectedRole}
           onClose={() => setSelectedRole(null)}
-          onUpdate={handleUpdateRole}
+        />
+      )}
+
+      {/* Role Edit Modal */}
+      {roleToEdit && (
+        <RoleDetailsModal
+          role={roleToEdit}
+          onClose={() => setRoleToEdit(null)}
+          onUpdate={(id, updates) => {
+            handleUpdateRole(id, updates);
+            // Close modal after successful update
+            setTimeout(() => setRoleToEdit(null), 100);
+          }}
           onDelete={handleDeleteRole}
+        />
+      )}
+
+      {/* Delete Role Modal */}
+      {roleToDelete && (
+        <DeleteRoleModal
+          role={roleToDelete}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setRoleToDelete(null);
+          }}
+          onConfirm={() => {
+            handleDeleteRole(roleToDelete.id);
+            setShowDeleteModal(false);
+            setRoleToDelete(null);
+          }}
+          isShowing={showDeleteModal}
         />
       )}
     </div>
@@ -821,6 +814,36 @@ function CreateRoleModal({ onClose, onCreate }: CreateRoleModalProps) {
         ? prev.filter((id) => id !== permissionId)
         : [...prev, permissionId]
     );
+  };
+
+  const toggleCategoryPermissions = (category: string) => {
+    const categoryPermissions = permissionsByCategory[category] || [];
+    const categoryPermissionIds = categoryPermissions.map((p) => p.id);
+    const allSelected = categoryPermissionIds.every((id) => selectedPermissions.includes(id));
+
+    if (allSelected) {
+      // Deselect all permissions in this category
+      setSelectedPermissions((prev) =>
+        prev.filter((id) => !categoryPermissionIds.includes(id))
+      );
+    } else {
+      // Select all permissions in this category
+      setSelectedPermissions((prev) => {
+        const newPermissions = [...prev];
+        categoryPermissionIds.forEach((id) => {
+          if (!newPermissions.includes(id)) {
+            newPermissions.push(id);
+          }
+        });
+        return newPermissions;
+      });
+    }
+  };
+
+  const isCategoryAllSelected = (category: string) => {
+    const categoryPermissions = permissionsByCategory[category] || [];
+    if (categoryPermissions.length === 0) return false;
+    return categoryPermissions.every((p) => selectedPermissions.includes(p.id));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -890,9 +913,20 @@ function CreateRoleModal({ onClose, onCreate }: CreateRoleModalProps) {
             <div className="space-y-4 max-h-[300px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               {Object.entries(permissionsByCategory).map(([category, permissions]) => (
                 <div key={category} className="space-y-2">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
-                    {category}
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
+                      {category}
+                    </h4>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isCategoryAllSelected(category)}
+                        onChange={() => toggleCategoryPermissions(category)}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Select All</span>
+                    </label>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     {permissions.map((permission) => (
                       <label
@@ -940,7 +974,182 @@ function CreateRoleModal({ onClose, onCreate }: CreateRoleModalProps) {
   );
 }
 
-// Role Details Modal
+// Role View Modal (Read-only)
+interface RoleViewModalProps {
+  role: Role;
+  onClose: () => void;
+}
+
+function RoleViewModal({ role, onClose }: RoleViewModalProps) {
+  // Available permissions
+  const allPermissions = [
+    { id: 'inventory:view', name: 'View Inventory', category: 'inventory' },
+    { id: 'inventory:create', name: 'Create Inventory', category: 'inventory' },
+    { id: 'inventory:edit', name: 'Edit Inventory', category: 'inventory' },
+    { id: 'inventory:delete', name: 'Delete Inventory', category: 'inventory' },
+    { id: 'inventory:export', name: 'Export Inventory', category: 'inventory' },
+    { id: 'orders:view', name: 'View Orders', category: 'orders' },
+    { id: 'orders:create', name: 'Create Orders', category: 'orders' },
+    { id: 'orders:edit', name: 'Edit Orders', category: 'orders' },
+    { id: 'orders:delete', name: 'Delete Orders', category: 'orders' },
+    { id: 'orders:export', name: 'Export Orders', category: 'orders' },
+    { id: 'customers:view', name: 'View Customers', category: 'customers' },
+    { id: 'customers:create', name: 'Create Customers', category: 'customers' },
+    { id: 'customers:edit', name: 'Edit Customers', category: 'customers' },
+    { id: 'customers:delete', name: 'Delete Customers', category: 'customers' },
+    { id: 'reports:view', name: 'View Reports', category: 'reports' },
+    { id: 'reports:export', name: 'Export Reports', category: 'reports' },
+    { id: 'settings:view', name: 'View Settings', category: 'settings' },
+    { id: 'settings:edit', name: 'Edit Settings', category: 'settings' },
+    { id: 'users:view', name: 'View Users', category: 'users' },
+    { id: 'users:create', name: 'Create Users', category: 'users' },
+    { id: 'users:edit', name: 'Edit Users', category: 'users' },
+    { id: 'users:delete', name: 'Delete Users', category: 'users' },
+    { id: 'purchasing:view', name: 'View Purchasing', category: 'purchasing' },
+    { id: 'purchasing:create', name: 'Create Purchasing', category: 'purchasing' },
+    { id: 'purchasing:edit', name: 'Edit Purchasing', category: 'purchasing' },
+    { id: 'warehouse:view', name: 'View Warehouse', category: 'warehouse' },
+    { id: 'warehouse:edit', name: 'Edit Warehouse', category: 'warehouse' },
+  ];
+
+  const permissionsByCategory = useMemo(() => {
+    const grouped: Record<string, typeof allPermissions> = {};
+    allPermissions.forEach((perm) => {
+      if (!grouped[perm.category]) {
+        grouped[perm.category] = [];
+      }
+      grouped[perm.category].push(perm);
+    });
+    return grouped;
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">Role Details</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{role.name}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="px-6 py-3 space-y-6">
+          {/* Role Information */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Role Name
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white">
+                {role.name}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-[14px] text-gray-900 dark:text-white min-h-[80px]">
+                {role.description}
+              </div>
+            </div>
+          </div>
+
+          {/* Permissions */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+              Permissions
+            </label>
+            <div className="space-y-4 max-h-[200px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              {Object.entries(permissionsByCategory).map(([category, permissions]) => (
+                <div key={category} className="space-y-2">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
+                    {category}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {permissions.map((permission) => {
+                      const isChecked = role.permissions.includes(permission.id) || role.permissions.includes('*');
+                      return (
+                        <div
+                          key={permission.id}
+                          className="flex items-center gap-2 p-2 rounded-lg"
+                        >
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            isChecked
+                              ? 'bg-primary-600 border-primary-600'
+                              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                          }`}>
+                            {isChecked && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {permission.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {role.permissions.includes('*') ? 'All Permissions' : `${role.permissions.length} permissions`}
+            </p>
+          </div>
+
+          {/* Metadata */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Type</span>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                role.isSystemRole
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+              }`}>
+                {role.isSystemRole ? 'System' : 'Custom'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Users Assigned</span>
+              <span className="text-gray-900 dark:text-white">{role.userCount}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Created At</span>
+              <span className="text-gray-900 dark:text-white">
+                {new Date(role.createdAt).toLocaleString()}
+              </span>
+            </div>
+            {role.updatedAt && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Updated At</span>
+                <span className="text-gray-900 dark:text-white">
+                  {new Date(role.updatedAt).toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Role Details Modal (Edit)
 interface RoleDetailsModalProps {
   role: Role;
   onClose: () => void;
@@ -948,7 +1157,7 @@ interface RoleDetailsModalProps {
   onDelete: (roleId: string | number) => void;
 }
 
-function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModalProps) {
+function RoleDetailsModal({ role, onClose, onUpdate }: RoleDetailsModalProps) {
   const [name, setName] = useState(role.name);
   const [description, setDescription] = useState(role.description);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>(role.permissions);
@@ -1007,6 +1216,43 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
     );
   };
 
+  const toggleCategoryPermissions = (category: string) => {
+    if (role.isSystemRole && role.name === 'Admin') {
+      toast.error('Cannot modify Admin role permissions');
+      return;
+    }
+    const categoryPermissions = permissionsByCategory[category] || [];
+    const categoryPermissionIds = categoryPermissions.map((p) => p.id);
+    const allSelected = categoryPermissionIds.every((id) => 
+      selectedPermissions.includes(id) || selectedPermissions.includes('*')
+    );
+
+    if (allSelected) {
+      // Deselect all permissions in this category
+      setSelectedPermissions((prev) =>
+        prev.filter((id) => !categoryPermissionIds.includes(id) && id !== '*')
+      );
+    } else {
+      // Select all permissions in this category
+      setSelectedPermissions((prev) => {
+        const newPermissions = prev.filter((id) => id !== '*'); // Remove wildcard if present
+        categoryPermissionIds.forEach((id) => {
+          if (!newPermissions.includes(id)) {
+            newPermissions.push(id);
+          }
+        });
+        return newPermissions;
+      });
+    }
+  };
+
+  const isCategoryAllSelected = (category: string) => {
+    if (selectedPermissions.includes('*')) return true;
+    const categoryPermissions = permissionsByCategory[category] || [];
+    if (categoryPermissions.length === 0) return false;
+    return categoryPermissions.every((p) => selectedPermissions.includes(p.id));
+  };
+
   const handleSave = () => {
     if (role.isSystemRole && role.name === 'Admin') {
       toast.error('Cannot modify Admin role');
@@ -1017,20 +1263,6 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
       description: description.trim(),
       permissions: selectedPermissions,
     });
-    onClose();
-  };
-
-  const handleDelete = () => {
-    if (role.isSystemRole) {
-      toast.error('Cannot delete system roles');
-      return;
-    }
-    if (role.userCount > 0) {
-      toast.error('Cannot delete role with assigned users');
-      return;
-    }
-    onDelete(role.id);
-    onClose();
   };
 
   const isReadOnly = role.isSystemRole && role.name === 'Admin';
@@ -1046,8 +1278,8 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Role Details</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{role.name}</p>
+            <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">Edit Role</h2>
+            <p className="text-[14px] text-gray-500 dark:text-gray-400 mt-1">{role.name}</p>
           </div>
           <button
             onClick={onClose}
@@ -1057,7 +1289,7 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="px-6 py-3 space-y-6">
           {/* Role Information */}
           <div className="space-y-4">
             <div>
@@ -1069,7 +1301,8 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isReadOnly}
-                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="e.g., Sales Manager"
+                className={`w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </div>
 
@@ -1082,7 +1315,8 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={isReadOnly}
                 rows={3}
-                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="Describe the role's purpose and responsibilities..."
+                className={`w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </div>
           </div>
@@ -1092,12 +1326,24 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
               Permissions
             </label>
-            <div className="space-y-4 max-h-[300px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div className="space-y-4 max-h-[200px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               {Object.entries(permissionsByCategory).map(([category, permissions]) => (
-                <div key={category} className="space-y-2">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
-                    {category}
-                  </h4>
+                <div key={category} className="space-y-2 ">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
+                      {category}
+                    </h4>
+                    <label className={`flex items-center gap-2 ${isReadOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                      <input
+                        type="checkbox"
+                        checked={isCategoryAllSelected(category)}
+                        onChange={() => toggleCategoryPermissions(category)}
+                        disabled={isReadOnly || selectedPermissions.includes('*')}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Select All</span>
+                    </label>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {permissions.map((permission) => {
                       const isChecked = selectedPermissions.includes(permission.id) || selectedPermissions.includes('*');
@@ -1161,15 +1407,7 @@ function RoleDetailsModal({ role, onClose, onUpdate, onDelete }: RoleDetailsModa
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            {!role.isSystemRole && (
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 text-red-600 dark:text-red-400 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              >
-                Delete
-              </button>
-            )}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
@@ -1598,6 +1836,67 @@ function PermissionsSection() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Delete Role Modal Component
+interface DeleteRoleModalProps {
+  role: Role;
+  onClose: () => void;
+  onConfirm: () => void;
+  isShowing: boolean;
+}
+
+function DeleteRoleModal({ role, onClose, onConfirm, isShowing }: DeleteRoleModalProps) {
+  if (!isShowing) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" strokeWidth={2} />
+            </div>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-center">
+            Delete Role
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-1 text-center">
+            Are you sure you want to delete the role
+          </p>
+          <p className="text-gray-900 dark:text-white font-semibold mb-4 text-center">
+            "{role.name}"?
+          </p>
+          <p className="text-sm text-red-600 dark:text-red-400 font-medium text-center mb-6">
+            This action cannot be undone.
+          </p>
+          <div className="flex items-center justify-end gap-3 text-[14px]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Role
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
