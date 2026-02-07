@@ -1,146 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { User, MapPin, Users, DollarSign, Search, Plus, X, Edit, Trash2, ChevronDown, Inbox, Calculator, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, MapPin, Users, DollarSign, Search, Plus, X, Edit, Trash2, Calculator, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type TabType = 'accounts-territories' | 'client-assignments' | 'commissions';
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 10001 : 'auto', position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${error ? 'border-red-500' : 'border-gray-300'
-          } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.6rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
-            </div>
-          ) : (
-            options.map((option, index) => {
-              const isSelected = option.value === value;
-
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${isSelected
-                      ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                    } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    display: 'block',
-                    width: '100%',
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function SalesReps() {
   const [activeTab, setActiveTab] = useState<TabType>('accounts-territories');
@@ -582,7 +450,7 @@ function RepTerritoryModal({ rep, onClose, onSave }: { rep?: any; onClose: () =>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role *</label>
-                <CustomSelect
+                <CustomDropdown
                   value={formData.role}
                   onChange={(value) => setFormData({ ...formData, role: value })}
                   options={[
@@ -1005,7 +873,7 @@ function AssignClientModal({ customer, reps, onClose, onSave, isLoading }: { cus
               Assign <span className="font-semibold">{customer.name}</span> to a sales rep:
             </p>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sales Rep</label>
-            <CustomSelect
+            <CustomDropdown
               value={selectedRepId}
               onChange={(value) => setSelectedRepId(value)}
               options={[
@@ -1608,7 +1476,7 @@ function CalculateCommissionsModal({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Commission Type *</label>
-                  <CustomSelect
+                  <CustomDropdown
                     value={formData.commissionType}
                     onChange={(value) => setFormData({ ...formData, commissionType: value })}
                     options={[
@@ -1907,7 +1775,7 @@ function CommissionsSection() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Period</label>
-              <CustomSelect
+              <CustomDropdown
                 value={periodFilter}
                 onChange={(value) => setPeriodFilter(value)}
                 options={periodOptions}
@@ -1915,7 +1783,7 @@ function CommissionsSection() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
-              <CustomSelect
+              <CustomDropdown
                 value={typeFilter}
                 onChange={(value) => setTypeFilter(value)}
                 options={[
@@ -1928,7 +1796,7 @@ function CommissionsSection() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-              <CustomSelect
+              <CustomDropdown
                 value={statusFilter}
                 onChange={(value) => setStatusFilter(value)}
                 options={[

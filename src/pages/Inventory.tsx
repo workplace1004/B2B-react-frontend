@@ -1,280 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
-import { Warehouse, Plus, X, ChevronsLeft, ChevronsRight, Edit, Trash2, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Warehouse, Plus, X, ChevronsLeft, ChevronsRight, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { ButtonWithWaves, CustomDropdown } from '../components/ui';
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string | number;
-  onChange: (value: string | number) => void;
-  options: Array<{ value: string | number; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [typedChars, setTypedChars] = useState('');
-  const typedCharsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-        setTypedChars('');
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (typedCharsTimeoutRef.current) {
-        clearTimeout(typedCharsTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isOpen && highlightedIndex >= 0) {
-      const optionElement = selectRef.current?.querySelector(
-        `[data-option-index="${highlightedIndex}"]`
-      ) as HTMLElement;
-      if (optionElement) {
-        optionElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
-    }
-  }, [highlightedIndex, isOpen]);
-
-  // Sort options alphabetically by label (case-insensitive)
-  const sortedOptions = useMemo(() => {
-    return [...options].sort((a, b) => 
-      a.label.localeCompare(b.label, undefined, { sensitivity: 'base', numeric: true })
-    );
-  }, [options]);
-
-  const selectedOption = sortedOptions.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string | number) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-    setTypedChars('');
-  };
-
-  const findMatchingOption = (searchString: string, startIndex: number = 0) => {
-    const lowerSearch = searchString.toLowerCase();
-    // First, try to find a match starting from the current highlighted index
-    for (let i = startIndex; i < sortedOptions.length; i++) {
-      if (sortedOptions[i].label.toLowerCase().startsWith(lowerSearch)) {
-        return i;
-      }
-    }
-    // If not found, search from the beginning
-    for (let i = 0; i < startIndex; i++) {
-      if (sortedOptions[i].label.toLowerCase().startsWith(lowerSearch)) {
-        return i;
-      }
-    }
-    return -1;
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (!isOpen) setIsOpen(true);
-      setHighlightedIndex((prev) => (prev < sortedOptions.length - 1 ? prev + 1 : prev));
-      setTypedChars('');
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (!isOpen) setIsOpen(true);
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-      setTypedChars('');
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (highlightedIndex >= 0) {
-        handleSelect(sortedOptions[highlightedIndex].value);
-      } else if (!isOpen) {
-        setIsOpen(true);
-      }
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-      setTypedChars('');
-    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      // Handle alphanumeric keys
-      e.preventDefault();
-      const newTypedChars = typedChars + e.key;
-      setTypedChars(newTypedChars);
-      
-      // Clear previous timeout
-      if (typedCharsTimeoutRef.current) {
-        clearTimeout(typedCharsTimeoutRef.current);
-      }
-      
-      // Set timeout to reset typed characters after 500ms
-      typedCharsTimeoutRef.current = setTimeout(() => {
-        setTypedChars('');
-      }, 500);
-      
-      // Open dropdown if closed
-      if (!isOpen) {
-        setIsOpen(true);
-      }
-      
-      // Find matching option
-      const matchIndex = findMatchingOption(newTypedChars, highlightedIndex >= 0 ? highlightedIndex + 1 : 0);
-      if (matchIndex >= 0) {
-        setHighlightedIndex(matchIndex);
-      }
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10000,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '200px',
-            maxHeight: '400px', // Limit to 10 items (10 * ~40px per item)
-          }}
-        >
-          {sortedOptions.map((option, index) => {
-            const isSelected = option.value === value;
-            
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                data-option-index={index}
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === sortedOptions.length - 1 ? 'rounded-b-lg' : ''}`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  display: 'block',
-                  width: '100%',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Waves effect button component
-const ButtonWithWaves = ({ 
-  children, 
-  onClick, 
-  className = '',
-  disabled = false 
-}: { 
-  children: React.ReactNode; 
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-
-    const button = buttonRef.current;
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const id = Date.now();
-
-    setRipples((prev) => [...prev, { x, y, id }]);
-
-    setTimeout(() => {
-      setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
-    }, 600);
-
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <button
-      ref={buttonRef}
-      onClick={handleClick}
-      disabled={disabled}
-      className={`btn-primary-lg relative overflow-hidden ${className} ${disabled ? 'opacity-65 cursor-not-allowed pointer-events-none' : ''}`}
-    >
-      {children}
-      {ripples.map((ripple) => (
-        <span
-          key={ripple.id}
-          className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-          style={{
-            left: `${ripple.x}px`,
-            top: `${ripple.y}px`,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      ))}
-    </button>
-  );
-};
 
 export default function Inventory() {
   const [page, setPage] = useState(0);
@@ -429,14 +162,14 @@ export default function Inventory() {
         <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Inventory</h1>
         <div className="flex items-center gap-4">
           {warehouses && warehouses.length > 0 && (
-            <CustomSelect
+            <CustomDropdown
               options={[
                 { value: '', label: 'All Warehouses' },
-                ...warehouses.map((w: any) => ({ value: w.id, label: w.name })),
+                ...warehouses.map((w: any) => ({ value: w.id.toString(), label: w.name })),
               ]}
-            value={warehouseFilter}
+            value={warehouseFilter.toString()}
               onChange={(value) => {
-                setWarehouseFilter(value);
+                setWarehouseFilter(value === '' ? '' : Number(value));
                 setPage(0);
               }}
               placeholder="Filter by warehouse"
@@ -766,8 +499,8 @@ function AddInventoryModal({
     }
   };
 
-  const warehouseOptions = warehouses.map((w) => ({ value: w.id, label: w.name }));
-  const productOptions = products.map((p) => ({ value: p.id, label: p.name }));
+  const warehouseOptions = warehouses.map((w) => ({ value: w.id.toString(), label: w.name }));
+  const productOptions = products.map((p) => ({ value: p.id.toString(), label: p.name }));
 
   return (
     <>
@@ -811,9 +544,9 @@ function AddInventoryModal({
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Product <span className="text-red-500">*</span>
                       </label>
-                      <CustomSelect
+                      <CustomDropdown
                         options={productOptions}
-                        value={formData.productId}
+                        value={formData.productId.toString()}
                         onChange={(value) => handleChange('productId', value)}
                         placeholder="Select product"
                         error={!!errors.productId}
@@ -824,9 +557,9 @@ function AddInventoryModal({
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Warehouse <span className="text-red-500">*</span>
                       </label>
-                      <CustomSelect
+                      <CustomDropdown
                         options={warehouseOptions}
-                        value={formData.warehouseId}
+                        value={formData.warehouseId.toString()}
                         onChange={(value) => handleChange('warehouseId', value)}
                         placeholder="Select warehouse"
                         error={!!errors.warehouseId}
@@ -1015,8 +748,8 @@ function EditInventoryModal({
     }
   };
 
-  const warehouseOptions = warehouses.map((w) => ({ value: w.id, label: w.name }));
-  const productOptions = products.map((p) => ({ value: p.id, label: p.name }));
+  const warehouseOptions = warehouses.map((w) => ({ value: w.id.toString(), label: w.name }));
+  const productOptions = products.map((p) => ({ value: p.id.toString(), label: p.name }));
 
   return (
     <>
@@ -1060,9 +793,9 @@ function EditInventoryModal({
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Product <span className="text-red-500">*</span>
                       </label>
-                      <CustomSelect
+                      <CustomDropdown
                         options={productOptions}
-                        value={formData.productId}
+                        value={formData.productId.toString()}
                         onChange={(value) => handleChange('productId', value)}
                         placeholder="Select product"
                         error={!!errors.productId}
@@ -1073,9 +806,9 @@ function EditInventoryModal({
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Warehouse <span className="text-red-500">*</span>
                       </label>
-                      <CustomSelect
+                      <CustomDropdown
                         options={warehouseOptions}
-                        value={formData.warehouseId}
+                        value={formData.warehouseId.toString()}
                         onChange={(value) => handleChange('warehouseId', value)}
                         placeholder="Select warehouse"
                         error={!!errors.warehouseId}

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import {
@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { ButtonWithWaves, CustomDropdown } from '../components/ui';
 
 // Types
 interface Warehouse {
@@ -84,193 +85,8 @@ interface PutAwayRule {
   updatedAt?: string;
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  display: 'block',
-                  width: '100%',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Waves effect button component
-const ButtonWithWaves = ({ 
-  children, 
-  onClick, 
-  className = '',
-  disabled = false 
-}: { 
-  children: React.ReactNode; 
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-
-    const button = buttonRef.current;
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const id = Date.now();
-
-    setRipples((prev) => [...prev, { x, y, id }]);
-
-    setTimeout(() => {
-      setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
-    }, 600);
-
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <button
-      ref={buttonRef}
-      onClick={handleClick}
-      disabled={disabled}
-      className={`btn-primary-lg relative overflow-hidden ${className} ${disabled ? 'opacity-65 cursor-not-allowed pointer-events-none' : ''}`}
-    >
-      {children}
-      {ripples.map((ripple) => (
-        <span
-          key={ripple.id}
-          className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-          style={{
-            left: `${ripple.x}px`,
-            top: `${ripple.y}px`,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      ))}
-    </button>
-  );
-};
-
 export default function WarehousesLocations() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -551,8 +367,8 @@ export default function WarehousesLocations() {
               Manage warehouses, bins/locations, and put-away rules
             </p>
           </div>
-          <ButtonWithWaves onClick={openModal}>
-            <Plus className="w-5 h-5" />
+          <ButtonWithWaves className='text-[14px]' onClick={openModal}>
+            <Plus className="w-4 h-4" />
             Add Warehouse
           </ButtonWithWaves>
         </div>
@@ -644,11 +460,11 @@ export default function WarehousesLocations() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 ::placeholder-[12px] text-[14px] pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="w-full md:w-48">
-            <CustomSelect
+            <CustomDropdown
               value={statusFilter}
               onChange={(value) => {
                 setStatusFilter(value);
@@ -677,12 +493,6 @@ export default function WarehousesLocations() {
                 ? 'Try adjusting your search or filter criteria'
                 : 'Get started by creating your first warehouse'}
             </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <ButtonWithWaves onClick={openModal}>
-                <Plus className="w-5 h-5" />
-                Add Warehouse
-              </ButtonWithWaves>
-            )}
           </div>
         ) : (
           <>
@@ -1129,12 +939,12 @@ function AddWarehouseModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add Warehouse</h2>
+          <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white">Add Warehouse</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -1151,7 +961,7 @@ function AddWarehouseModal({
                   setFormData({ ...formData, name: e.target.value });
                   if (errors.name) setErrors({ ...errors, name: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                className={`w-full px-4 py-2 ::placeholder-[12px] text-[14px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                   errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter warehouse name"
@@ -1167,7 +977,7 @@ function AddWarehouseModal({
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Location identifier"
               />
             </div>
@@ -1180,7 +990,7 @@ function AddWarehouseModal({
                 type="text"
                 value={formData.tplReference}
                 onChange={(e) => setFormData({ ...formData, tplReference: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="3PL reference"
               />
             </div>
@@ -1193,7 +1003,7 @@ function AddWarehouseModal({
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 ::placeholder-[12px] text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Street address"
               />
             </div>
@@ -1206,7 +1016,7 @@ function AddWarehouseModal({
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="City"
               />
             </div>
@@ -1219,7 +1029,7 @@ function AddWarehouseModal({
                 type="text"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Country"
               />
             </div>
@@ -1232,7 +1042,7 @@ function AddWarehouseModal({
                 type="text"
                 value={formData.postalCode}
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Postal code"
               />
             </div>
@@ -1250,7 +1060,7 @@ function AddWarehouseModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center text-[14px] justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
@@ -1338,12 +1148,12 @@ function EditWarehouseModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Warehouse</h2>
+          <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white">Edit Warehouse</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -1360,7 +1170,7 @@ function EditWarehouseModal({
                   setFormData({ ...formData, name: e.target.value });
                   if (errors.name) setErrors({ ...errors, name: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                className={`w-full ::placeholder-[12px] text-[14px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                   errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter warehouse name"
@@ -1376,7 +1186,7 @@ function EditWarehouseModal({
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Location identifier"
               />
             </div>
@@ -1389,7 +1199,7 @@ function EditWarehouseModal({
                 type="text"
                 value={formData.tplReference}
                 onChange={(e) => setFormData({ ...formData, tplReference: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="3PL reference"
               />
             </div>
@@ -1402,7 +1212,7 @@ function EditWarehouseModal({
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Street address"
               />
             </div>
@@ -1415,7 +1225,7 @@ function EditWarehouseModal({
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="City"
               />
             </div>
@@ -1428,7 +1238,7 @@ function EditWarehouseModal({
                 type="text"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Country"
               />
             </div>
@@ -1441,7 +1251,7 @@ function EditWarehouseModal({
                 type="text"
                 value={formData.postalCode}
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full ::placeholder-[12px] text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Postal code"
               />
             </div>
@@ -1459,7 +1269,7 @@ function EditWarehouseModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex text-[14px] items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
@@ -1526,7 +1336,7 @@ function DeleteWarehouseModal({
             permanently remove the warehouse from your database.
           </p>
 
-          <div className="flex items-center justify-end gap-4">
+          <div className="flex items-center text-[14px] justify-end gap-4">
             <button
               type="button"
               onClick={onClose}
@@ -1739,7 +1549,7 @@ function BinsModal({
               />
             </div>
             <div>
-              <CustomSelect
+              <CustomDropdown
                 value={zoneFilter}
                 onChange={setZoneFilter}
                 options={[
@@ -1750,7 +1560,7 @@ function BinsModal({
               />
             </div>
             <div>
-              <CustomSelect
+              <CustomDropdown
                 value={typeFilter}
                 onChange={setTypeFilter}
                 options={[
@@ -2028,7 +1838,7 @@ function AddEditBinModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Bin Type <span className="text-red-500">*</span>
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.binType}
                 onChange={(value) => setFormData({ ...formData, binType: value as 'PICKING' | 'STORAGE' | 'BULK' | 'QUARANTINE' | 'RETURNS' })}
                 options={[
@@ -2743,7 +2553,7 @@ function AddEditPutAwayRuleModal({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Preferred Bin Type
                 </label>
-                <CustomSelect
+                <CustomDropdown
                   value={formData.preferredBinType}
                   onChange={(value) => setFormData({ ...formData, preferredBinType: value })}
                   options={[

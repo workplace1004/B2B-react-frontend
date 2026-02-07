@@ -20,6 +20,7 @@ import {
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type TabType = 'aging' | 'slow-movers' | 'markdown-scenarios' | 'recovery-tracking';
 
@@ -306,27 +307,29 @@ function AgingInventorySection() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
-            <select
+            <CustomDropdown
               value={ageFilter}
-              onChange={(e) => setAgeFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">All Ages</option>
-              <option value="critical">Critical (180+ days)</option>
-              <option value="high">High (90-179 days)</option>
-              <option value="medium">Medium (60-89 days)</option>
-              <option value="low">Low (&lt;60 days)</option>
-            </select>
-            <select
+              onChange={setAgeFilter}
+              options={[
+                { value: 'all', label: 'All Ages' },
+                { value: 'critical', label: 'Critical (180+ days)' },
+                { value: 'high', label: 'High (90-179 days)' },
+                { value: 'medium', label: 'Medium (60-89 days)' },
+                { value: 'low', label: 'Low (<60 days)' },
+              ]}
+              className="min-w-[200px]"
+            />
+            <CustomDropdown
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="age-desc">Age: High to Low</option>
-              <option value="age-asc">Age: Low to High</option>
-              <option value="value-desc">Value: High to Low</option>
-              <option value="value-asc">Value: Low to High</option>
-            </select>
+              onChange={setSortBy}
+              options={[
+                { value: 'age-desc', label: 'Age: High to Low' },
+                { value: 'age-asc', label: 'Age: Low to High' },
+                { value: 'value-desc', label: 'Value: High to Low' },
+                { value: 'value-asc', label: 'Value: Low to High' },
+              ]}
+              className="min-w-[180px]"
+            />
           </div>
         </div>
       </div>
@@ -740,17 +743,18 @@ function SlowMoversSection() {
           </div>
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
-            <select
+            <CustomDropdown
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">All Status</option>
-              <option value="dead-stock">Dead Stock</option>
-              <option value="slow-mover">Slow Movers</option>
-              <option value="at-risk">At Risk</option>
-              <option value="normal">Normal</option>
-            </select>
+              onChange={setFilterStatus}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'dead-stock', label: 'Dead Stock' },
+                { value: 'slow-mover', label: 'Slow Movers' },
+                { value: 'at-risk', label: 'At Risk' },
+                { value: 'normal', label: 'Normal' },
+              ]}
+              className="min-w-[180px]"
+            />
           </div>
         </div>
       </div>
@@ -1352,17 +1356,17 @@ function MarkdownPlanModal({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Reason
             </label>
-            <select
+            <CustomDropdown
               value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="Dead stock clearance">Dead stock clearance</option>
-              <option value="Seasonal clearance">Seasonal clearance</option>
-              <option value="End of season sale">End of season sale</option>
-              <option value="Promotional discount">Promotional discount</option>
-              <option value="Other">Other</option>
-            </select>
+              onChange={(value) => setFormData({ ...formData, reason: value })}
+              options={[
+                { value: 'Dead stock clearance', label: 'Dead stock clearance' },
+                { value: 'Seasonal clearance', label: 'Seasonal clearance' },
+                { value: 'End of season sale', label: 'End of season sale' },
+                { value: 'Promotional discount', label: 'Promotional discount' },
+                { value: 'Other', label: 'Other' },
+              ]}
+            />
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -1664,16 +1668,17 @@ function RecoveryTrackingSection() {
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-gray-400" />
-            <select
+            <CustomDropdown
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="60d">Last 60 Days</option>
-              <option value="90d">Last 90 Days</option>
-            </select>
+              onChange={setTimeRange}
+              options={[
+                { value: '7d', label: 'Last 7 Days' },
+                { value: '30d', label: 'Last 30 Days' },
+                { value: '60d', label: 'Last 60 Days' },
+                { value: '90d', label: 'Last 90 Days' },
+              ]}
+              className="min-w-[180px]"
+            />
           </div>
         </div>
       </div>

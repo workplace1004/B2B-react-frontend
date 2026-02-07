@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
@@ -7,19 +7,22 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
-  Search,
-  Filter,
   BarChart3,
   Target,
   ShoppingBag,
   Store,
   Users,
-  ChevronDown,
   Calendar,
 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
-import Breadcrumb from '../components/Breadcrumb';
+import {
+  PageHeader,
+  TabsNavigation,
+  SummaryCard,
+  SearchAndFilterBar,
+  EmptyState,
+} from '../components/ui';
 
 type TabType = 'reorder-suggestions' | 'risk-scoring' | 'channel-replenishment';
 type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'overstock';
@@ -36,40 +39,17 @@ export default function Replenishment() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Replenishment" />
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Replenishment</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
-              Reorder suggestions, stock risk scoring, and channel-based replenishment
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Replenishment"
+        description="Reorder suggestions, stock risk scoring, and channel-based replenishment"
+        breadcrumbPage="Replenishment"
+      />
 
-      {/* Tabs Navigation */}
-      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8" aria-label="Tabs">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <TabsNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(tabId) => setActiveTab(tabId as TabType)}
+      />
 
       {/* Tab Content */}
       <div>
@@ -77,75 +57,6 @@ export default function Replenishment() {
         {activeTab === 'risk-scoring' && <StockRiskScoringSection />}
         {activeTab === 'channel-replenishment' && <ChannelReplenishmentSection />}
       </div>
-    </div>
-  );
-}
-
-// Custom Dropdown Component
-interface CustomDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}
-
-function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm flex items-center justify-between cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-          isOpen
-            ? 'border-primary-500 ring-2 ring-primary-500/20'
-            : 'hover:border-gray-400 dark:hover:border-gray-500'
-        }`}
-      >
-        <span>{selectedOption?.label || placeholder || 'Select...'}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
-            isOpen ? 'transform rotate-180' : ''
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                option.value === value
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -279,124 +190,80 @@ function ReorderSuggestionsSection() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.totalItems}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Needs Reorder</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                {summaryMetrics.needsReorderCount}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Reorder Qty</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.totalReorderQty.toLocaleString()}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <RefreshCw className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Avg Days Until Reorder</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.avgDaysUntilReorder}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
+        <SummaryCard
+          label="Total Items"
+          value={summaryMetrics.totalItems}
+          icon={Package}
+        />
+        <SummaryCard
+          label="Needs Reorder"
+          value={summaryMetrics.needsReorderCount}
+          icon={AlertTriangle}
+          iconBgColor="bg-red-100 dark:bg-red-900/30"
+          iconColor="text-red-600 dark:text-red-400"
+          valueColor="text-red-600 dark:text-red-400"
+        />
+        <SummaryCard
+          label="Total Reorder Qty"
+          value={summaryMetrics.totalReorderQty.toLocaleString()}
+          icon={RefreshCw}
+          iconBgColor="bg-green-100 dark:bg-green-900/30"
+          iconColor="text-green-600 dark:text-green-400"
+        />
+        <SummaryCard
+          label="Avg Days Until Reorder"
+          value={summaryMetrics.avgDaysUntilReorder}
+          icon={Calendar}
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+        />
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex-1 relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search products, SKU, warehouse..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <div className="min-w-[240px]">
-              <CustomDropdown
-                value={warehouseFilter}
-                onChange={setWarehouseFilter}
-                options={[
-                  { value: 'all', label: 'All Warehouses' },
-                  ...warehouses.map((w: any) => ({
-                    value: w.id.toString(),
-                    label: w.name,
-                  })),
-                ]}
-              />
-            </div>
-            <div className="min-w-[240px]">
-              <CustomDropdown
-                value={sortBy}
-                onChange={setSortBy}
-                options={[
-                  { value: 'reorder-desc', label: 'Reorder Qty: High to Low' },
-                  { value: 'reorder-asc', label: 'Reorder Qty: Low to High' },
-                  { value: 'current-desc', label: 'Current Qty: High to Low' },
-                  { value: 'current-asc', label: 'Current Qty: Low to High' },
-                  { value: 'days-desc', label: 'Days Until Reorder: High to Low' },
-                  { value: 'days-asc', label: 'Days Until Reorder: Low to High' },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <SearchAndFilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search products, SKU, warehouse..."
+        filters={[
+          {
+            value: warehouseFilter,
+            onChange: setWarehouseFilter,
+            options: [
+              { value: 'all', label: 'All Warehouses' },
+              ...warehouses.map((w: any) => ({
+                value: w.id.toString(),
+                label: w.name,
+              })),
+            ],
+            className: 'min-w-[240px]',
+          },
+          {
+            value: sortBy,
+            onChange: setSortBy,
+            options: [
+              { value: 'reorder-desc', label: 'Reorder Qty: High to Low' },
+              { value: 'reorder-asc', label: 'Reorder Qty: Low to High' },
+              { value: 'current-desc', label: 'Current Qty: High to Low' },
+              { value: 'current-asc', label: 'Current Qty: Low to High' },
+              { value: 'days-desc', label: 'Days Until Reorder: High to Low' },
+              { value: 'days-asc', label: 'Days Until Reorder: Low to High' },
+            ],
+            className: 'min-w-[240px]',
+          },
+        ]}
+      />
 
       {/* Reorder Suggestions Table */}
       {reorderSuggestions.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-              <Target className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No reorder suggestions found</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
-              {searchQuery || warehouseFilter !== 'all'
-                ? 'Try adjusting your search or filter criteria.'
-                : 'All inventory levels are optimal. No reorder suggestions at this time.'}
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={Target}
+          title="No reorder suggestions found"
+          description={
+            searchQuery || warehouseFilter !== 'all'
+              ? 'Try adjusting your search or filter criteria.'
+              : 'All inventory levels are optimal. No reorder suggestions at this time.'
+          }
+        />
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
@@ -738,124 +605,81 @@ function StockRiskScoringSection() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.totalItems}
-            </p>
-          </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-        </div>
-      </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Stockout Risk</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                {summaryMetrics.stockoutCount}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Overstock Risk</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {summaryMetrics.overstockCount}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <TrendingDown className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Avg Risk Score</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.avgRiskScore}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
+        <SummaryCard
+          label="Total Items"
+          value={summaryMetrics.totalItems}
+          icon={BarChart3}
+        />
+        <SummaryCard
+          label="Stockout Risk"
+          value={summaryMetrics.stockoutCount}
+          icon={AlertTriangle}
+          iconBgColor="bg-red-100 dark:bg-red-900/30"
+          iconColor="text-red-600 dark:text-red-400"
+          valueColor="text-red-600 dark:text-red-400"
+        />
+        <SummaryCard
+          label="Overstock Risk"
+          value={summaryMetrics.overstockCount}
+          icon={TrendingDown}
+          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+          valueColor="text-blue-600 dark:text-blue-400"
+        />
+        <SummaryCard
+          label="Avg Risk Score"
+          value={summaryMetrics.avgRiskScore}
+          icon={TrendingUp}
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+        />
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex-1 relative w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search products, SKU, warehouse..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <div className="min-w-[240px]">
-              <CustomDropdown
-                value={riskTypeFilter}
-                onChange={setRiskTypeFilter}
-                options={[
-                  { value: 'all', label: 'All Risks' },
-                  { value: 'stockout', label: 'Stockout Risk' },
-                  { value: 'overstock', label: 'Overstock Risk' },
-                  { value: 'critical', label: 'Critical' },
-                  { value: 'high', label: 'High' },
-                ]}
-              />
-          </div>
-            <div className="min-w-[240px]">
-              <CustomDropdown
-              value={sortBy}
-                onChange={setSortBy}
-                options={[
-                  { value: 'risk-desc', label: 'Risk Score: High to Low' },
-                  { value: 'risk-asc', label: 'Risk Score: Low to High' },
-                  { value: 'stockout-desc', label: 'Stockout Risk: High to Low' },
-                  { value: 'overstock-desc', label: 'Overstock Risk: High to Low' },
-                  { value: 'days-desc', label: 'Days of Stock: High to Low' },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <SearchAndFilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search products, SKU, warehouse..."
+        filters={[
+          {
+            value: riskTypeFilter,
+            onChange: setRiskTypeFilter,
+            options: [
+              { value: 'all', label: 'All Risks' },
+              { value: 'stockout', label: 'Stockout Risk' },
+              { value: 'overstock', label: 'Overstock Risk' },
+              { value: 'critical', label: 'Critical' },
+              { value: 'high', label: 'High' },
+            ],
+            className: 'min-w-[240px]',
+          },
+          {
+            value: sortBy,
+            onChange: setSortBy,
+            options: [
+              { value: 'risk-desc', label: 'Risk Score: High to Low' },
+              { value: 'risk-asc', label: 'Risk Score: Low to High' },
+              { value: 'stockout-desc', label: 'Stockout Risk: High to Low' },
+              { value: 'overstock-desc', label: 'Overstock Risk: High to Low' },
+              { value: 'days-desc', label: 'Days of Stock: High to Low' },
+            ],
+            className: 'min-w-[240px]',
+          },
+        ]}
+      />
 
       {/* Risk Scoring Table */}
       {riskScoredItems.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-              <BarChart3 className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No risk items found</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
-              {searchQuery || riskTypeFilter !== 'all'
-                ? 'Try adjusting your search or filter criteria.'
-                : 'All inventory levels are within acceptable risk ranges.'}
-            </p>
-          </div>
-          </div>
-        ) : (
+        <EmptyState
+          icon={BarChart3}
+          title="No risk items found"
+          description={
+            searchQuery || riskTypeFilter !== 'all'
+              ? 'Try adjusting your search or filter criteria.'
+              : 'All inventory levels are within acceptable risk ranges.'
+          }
+        />
+      ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -1189,122 +1013,79 @@ function ChannelReplenishmentSection() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.totalItems}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">DTC Needs</p>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-                {summaryMetrics.dtcCount}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">B2B Needs</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {summaryMetrics.b2bCount}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Reorder Qty</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.totalReorderQty.toLocaleString()}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <RefreshCw className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
+        <SummaryCard
+          label="Total Items"
+          value={summaryMetrics.totalItems}
+          icon={Package}
+        />
+        <SummaryCard
+          label="DTC Needs"
+          value={summaryMetrics.dtcCount}
+          icon={ShoppingBag}
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+          valueColor="text-purple-600 dark:text-purple-400"
+        />
+        <SummaryCard
+          label="B2B Needs"
+          value={summaryMetrics.b2bCount}
+          icon={Users}
+          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+          valueColor="text-blue-600 dark:text-blue-400"
+        />
+        <SummaryCard
+          label="Total Reorder Qty"
+          value={summaryMetrics.totalReorderQty.toLocaleString()}
+          icon={RefreshCw}
+          iconBgColor="bg-green-100 dark:bg-green-900/30"
+          iconColor="text-green-600 dark:text-green-400"
+        />
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex-1 relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search products, SKU, warehouse..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-                      <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <div className="min-w-[240px]">
-              <CustomDropdown
-                value={channelFilter}
-                onChange={setChannelFilter}
-                options={[
-                  { value: 'all', label: 'All Channels' },
-                  { value: 'dtc', label: 'DTC Only' },
-                  { value: 'b2b', label: 'B2B Only' },
-                  { value: 'wholesale', label: 'Wholesale Only' },
-                ]}
-              />
-                      </div>
-            <div className="min-w-[240px]">
-              <CustomDropdown
-                value={warehouseFilter}
-                onChange={setWarehouseFilter}
-                options={[
-                  { value: 'all', label: 'All Warehouses' },
-                  ...warehouses.map((w: any) => ({
-                    value: w.id.toString(),
-                    label: w.name,
-                  })),
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <SearchAndFilterBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search products, SKU, warehouse..."
+        filters={[
+          {
+            value: channelFilter,
+            onChange: setChannelFilter,
+            options: [
+              { value: 'all', label: 'All Channels' },
+              { value: 'dtc', label: 'DTC Only' },
+              { value: 'b2b', label: 'B2B Only' },
+              { value: 'wholesale', label: 'Wholesale Only' },
+            ],
+            className: 'min-w-[240px]',
+          },
+          {
+            value: warehouseFilter,
+            onChange: setWarehouseFilter,
+            options: [
+              { value: 'all', label: 'All Warehouses' },
+              ...warehouses.map((w: any) => ({
+                value: w.id.toString(),
+                label: w.name,
+              })),
+            ],
+            className: 'min-w-[240px]',
+          },
+        ]}
+      />
 
       {/* Channel Replenishment Table */}
       {channelReplenishment.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-              <ShoppingBag className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No channel replenishment needed</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
-              {searchQuery || channelFilter !== 'all' || warehouseFilter !== 'all'
-                ? 'Try adjusting your search or filter criteria.'
-                : 'All channels have adequate inventory levels.'}
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={ShoppingBag}
+          title="No channel replenishment needed"
+          description={
+            searchQuery || channelFilter !== 'all' || warehouseFilter !== 'all'
+              ? 'Try adjusting your search or filter criteria.'
+              : 'All channels have adequate inventory levels.'
+          }
+        />
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">

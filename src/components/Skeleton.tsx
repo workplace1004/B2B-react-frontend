@@ -90,3 +90,39 @@ export const SkeletonPage = () => (
   </div>
 );
 
+export const SkeletonModal = () => (
+  <div className="animate-pulse">
+    {/* Modal Header */}
+    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+    </div>
+    
+    {/* Modal Body */}
+    <div className="px-6 py-6 space-y-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+        </div>
+      ))}
+    </div>
+    
+    {/* Modal Footer */}
+    <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+    </div>
+  </div>
+);
+
+export const SkeletonForm = ({ fields = 5 }: { fields?: number }) => (
+  <div className="space-y-4 animate-pulse">
+    {Array.from({ length: fields }).map((_, i) => (
+      <div key={i} className="space-y-2">
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+      </div>
+    ))}
+  </div>
+);
+

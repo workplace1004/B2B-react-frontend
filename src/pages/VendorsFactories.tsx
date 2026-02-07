@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import {
@@ -26,6 +27,7 @@ import {
 import { validators } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { ButtonWithWaves, CustomDropdown, DatePicker, ScrollIndicator, Input } from '../components/ui';
 import PhoneInput from '../components/PhoneInput';
 
 // Types
@@ -71,193 +73,8 @@ interface NegotiationNote {
   tags?: string[];
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  display: 'block',
-                  width: '100%',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Waves effect button component
-const ButtonWithWaves = ({ 
-  children, 
-  onClick, 
-  className = '',
-  disabled = false 
-}: { 
-  children: React.ReactNode; 
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-
-    const button = buttonRef.current;
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const id = Date.now();
-
-    setRipples((prev) => [...prev, { x, y, id }]);
-
-    setTimeout(() => {
-      setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
-    }, 600);
-
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <button
-      ref={buttonRef}
-      onClick={handleClick}
-      disabled={disabled}
-      className={`btn-primary-lg relative overflow-hidden ${className} ${disabled ? 'opacity-65 cursor-not-allowed pointer-events-none' : ''}`}
-    >
-      {children}
-      {ripples.map((ripple) => (
-        <span
-          key={ripple.id}
-          className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-          style={{
-            left: `${ripple.x}px`,
-            top: `${ripple.y}px`,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      ))}
-    </button>
-  );
-};
-
 export default function VendorsFactories() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -563,11 +380,11 @@ export default function VendorsFactories() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 pr-4 ::placeholder-[12px] text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="w-full md:w-48">
-            <CustomSelect
+            <CustomDropdown
               value={statusFilter}
               onChange={(value) => {
                 setStatusFilter(value);
@@ -596,12 +413,6 @@ export default function VendorsFactories() {
                 ? 'Try adjusting your search or filter criteria'
                 : 'Get started by adding your first vendor'}
             </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <ButtonWithWaves onClick={openModal}>
-                <Plus className="w-5 h-5" />
-                Add Vendor
-              </ButtonWithWaves>
-            )}
           </div>
         ) : (
           <>
@@ -874,6 +685,25 @@ function AddVendorModal({
   isLoading: boolean;
   isShowing: boolean;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isShowing) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isShowing, onClose]);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -935,12 +765,14 @@ function AddVendorModal({
       }`}
       onClick={onClose}
     >
-      <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]">
+        <div
+          ref={modalRef}
+          className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar transform transition-all duration-300 ${
+            isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add Vendor</h2>
           <button
@@ -954,41 +786,35 @@ function AddVendorModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Vendor Name <span className="text-red-500">*</span>
-              </label>
-              <input
+              <Input
+                label={
+                  <>
+                    Vendor Name <span className="text-red-500">*</span>
+                  </>
+                }
                 type="text"
                 value={formData.name}
                 onChange={(e) => {
                   setFormData({ ...formData, name: e.target.value });
                   if (errors.name) setErrors({ ...errors, name: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.name}
                 placeholder="Enter vendor name"
               />
-              {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email
-              </label>
-              <input
+              <Input
+                label="Email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value });
                   if (errors.email) setErrors({ ...errors, email: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.email}
                 placeholder="vendor@example.com"
               />
-              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
             </div>
 
             <div>
@@ -1007,88 +833,68 @@ function AddVendorModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Contact Name
-              </label>
-              <input
+              <Input
+                label="Contact Name"
                 type="text"
                 value={formData.contactName}
                 onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Primary contact name"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Address
-              </label>
-              <input
+              <Input
+                label="Address"
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Street address"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                City
-              </label>
-              <input
+              <Input
+                label="City"
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="City"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Country
-              </label>
-              <input
+              <Input
+                label="Country"
                 type="text"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Country"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Postal Code
-              </label>
-              <input
+              <Input
+                label="Postal Code"
                 type="text"
                 value={formData.postalCode}
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Postal code"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Lead Time (Days)
-              </label>
-              <input
+              <Input
+                label="Lead Time (Days)"
                 type="number"
                 value={formData.leadTimeDays}
                 onChange={(e) => {
                   setFormData({ ...formData, leadTimeDays: e.target.value });
                   if (errors.leadTimeDays) setErrors({ ...errors, leadTimeDays: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.leadTimeDays ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.leadTimeDays}
                 placeholder="30"
                 min="0"
               />
-              {errors.leadTimeDays && <p className="mt-1 text-sm text-red-500">{errors.leadTimeDays}</p>}
             </div>
 
             <div className="md:col-span-2">
@@ -1104,7 +910,7 @@ function AddVendorModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
             <button
               type="button"
               onClick={onClose}
@@ -1121,6 +927,12 @@ function AddVendorModal({
             </button>
           </div>
         </form>
+        <ScrollIndicator 
+          scrollableRef={modalRef} 
+          topOffset={73}
+          dependencies={[formData]}
+        />
+        </div>
       </div>
     </div>
   );
@@ -1140,6 +952,25 @@ function EditVendorModal({
   isLoading: boolean;
   isShowing: boolean;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isShowing) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isShowing, onClose]);
+
   const [formData, setFormData] = useState({
     name: vendor.name,
     email: vendor.email || '',
@@ -1201,12 +1032,14 @@ function EditVendorModal({
       }`}
       onClick={onClose}
     >
-      <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]">
+        <div
+          ref={modalRef}
+          className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar transform transition-all duration-300 ${
+            isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Vendor</h2>
           <button
@@ -1220,41 +1053,35 @@ function EditVendorModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Vendor Name <span className="text-red-500">*</span>
-              </label>
-              <input
+              <Input
+                label={
+                  <>
+                    Vendor Name <span className="text-red-500">*</span>
+                  </>
+                }
                 type="text"
                 value={formData.name}
                 onChange={(e) => {
                   setFormData({ ...formData, name: e.target.value });
                   if (errors.name) setErrors({ ...errors, name: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.name}
                 placeholder="Enter vendor name"
               />
-              {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email
-              </label>
-              <input
+              <Input
+                label="Email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value });
                   if (errors.email) setErrors({ ...errors, email: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.email}
                 placeholder="vendor@example.com"
               />
-              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
             </div>
 
             <div>
@@ -1273,88 +1100,68 @@ function EditVendorModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Contact Name
-              </label>
-              <input
+              <Input
+                label="Contact Name"
                 type="text"
                 value={formData.contactName}
                 onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Primary contact name"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Address
-              </label>
-              <input
+              <Input
+                label="Address"
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Street address"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                City
-              </label>
-              <input
+              <Input
+                label="City"
                 type="text"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="City"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Country
-              </label>
-              <input
+              <Input
+                label="Country"
                 type="text"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Country"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Postal Code
-              </label>
-              <input
+              <Input
+                label="Postal Code"
                 type="text"
                 value={formData.postalCode}
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Postal code"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Lead Time (Days)
-              </label>
-              <input
+              <Input
+                label="Lead Time (Days)"
                 type="number"
                 value={formData.leadTimeDays}
                 onChange={(e) => {
                   setFormData({ ...formData, leadTimeDays: e.target.value });
                   if (errors.leadTimeDays) setErrors({ ...errors, leadTimeDays: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.leadTimeDays ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.leadTimeDays}
                 placeholder="30"
                 min="0"
               />
-              {errors.leadTimeDays && <p className="mt-1 text-sm text-red-500">{errors.leadTimeDays}</p>}
             </div>
 
             <div className="md:col-span-2">
@@ -1387,6 +1194,12 @@ function EditVendorModal({
             </button>
           </div>
         </form>
+        <ScrollIndicator 
+          scrollableRef={modalRef} 
+          topOffset={73}
+          dependencies={[formData]}
+        />
+        </div>
       </div>
     </div>
   );
@@ -1472,6 +1285,25 @@ function PriceHistoryModal({
   isShowing: boolean;
   storageKey: string;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isShowing) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isShowing, onClose]);
+
   const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<PriceHistory | null>(null);
@@ -1554,12 +1386,14 @@ function PriceHistoryModal({
       }`}
       onClick={onClose}
     >
-      <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative max-w-5xl w-full mx-4 max-h-[90vh]">
+        <div
+          ref={modalRef}
+          className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar transform transition-all duration-300 ${
+            isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Price History</h2>
@@ -1670,6 +1504,12 @@ function PriceHistoryModal({
             </div>
           )}
         </div>
+        <ScrollIndicator 
+          scrollableRef={modalRef} 
+          topOffset={73}
+          dependencies={[priceHistory, searchQuery]}
+        />
+        </div>
 
         {/* Add/Edit Price Modal */}
         {(isAddModalOpen || editingPrice) && (
@@ -1701,6 +1541,22 @@ function AddEditPriceModal({
   onClose: () => void;
   onSubmit: (data: Omit<PriceHistory, 'id' | 'vendorId'> | Partial<PriceHistory>) => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
   const [formData, setFormData] = useState({
     productName: price?.productName || '',
     price: price?.price.toString() || '',
@@ -1744,10 +1600,12 @@ function AddEditPriceModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]">
+        <div
+          ref={modalRef}
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar"
+          onClick={(e) => e.stopPropagation()}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {price ? 'Edit Price History' : 'Add Price History'}
@@ -1763,23 +1621,22 @@ function AddEditPriceModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Product Name
-              </label>
-              <input
+              <Input
+                label="Product Name"
                 type="text"
                 value={formData.productName}
                 onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Product name (optional)"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Price <span className="text-red-500">*</span>
-              </label>
-              <input
+              <Input
+                label={
+                  <>
+                    Price <span className="text-red-500">*</span>
+                  </>
+                }
                 type="number"
                 step="0.01"
                 value={formData.price}
@@ -1787,20 +1644,17 @@ function AddEditPriceModal({
                   setFormData({ ...formData, price: e.target.value });
                   if (errors.price) setErrors({ ...errors, price: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.price ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.price}
                 placeholder="0.00"
                 min="0"
               />
-              {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Currency
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.currency}
                 onChange={(value) => setFormData({ ...formData, currency: value })}
                 options={[
@@ -1814,39 +1668,31 @@ function AddEditPriceModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Quantity
-              </label>
-              <input
+              <Input
+                label="Quantity"
                 type="number"
                 value={formData.quantity}
                 onChange={(e) => {
                   setFormData({ ...formData, quantity: e.target.value });
                   if (errors.quantity) setErrors({ ...errors, quantity: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.quantity ? 'border-red-500' : 'border-gray-300'
-                }`}
+                error={errors.quantity}
                 placeholder="Quantity (optional)"
                 min="0"
               />
-              {errors.quantity && <p className="mt-1 text-sm text-red-500">{errors.quantity}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Date <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.date}
-                onChange={(e) => {
-                  setFormData({ ...formData, date: e.target.value });
+                onChange={(date) => {
+                  setFormData({ ...formData, date: date || new Date().toISOString().split('T')[0] });
                   if (errors.date) setErrors({ ...errors, date: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.date ? 'border-red-500' : 'border-gray-300'
-                }`}
+                placeholder="Select date"
               />
               {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date}</p>}
             </div>
@@ -1881,6 +1727,12 @@ function AddEditPriceModal({
             </button>
           </div>
         </form>
+        <ScrollIndicator 
+          scrollableRef={modalRef} 
+          topOffset={73}
+          dependencies={[formData]}
+        />
+        </div>
       </div>
     </div>
   );
@@ -1898,6 +1750,7 @@ function NegotiationNotesModal({
   isShowing: boolean;
   storageKey: string;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState<NegotiationNote[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<NegotiationNote | null>(null);
@@ -2008,12 +1861,14 @@ function NegotiationNotesModal({
       }`}
       onClick={onClose}
     >
-      <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative max-w-5xl w-full mx-4 max-h-[90vh]">
+        <div
+          ref={modalRef}
+          className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar transform transition-all duration-300 ${
+            isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Negotiation Notes</h2>
@@ -2048,7 +1903,7 @@ function NegotiationNotesModal({
             </div>
             {allTags.length > 0 && (
               <div>
-                <CustomSelect
+                <CustomDropdown
                   value={tagFilter}
                   onChange={setTagFilter}
                   options={[
@@ -2124,24 +1979,30 @@ function NegotiationNotesModal({
             </div>
           )}
         </div>
-
-        {/* Add/Edit Note Modal */}
-        {(isAddModalOpen || editingNote) && (
-          <AddEditNoteModal
-            note={editingNote || undefined}
-            allTags={allTags}
-            onClose={() => {
-              setIsAddModalOpen(false);
-              setEditingNote(null);
-            }}
-            onSubmit={
-              editingNote
-                ? (data) => handleUpdateNote(editingNote.id!, data as Partial<NegotiationNote>)
-                : (data) => handleAddNote(data as Omit<NegotiationNote, 'id' | 'vendorId'>)
-            }
-          />
-        )}
+        <ScrollIndicator 
+          scrollableRef={modalRef} 
+          topOffset={73}
+          dependencies={[notes, searchQuery, tagFilter]}
+        />
+        </div>
       </div>
+
+      {/* Add/Edit Note Modal */}
+      {(isAddModalOpen || editingNote) && (
+        <AddEditNoteModal
+          note={editingNote || undefined}
+          allTags={allTags}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditingNote(null);
+          }}
+          onSubmit={
+            editingNote
+              ? (data) => handleUpdateNote(editingNote.id!, data as Partial<NegotiationNote>)
+              : (data) => handleAddNote(data as Omit<NegotiationNote, 'id' | 'vendorId'>)
+          }
+        />
+      )}
     </div>
   );
 }
@@ -2160,6 +2021,7 @@ function AddEditNoteModal({
     data: Omit<NegotiationNote, 'id' | 'vendorId'> | Partial<NegotiationNote>
   ) => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     title: note?.title || '',
     content: note?.content || '',
@@ -2217,10 +2079,12 @@ function AddEditNoteModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]">
+        <div
+          ref={modalRef}
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar"
+          onClick={(e) => e.stopPropagation()}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {note ? 'Edit Negotiation Note' : 'Add Negotiation Note'}
@@ -2235,38 +2099,34 @@ function AddEditNoteModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
+            <Input
+              label={
+                <>
+                  Title <span className="text-red-500">*</span>
+                </>
+              }
               type="text"
               value={formData.title}
               onChange={(e) => {
                 setFormData({ ...formData, title: e.target.value });
                 if (errors.title) setErrors({ ...errors, title: '' });
               }}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
-              }`}
+              error={errors.title}
               placeholder="Note title"
             />
-            {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Date <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <DatePicker
               value={formData.date}
-              onChange={(e) => {
-                setFormData({ ...formData, date: e.target.value });
+              onChange={(date) => {
+                setFormData({ ...formData, date: date || new Date().toISOString().split('T')[0] });
                 if (errors.date) setErrors({ ...errors, date: '' });
               }}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                errors.date ? 'border-red-500' : 'border-gray-300'
-              }`}
+              placeholder="Select date"
             />
             {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date}</p>}
           </div>
@@ -2312,7 +2172,7 @@ function AddEditNoteModal({
               ))}
             </div>
             <div className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
@@ -2322,7 +2182,8 @@ function AddEditNoteModal({
                     handleAddTag();
                   }
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                containerClassName="flex-1"
+                className="mb-0"
                 placeholder="Add tag and press Enter"
               />
               <button
@@ -2375,6 +2236,12 @@ function AddEditNoteModal({
             </button>
           </div>
         </form>
+        <ScrollIndicator 
+          scrollableRef={modalRef} 
+          topOffset={73}
+          dependencies={[formData]}
+        />
+        </div>
       </div>
     </div>
   );

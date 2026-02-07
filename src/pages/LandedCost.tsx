@@ -1,14 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import {
   DollarSign,
   X,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronDown,
-  Search,
   Calculator,
   Package,
   Ship,
@@ -17,9 +13,18 @@ import {
   Eye,
   Save,
   Download,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronDown,
 } from 'lucide-react';
 import { SkeletonPage } from '../components/Skeleton';
-import Breadcrumb from '../components/Breadcrumb';
+import {
+  PageHeader,
+  SummaryCard,
+  SearchInput,
+  CustomDropdown,
+  EmptyState,
+} from '../components/ui';
 
 // Types
 interface Order {
@@ -81,195 +86,6 @@ interface LandedCost {
   updatedAt?: string;
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  display: 'block',
-                  width: '100%',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Waves effect button component (unused)
-// Waves effect button component (unused)
-/*
-const ButtonWithWaves = ({ 
-  children, 
-  onClick, 
-  className = '',
-  disabled = false 
-}: { 
-  children: React.ReactNode; 
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-
-    const button = buttonRef.current;
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const id = Date.now();
-
-    setRipples((prev) => [...prev, { x, y, id }]);
-
-    setTimeout(() => {
-      setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
-    }, 600);
-
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <button
-      ref={buttonRef}
-      onClick={handleClick}
-      disabled={disabled}
-      className={`btn-primary-lg relative overflow-hidden ${className} ${disabled ? 'opacity-65 cursor-not-allowed pointer-events-none' : ''}`}
-    >
-      {children}
-      {ripples.map((ripple) => (
-        <span
-          key={ripple.id}
-          className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-          style={{
-            left: `${ripple.x}px`,
-            top: `${ripple.y}px`,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      ))}
-    </button>
-  );
-};
-*/
 
 export default function LandedCost() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -440,108 +256,66 @@ export default function LandedCost() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Landed Cost" />
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Landed Cost</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
-              Calculate and track landed costs per order including shipping, customs, and all logistics costs
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Landed Cost"
+        description="Calculate and track landed costs per order including shipping, customs, and all logistics costs"
+        breadcrumbPage="Landed Cost"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.total}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">With Landed Cost</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.withLandedCost}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <Calculator className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Landed Cost</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                ${summaryMetrics.totalLandedCostValue.toFixed(2)}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Average Landed Cost</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                ${summaryMetrics.averageLandedCost.toFixed(2)}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-        </div>
+        <SummaryCard
+          label="Total Orders"
+          value={summaryMetrics.total}
+          icon={Package}
+        />
+        <SummaryCard
+          label="With Landed Cost"
+          value={summaryMetrics.withLandedCost}
+          icon={Calculator}
+          iconBgColor="bg-green-100 dark:bg-green-900/30"
+          iconColor="text-green-600 dark:text-green-400"
+        />
+        <SummaryCard
+          label="Total Landed Cost"
+          value={`$${summaryMetrics.totalLandedCostValue.toFixed(2)}`}
+          icon={DollarSign}
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+        />
+        <SummaryCard
+          label="Average Landed Cost"
+          value={`$${summaryMetrics.averageLandedCost.toFixed(2)}`}
+          icon={TrendingUp}
+          iconBgColor="bg-orange-100 dark:bg-orange-900/30"
+          iconColor="text-orange-600 dark:text-orange-400"
+        />
       </div>
 
       {/* Search */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search by order number or customer name..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={(value) => {
+            setSearchQuery(value);
+            setCurrentPage(1);
+          }}
+          placeholder="Search by order number or customer name..."
+        />
       </div>
 
       {/* Orders Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         {paginatedOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-              <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No orders found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
-              {searchQuery
+          <EmptyState
+            icon={Package}
+            title="No orders found"
+            description={
+              searchQuery
                 ? 'Try adjusting your search criteria'
-                : 'No orders available for landed cost calculation'}
-            </p>
-          </div>
+                : 'No orders available for landed cost calculation'
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -912,7 +686,7 @@ function LandedCostCalculatorModal({
                 </div>
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">Currency:</span>
-                  <CustomSelect
+                  <CustomDropdown
                     value={formData.currency}
                     onChange={(value) => setFormData({ ...formData, currency: value })}
                     options={[

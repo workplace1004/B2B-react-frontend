@@ -1,146 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { List, DollarSign, Calculator, Plus, ChevronRight, ChevronDown, Package, Factory, Users, TrendingUp, X, Edit, Trash2, Save, Inbox, Search } from 'lucide-react';
+import { List, DollarSign, Calculator, Plus, ChevronRight, ChevronDown, Package, Factory, Users, TrendingUp, X, Edit, Trash2, Save, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
-// Custom Select Component with beautiful dropdown
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between transition-all ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-          } ${isOpen ? 'ring-2 ring-primary-500 border-primary-500' : ''} hover:border-gray-400 dark:hover:border-gray-500`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-          backgroundColor: 'transparent',
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl custom-dropdown-menu"
-          style={{
-            zIndex: 10000,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            maxHeight: '210px', // Approximately 5 items (42px per item)
-            overflowY: 'auto',
-            overflowX: 'hidden',
-          }}
-        >
-          {options.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
-            </div>
-          ) : (
-            options.map((option, index) => {
-              const isSelected = option.value === value;
-              
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${isSelected
-                      ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                    } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    display: 'block',
-                    width: '100%',
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 type TabType = 'bom' | 'cost-sheets' | 'margin-simulator';
 
@@ -751,7 +617,7 @@ function BOMModal({
                   {!bom && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product *</label>
-                      <CustomSelect
+                      <CustomDropdown
                         value={formData.productId > 0 ? formData.productId.toString() : ''}
                         onChange={(value) => setFormData({ ...formData, productId: parseInt(value) || 0 })}
                         options={products && products.length > 0 ? products.map((product) => ({
@@ -777,7 +643,7 @@ function BOMModal({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                    <CustomSelect
+                    <CustomDropdown
                       value={formData.status}
                       onChange={(value) => setFormData({ ...formData, status: value })}
                       options={[
@@ -831,7 +697,7 @@ function BOMModal({
                       onChange={(e) => setComponentForm({ ...componentForm, quantity: parseFloat(e.target.value) || 0 })}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                     />
-                    <CustomSelect
+                    <CustomDropdown
                       value={componentForm.unit}
                       onChange={(value) => setComponentForm({ ...componentForm, unit: value })}
                       options={[
@@ -1407,7 +1273,7 @@ function CostSheetModal({
                   {!costSheet && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product *</label>
-                      <CustomSelect
+                      <CustomDropdown
                         value={formData.productId > 0 ? formData.productId.toString() : ''}
                         onChange={(value) => setFormData({ ...formData, productId: parseInt(value) || 0 })}
                         options={products && products.length > 0 ? products.map((product) => ({
@@ -1657,7 +1523,7 @@ function MarginSimulatorSection() {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Select Product
         </label>
-        <CustomSelect
+        <CustomDropdown
           value={selectedProductId ? selectedProductId.toString() : ''}
           onChange={(value) => setSelectedProductId(value ? parseInt(value) : null)}
           options={products && products.length > 0 ? products.map((product: any) => ({

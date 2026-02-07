@@ -1,150 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Percent, Star, TrendingDown, Package, Search, X, DollarSign, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, Inbox } from 'lucide-react';
+import { Percent, Star, TrendingDown, Package, Search, X, DollarSign, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type TabType = 'featured' | 'markdown';
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-  disabled = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-  disabled?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 10001 : 'auto', position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between transition-all ${
-          error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-        } ${isOpen ? 'ring-2 ring-primary-500 border-primary-500' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}`}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && !disabled && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '210px',
-          }}
-        >
-          {options.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
-            </div>
-          ) : (
-            <div className="py-1">
-              {options.map((option, index) => {
-                const isSelected = option.value === value;
-                const isHighlighted = index === highlightedIndex;
-                
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                    onMouseLeave={() => setHighlightedIndex(-1)}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-all duration-200 relative ${
-                      isSelected
-                        ? 'bg-primary-600 text-white'
-                        : isHighlighted
-                          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
-                          : 'text-gray-900 dark:text-white hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400'
-                    }`}
-                    style={{
-                      transform: isHighlighted ? 'translateX(2px)' : 'translateX(0)',
-                    }}
-                  >
-                    {option.label}
-                    {isHighlighted && !isSelected && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-600 dark:bg-primary-400 rounded-r" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function AssortmentMerchandising() {
   const [activeTab, setActiveTab] = useState<TabType>('featured');
@@ -540,7 +404,7 @@ function MarkdownPlanningSection() {
             </div>
           </div>
           <div className="flex items-center gap-2 text-[14px]">
-            <CustomSelect
+            <CustomDropdown
               value={filterStatus}
               onChange={(value) => setFilterStatus(value)}
               options={[
@@ -1460,7 +1324,7 @@ function MarkdownPlanModal({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Reason
             </label>
-            <CustomSelect
+            <CustomDropdown
               value={formData.reason}
               onChange={(value) => setFormData({ ...formData, reason: value })}
               options={[

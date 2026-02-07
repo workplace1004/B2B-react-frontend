@@ -1,83 +1,14 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Wallet, TrendingUp, TrendingDown, DollarSign, ShoppingCart, ChevronDown } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, DollarSign, ShoppingCart } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import Chart from 'react-apexcharts';
+import { CustomDropdown } from '../components/ui';
 
 type PeriodType = 'month' | 'quarter' | 'year';
 type ViewType = 'overview' | 'budget' | 'commitments' | 'scenario';
-
-// Custom Dropdown Component
-interface CustomDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  className?: string;
-}
-
-function CustomDropdown({ value, onChange, options, className = '' }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div ref={dropdownRef} className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-2.5 border rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium flex items-center justify-between cursor-pointer transition-colors ${
-          isOpen
-            ? 'border-primary-500 ring-2 ring-primary-500/20'
-            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-        }`}
-      >
-        <span>{selectedOption?.label || value}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
-            isOpen ? 'transform rotate-180' : ''
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                option.value === value
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 
 interface CommitmentData {
   productId: number;

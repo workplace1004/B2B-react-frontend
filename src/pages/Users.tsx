@@ -1,11 +1,10 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
   Plus,
   Search,
   Filter,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Shield,
@@ -23,6 +22,7 @@ import {
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type TabType = 'role-based-access' | 'permissions';
 type PermissionCategory = 'inventory' | 'orders' | 'customers' | 'reports' | 'settings' | 'users' | 'purchasing' | 'warehouse';
@@ -45,161 +45,6 @@ interface Permission {
   action: PermissionAction;
   name: string;
   description: string;
-}
-
-// Custom Dropdown Component
-interface CustomDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-  className?: string;
-}
-
-function CustomDropdown({ value, onChange, options, placeholder, className = '' }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [openAbove, setOpenAbove] = useState(false);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  // Calculate dropdown position when opening or window changes
-  useEffect(() => {
-    const calculatePosition = () => {
-      if (isOpen && buttonRef.current) {
-        const rect = buttonRef.current.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        const dropdownHeight = 210; // maxHeight + some margin
-        
-        // If not enough space below but enough space above, open upward
-        if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-          setOpenAbove(true);
-        } else {
-          setOpenAbove(false);
-        }
-      }
-    };
-
-    calculatePosition();
-    
-    if (isOpen) {
-      window.addEventListener('resize', calculatePosition);
-      window.addEventListener('scroll', calculatePosition, true);
-      return () => {
-        window.removeEventListener('resize', calculatePosition);
-        window.removeEventListener('scroll', calculatePosition, true);
-      };
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={dropdownRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 10001 : 'auto', position: 'relative' }}>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 text-[14px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between transition-all ${
-          isOpen ? 'ring-2 ring-primary-500 border-primary-500' : 'border-gray-300 dark:border-gray-600'
-        } hover:border-gray-400 dark:hover:border-gray-500`}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder || 'Select...'}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isOpen && openAbove ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className={`absolute w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden custom-dropdown-menu ${
-            openAbove ? 'mb-1 bottom-full' : 'mt-1 top-full'
-          }`}
-          style={{
-            zIndex: 10001,
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '210px',
-          }}
-        >
-          <div className="py-1">
-            {options.map((option, index) => {
-              const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
-              
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  onMouseLeave={() => setHighlightedIndex(-1)}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-all duration-200 relative ${
-                    isSelected
-                      ? 'bg-primary-600 text-white'
-                      : isHighlighted
-                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
-                        : 'text-gray-900 dark:text-white hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400'
-                  }`}
-                  style={{
-                    transform: isHighlighted ? 'translateX(2px)' : 'translateX(0)',
-                  }}
-                >
-                  {option.label}
-                  {isHighlighted && !isSelected && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-600 dark:bg-primary-400 rounded-r" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default function Users() {

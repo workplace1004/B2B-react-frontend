@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
@@ -6,7 +6,6 @@ import {
   Search,
   Filter,
   Download,
-  ChevronDown,
   FileText,
   Globe,
   Calendar,
@@ -26,6 +25,7 @@ import {
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type TabType = 'vat-reports' | 'region-rules';
 
@@ -78,73 +78,6 @@ export default function TaxesVAT() {
         {activeTab === 'vat-reports' && <VATReportsSection />}
         {activeTab === 'region-rules' && <RegionRulesSection />}
       </div>
-    </div>
-  );
-}
-
-// Custom Dropdown Component
-interface CustomDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-  className?: string;
-}
-
-function CustomDropdown({ value, onChange, options, placeholder, className }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div ref={dropdownRef} className={`relative ${className || ''}`}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm flex items-center justify-between cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${isOpen
-          ? 'border-primary-500 ring-2 ring-primary-500/20'
-          : 'hover:border-gray-400 dark:hover:border-gray-500'
-          }`}
-      >
-        <span>{selectedOption?.label || placeholder || 'Select...'}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''
-            }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${option.value === value
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -899,7 +832,15 @@ function RegionRulesSection() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/tax-defaults/${id}`);
+      try {
+        const response = await api.delete(`/tax-defaults/${id}`);
+        return response.data;
+      } catch (error: any) {
+        // Log full error for debugging
+        console.error('Error deleting tax rule:', error);
+        console.error('Error response:', error.response);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tax-defaults'] });
@@ -909,7 +850,11 @@ function RegionRulesSection() {
     },
     onError: (error: any) => {
       console.error('Error deleting tax rule:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete tax rule');
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Failed to delete tax rule. It may be in use by other records.';
+      toast.error(errorMessage);
     },
   });
 

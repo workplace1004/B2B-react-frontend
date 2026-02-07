@@ -1,14 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import {
   ShoppingCart,
-  ChevronsLeft,
-  ChevronsRight,
   Edit,
   AlertTriangle,
-  ChevronDown,
-  Search,
   Package,
   Clock,
   Eye,
@@ -18,7 +14,14 @@ import {
   Truck,
 } from 'lucide-react';
 import { SkeletonPage } from '../components/Skeleton';
-import Breadcrumb from '../components/Breadcrumb';
+import {
+  PageHeader,
+  TabsNavigation,
+  SummaryCard,
+  SearchAndFilterBar,
+  Pagination,
+  EmptyState,
+} from '../components/ui';
 
 // Types
 interface Order {
@@ -129,133 +132,6 @@ interface PartialShipmentItem {
   productId: number;
   quantity: number;
 }
-
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  display: 'block',
-                  width: '100%',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
 
 
 export default function Orders() {
@@ -450,264 +326,142 @@ export default function Orders() {
     return <SkeletonPage />;
   }
 
+  const tabs = [
+    { id: 'inbox', label: 'Order Inbox', icon: ShoppingCart },
+    { id: 'allocation-rules', label: 'Allocation Rules', icon: Settings },
+    { id: 'pre-orders', label: 'Pre-Orders', icon: Calendar },
+    { id: 'backorders', label: 'Backorders', icon: AlertTriangle },
+    { id: 'partial-shipments', label: 'Partial Shipments', icon: Truck },
+  ];
+
   return (
     <div>
-      <Breadcrumb currentPage="Orders" />
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Orders</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
-              Manage DTC, POS, and B2B orders with allocation rules and fulfillment tracking
-            </p>
-          </div>
-        </div>
-            </div>
+      <PageHeader
+        title="Orders"
+        description="Manage DTC, POS, and B2B orders with allocation rules and fulfillment tracking"
+        breadcrumbPage="Orders"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-                    <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Total Orders</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.total}
-              </p>
-                    </div>
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <ShoppingCart className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-                    <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">DTC</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {summaryMetrics.dtc}
-              </p>
-                    </div>
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-                  <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">POS</p>
-              <p className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-                {summaryMetrics.pos}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <ShoppingCart className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-                    </div>
-                  </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-                  <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">B2B</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">
-                {summaryMetrics.b2b}
-              </p>
-                          </div>
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <User className="w-5 h-5 text-green-600 dark:text-green-400" />
-                          </div>
-                          </div>
-                          </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Pending</p>
-              <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                {summaryMetrics.pending}
-              </p>
-                      </div>
-            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                    </div>
-          </div>
-                  </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-                  <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Pre-Orders</p>
-              <p className="text-xl font-bold text-orange-600 dark:text-orange-400 mt-1">
-                {summaryMetrics.preOrderCount}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-                  </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-                  <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Backorders</p>
-              <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">
-                {summaryMetrics.backorderCount}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
-                  </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-                  <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Partial Shipments</p>
-              <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
-                {summaryMetrics.partialShipmentCount}
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-              <Truck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-                  </div>
-                </div>
-              </div>
+        <SummaryCard
+          label="Total Orders"
+          value={summaryMetrics.total}
+          icon={ShoppingCart}
+          className="p-4"
+          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+        />
+        <SummaryCard
+          label="DTC"
+          value={summaryMetrics.dtc}
+          icon={Package}
+          className="p-4"
+          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+          valueColor="text-blue-600 dark:text-blue-400"
+        />
+        <SummaryCard
+          label="POS"
+          value={summaryMetrics.pos}
+          icon={ShoppingCart}
+          className="p-4"
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+          valueColor="text-purple-600 dark:text-purple-400"
+        />
+        <SummaryCard
+          label="B2B"
+          value={summaryMetrics.b2b}
+          icon={User}
+          className="p-4"
+          iconBgColor="bg-green-100 dark:bg-green-900/30"
+          iconColor="text-green-600 dark:text-green-400"
+          valueColor="text-green-600 dark:text-green-400"
+        />
+        <SummaryCard
+          label="Pending"
+          value={summaryMetrics.pending}
+          icon={Clock}
+          className="p-4"
+          iconBgColor="bg-yellow-100 dark:bg-yellow-900/30"
+          iconColor="text-yellow-600 dark:text-yellow-400"
+          valueColor="text-yellow-600 dark:text-yellow-400"
+        />
+        <SummaryCard
+          label="Pre-Orders"
+          value={summaryMetrics.preOrderCount}
+          icon={Calendar}
+          className="p-4"
+          iconBgColor="bg-orange-100 dark:bg-orange-900/30"
+          iconColor="text-orange-600 dark:text-orange-400"
+          valueColor="text-orange-600 dark:text-orange-400"
+        />
+        <SummaryCard
+          label="Backorders"
+          value={summaryMetrics.backorderCount}
+          icon={AlertTriangle}
+          className="p-4"
+          iconBgColor="bg-red-100 dark:bg-red-900/30"
+          iconColor="text-red-600 dark:text-red-400"
+          valueColor="text-red-600 dark:text-red-400"
+        />
+        <SummaryCard
+          label="Partial Shipments"
+          value={summaryMetrics.partialShipmentCount}
+          icon={Truck}
+          className="p-4"
+          iconBgColor="bg-indigo-100 dark:bg-indigo-900/30"
+          iconColor="text-indigo-600 dark:text-indigo-400"
+          valueColor="text-indigo-600 dark:text-indigo-400"
+        />
+      </div>
 
       {/* Tabs */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex -mb-px overflow-x-auto">
-                <button
-              onClick={() => {
-                setActiveTab('inbox');
-                setCurrentPage(1);
-              }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'inbox'
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4" />
-                Order Inbox
-              </div>
-                </button>
-                <button
-              onClick={() => {
-                setActiveTab('allocation-rules');
-                setCurrentPage(1);
-              }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'allocation-rules'
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Allocation Rules
-              </div>
-                </button>
-            <button
-              onClick={() => {
-                setActiveTab('pre-orders');
-                setCurrentPage(1);
-              }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'pre-orders'
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Pre-Orders
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('backorders');
-                setCurrentPage(1);
-              }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'backorders'
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Backorders
-              </div>
-            </button>
-              <button
-              onClick={() => {
-                setActiveTab('partial-shipments');
-                setCurrentPage(1);
-              }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'partial-shipments'
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Truck className="w-4 h-4" />
-                Partial Shipments
-              </div>
-              </button>
-          </nav>
-            </div>
+        <TabsNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabId) => {
+            setActiveTab(tabId as typeof activeTab);
+            setCurrentPage(1);
+          }}
+          className="border-b border-gray-200 dark:border-gray-700"
+        />
 
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'inbox' && (
             <div className="space-y-6">
               {/* Search and Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-2 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search by order number, customer name..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  />
-                    </div>
-                    <div>
-                      <CustomSelect
-                    value={channelFilter}
-                    onChange={(value) => {
+              <SearchAndFilterBar
+                searchValue={searchQuery}
+                onSearchChange={(value) => {
+                  setSearchQuery(value);
+                  setCurrentPage(1);
+                }}
+                searchPlaceholder="Search by order number, customer name..."
+                filters={[
+                  {
+                    value: channelFilter,
+                    onChange: (value) => {
                       setChannelFilter(value);
                       setCurrentPage(1);
-                    }}
-                    options={[
+                    },
+                    options: [
                       { value: 'all', label: 'All Channels' },
                       { value: 'DTC', label: 'DTC' },
                       { value: 'POS', label: 'POS' },
                       { value: 'B2B', label: 'B2B' },
-                    ]}
-                      />
-                    </div>
-                  <div>
-                    <CustomSelect
-                    value={statusFilter}
-                    onChange={(value) => {
+                    ],
+                  },
+                  {
+                    value: statusFilter,
+                    onChange: (value) => {
                       setStatusFilter(value);
                       setCurrentPage(1);
-                    }}
-                    options={[
+                    },
+                    options: [
                       { value: 'all', label: 'All Status' },
                       { value: 'PENDING', label: 'Pending' },
                       { value: 'CONFIRMED', label: 'Confirmed' },
@@ -716,21 +470,21 @@ export default function Orders() {
                       { value: 'FULFILLED', label: 'Fulfilled' },
                       { value: 'SHIPPED', label: 'Shipped' },
                       { value: 'DELIVERED', label: 'Delivered' },
-                    ]}
-                  />
-                </div>
-                  </div>
+                    ],
+                  },
+                ]}
+                className="mb-6"
+              />
 
               {/* Orders Table */}
               {paginatedOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <ShoppingCart className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    {searchQuery || channelFilter !== 'all' || statusFilter !== 'all'
-                      ? 'No matching orders found'
-                      : 'No orders found'}
-                  </p>
-                          </div>
+                <EmptyState
+                  icon={ShoppingCart}
+                  title={searchQuery || channelFilter !== 'all' || statusFilter !== 'all'
+                    ? 'No matching orders found'
+                    : 'No orders found'}
+                  description=""
+                />
               ) : (
                 <>
                   <div className="overflow-x-auto">
@@ -836,48 +590,13 @@ export default function Orders() {
                   </div>
 
                   {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                        <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalOrders)}</span> of{' '}
-                        <span className="font-medium">{totalOrders}</span> orders
-                  </div>
-                      <div className="flex items-center gap-2">
-                <button
-                          onClick={() => setCurrentPage(1)}
-                          disabled={currentPage === 1}
-                          className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronsLeft className="w-4 h-4" />
-                </button>
-                <button
-                          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                          disabled={currentPage === 1}
-                          className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronDown className="w-4 h-4 rotate-90" />
-                        </button>
-                        <span className="text-sm text-gray-700 dark:text-gray-300 px-4">
-                          Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                          onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                          disabled={currentPage === totalPages}
-                          className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronDown className="w-4 h-4 -rotate-90" />
-                        </button>
-                        <button
-                          onClick={() => setCurrentPage(totalPages)}
-                          disabled={currentPage === totalPages}
-                          className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronsRight className="w-4 h-4" />
-                </button>
-              </div>
-          </div>
-                  )}
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalOrders}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                  />
                 </>
               )}
         </div>

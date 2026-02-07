@@ -10,11 +10,16 @@ import {
   TrendingDown,
   BarChart3,
   Download,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
-import Breadcrumb from '../components/Breadcrumb';
+import {
+  PageHeader,
+  TabsNavigation,
+  CustomDropdown,
+  SummaryCard,
+} from '../components/ui';
 import Chart from 'react-apexcharts';
 
 type TabType = 'sku-style-collection' | 'channel-warehouse-region' | 'seasonality' | 'anomaly' | 'accuracy';
@@ -32,38 +37,17 @@ export default function ForecastingAI() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Forecasting (AI)" />
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Forecasting (AI)</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">AI-powered demand forecasting and analytics</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Forecasting (AI)"
+        description="AI-powered demand forecasting and analytics"
+        breadcrumbPage="Forecasting (AI)"
+      />
 
-      {/* Tabs Navigation */}
-      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <TabsNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(tabId) => setActiveTab(tabId as TabType)}
+      />
 
       {/* Tab Content */}
       <div>
@@ -96,6 +80,11 @@ function ForecastBySKUStyleCollectionSection() {
     });
     return () => observer.disconnect();
   }, []);
+
+  // Reset selected item when forecast type changes
+  useEffect(() => {
+    setSelectedItem('all');
+  }, [forecastType]);
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['products', 'forecast'],
@@ -217,49 +206,46 @@ function ForecastBySKUStyleCollectionSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Forecast Type</label>
-            <select
+            <CustomDropdown
               value={forecastType}
-              onChange={(e) => setForecastType(e.target.value as 'SKU' | 'Style' | 'Collection')}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="SKU">By SKU</option>
-              <option value="Style">By Style</option>
-              <option value="Collection">By Collection</option>
-            </select>
+              onChange={(value) => setForecastType(value as 'SKU' | 'Style' | 'Collection')}
+              options={[
+                { value: 'SKU', label: 'By SKU' },
+                { value: 'Style', label: 'By Style' },
+                { value: 'Collection', label: 'By Collection' },
+              ]}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {forecastType === 'SKU' ? 'Select SKU' : forecastType === 'Style' ? 'Select Style' : 'Select Collection'}
             </label>
-            <select
+            <CustomDropdown
               value={selectedItem}
-              onChange={(e) => setSelectedItem(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">All {forecastType}s</option>
-              {forecastType === 'SKU' && products.slice(0, 20).map((p: any) => (
-                <option key={p.id} value={p.id}>{p.sku} - {p.name}</option>
-              ))}
-              {forecastType === 'Style' && (Array.from(new Set(products.map((p: any) => p.style).filter(Boolean))) as string[]).slice(0, 20).map((style: string) => (
-                <option key={style} value={style}>{style}</option>
-              ))}
-              {forecastType === 'Collection' && collections.slice(0, 20).map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={setSelectedItem}
+              options={[
+                { value: 'all', label: `All ${forecastType}s` },
+                ...(forecastType === 'SKU' 
+                  ? products.slice(0, 20).map((p: any) => ({ value: p.id.toString(), label: `${p.sku} - ${p.name}` }))
+                  : forecastType === 'Style'
+                  ? (Array.from(new Set(products.map((p: any) => p.style).filter(Boolean))) as string[]).slice(0, 20).map((style: string) => ({ value: style, label: style }))
+                  : collections.slice(0, 20).map((c: any) => ({ value: c.id.toString(), label: c.name }))
+                ),
+              ]}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Range</label>
-            <select
+            <CustomDropdown
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="1m">1 Month</option>
-              <option value="3m">3 Months</option>
-              <option value="6m">6 Months</option>
-              <option value="1y">1 Year</option>
-            </select>
+              onChange={setTimeRange}
+              options={[
+                { value: '1m', label: '1 Month' },
+                { value: '3m', label: '3 Months' },
+                { value: '6m', label: '6 Months' },
+                { value: '1y', label: '1 Year' },
+              ]}
+            />
           </div>
         </div>
       </div>
@@ -268,7 +254,7 @@ function ForecastBySKUStyleCollectionSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Demand Forecast - {forecastType}
+            Demand Forecast - {forecastType === 'SKU' ? 'SKU' : forecastType === 'Style' ? 'Style' : 'Collection'}
           </h3>
           <div className="flex items-center gap-2">
             <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
@@ -431,15 +417,16 @@ function ForecastByChannelWarehouseRegionSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center gap-4">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Forecast Dimension:</label>
-          <select
+          <CustomDropdown
             value={forecastDimension}
-            onChange={(e) => setForecastDimension(e.target.value as 'Channel' | 'Warehouse' | 'Region')}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-          >
-            <option value="Channel">By Channel</option>
-            <option value="Warehouse">By Warehouse</option>
-            <option value="Region">By Region</option>
-          </select>
+            onChange={(value) => setForecastDimension(value as 'Channel' | 'Warehouse' | 'Region')}
+            options={[
+              { value: 'Channel', label: 'By Channel' },
+              { value: 'Warehouse', label: 'By Warehouse' },
+              { value: 'Region', label: 'By Region' },
+            ]}
+            className="min-w-[200px]"
+          />
         </div>
       </div>
 
@@ -652,15 +639,16 @@ function AnomalyDetectionSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center gap-4">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Anomaly Type:</label>
-          <select
+          <CustomDropdown
             value={anomalyType}
-            onChange={(e) => setAnomalyType(e.target.value as 'all' | 'spikes' | 'drops')}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-          >
-            <option value="all">All Anomalies</option>
-            <option value="spikes">Spikes Only</option>
-            <option value="drops">Drops Only</option>
-          </select>
+            onChange={(value) => setAnomalyType(value as 'all' | 'spikes' | 'drops')}
+            options={[
+              { value: 'all', label: 'All Anomalies' },
+              { value: 'spikes', label: 'Spikes Only' },
+              { value: 'drops', label: 'Drops Only' },
+            ]}
+            className="min-w-[180px]"
+          />
         </div>
       </div>
 
@@ -822,47 +810,25 @@ function ForecastAccuracySection() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Average Accuracy</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {(avgAccuracy * 100).toFixed(1)}%
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Mean Absolute % Error</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {avgMAPE.toFixed(1)}%
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Root Mean Square Error</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {avgRMSE.toFixed(0)}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
+        <SummaryCard
+          label="Average Accuracy"
+          value={`${(avgAccuracy * 100).toFixed(1)}%`}
+          icon={TrendingUp}
+        />
+        <SummaryCard
+          label="Mean Absolute % Error"
+          value={`${avgMAPE.toFixed(1)}%`}
+          icon={BarChart3}
+          iconBgColor="bg-yellow-100 dark:bg-yellow-900/30"
+          iconColor="text-yellow-600 dark:text-yellow-400"
+        />
+        <SummaryCard
+          label="Root Mean Square Error"
+          value={avgRMSE.toFixed(0)}
+          icon={Brain}
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+        />
       </div>
 
       {/* Accuracy Chart */}

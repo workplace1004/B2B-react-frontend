@@ -1,11 +1,11 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Globe,
   Search,
   Filter,
   RefreshCw,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   TrendingUp,
@@ -21,9 +21,11 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
+import api from '../lib/api';
+import { CustomDropdown, DeleteModal } from '../components/ui';
+import { SkeletonStatsCard, SkeletonTable, SkeletonForm } from '../components/Skeleton';
 
 type TabType = 'fx-rates' | 'market-settings';
-type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'CAD' | 'AUD' | 'CHF' | 'CNY' | 'INR' | 'BRL' | 'MXN' | 'ZAR';
 
 export default function MultiCurrencyFX() {
   const [activeTab, setActiveTab] = useState<TabType>('fx-rates');
@@ -78,72 +80,6 @@ export default function MultiCurrencyFX() {
   );
 }
 
-// Custom Dropdown Component
-interface CustomDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}
-
-function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm flex items-center justify-between cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${isOpen
-          ? 'border-primary-500 ring-2 ring-primary-500/20'
-          : 'hover:border-gray-400 dark:hover:border-gray-500'
-          }`}
-      >
-        <span>{selectedOption?.label || placeholder || 'Select...'}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''
-            }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden max-h-[200px] overflow-y-auto">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${option.value === value
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // FX Rates Section
 function FXRatesSection() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,73 +88,52 @@ function FXRatesSection() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const queryClient = useQueryClient();
 
-  // Common currencies
-  const currencies: { code: CurrencyCode; name: string; symbol: string }[] = [
-    { code: 'USD', name: 'US Dollar', symbol: '$' },
-    { code: 'EUR', name: 'Euro', symbol: '€' },
-    { code: 'GBP', name: 'British Pound', symbol: '£' },
-    { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
-    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
-    { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
-    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
-    { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-    { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
-    { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
-    { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
-  ];
-
-  // Load FX rates from localStorage or generate mock data
-  const [fxRates, setFxRates] = useState<any[]>(() => {
-    const saved = localStorage.getItem('fx-rates');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Generate initial rates
-    const rates: any[] = [];
-    const baseDate = new Date();
-    currencies.forEach((currency) => {
-      if (currency.code !== 'USD') {
-        // Mock exchange rates (in real app, these would come from an API)
-        const rate = 0.5 + Math.random() * 2; // Random rate between 0.5 and 2.5
-        const previousRate = rate * (0.95 + Math.random() * 0.1); // Previous rate with small variation
-        const change = rate - previousRate;
-        const changePercent = (change / previousRate) * 100;
-
-        rates.push({
-          id: `rate-${currency.code}`,
-          fromCurrency: 'USD',
-          toCurrency: currency.code,
-          rate,
-          previousRate,
-          change,
-          changePercent,
-          lastUpdated: baseDate.toISOString(),
-          source: 'Manual',
-        });
+  // Fetch currencies from API
+  const { data: currenciesData, isLoading: currenciesLoading } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/currencies');
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+        return [];
       }
-    });
-    return rates;
+    },
   });
 
-  // Save FX rates to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('fx-rates', JSON.stringify(fxRates));
-  }, [fxRates]);
+  const currencies = currenciesData || [];
+
+  // Fetch FX rates from API
+  const { data: fxRatesData, isLoading: fxRatesLoading, refetch: refetchFxRates } = useQuery({
+    queryKey: ['fx-rates', baseCurrency],
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/fx-rates?baseCurrency=${baseCurrency}`);
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching FX rates:', error);
+        return [];
+      }
+    },
+  });
+
+  const fxRates = fxRatesData || [];
 
   // Filter rates
   const filteredRates = useMemo(() => {
     let filtered = fxRates.filter((rate: any) => rate.fromCurrency === baseCurrency);
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((rate: any) =>
-        rate.toCurrency.toLowerCase().includes(query) ||
-        currencies.find((c) => c.code === rate.toCurrency)?.name.toLowerCase().includes(query)
-      );
-    }
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter((rate: any) =>
+          rate.toCurrency.toLowerCase().includes(query) ||
+          currencies.find((c: any) => c.code === rate.toCurrency)?.name.toLowerCase().includes(query)
+        );
+      }
 
     // Sort by currency code
     return filtered.sort((a: any, b: any) => a.toCurrency.localeCompare(b.toCurrency));
@@ -252,37 +167,24 @@ function FXRatesSection() {
 
   const handleRefreshRates = async () => {
     setIsRefreshing(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Update rates with small random variations
-    setFxRates((prevRates: any[]) =>
-      prevRates.map((rate: any) => {
-        if (rate.fromCurrency === baseCurrency) {
-          const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
-          const newRate = rate.rate * (1 + variation);
-          const change = newRate - rate.rate;
-          const changePercent = (change / rate.rate) * 100;
-
-          return {
-            ...rate,
-            previousRate: rate.rate,
-            rate: newRate,
-            change,
-            changePercent,
-            lastUpdated: new Date().toISOString(),
-          };
-        }
-        return rate;
-      })
-    );
-
-    setIsRefreshing(false);
-    toast.success('FX rates updated successfully!');
+    try {
+      const response = await api.post('/fx-rates/refresh', { baseCurrency });
+      if (response.data) {
+        // Invalidate and refetch FX rates
+        await queryClient.invalidateQueries({ queryKey: ['fx-rates'] });
+        await refetchFxRates();
+        toast.success('FX rates updated successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error refreshing FX rates:', error);
+      toast.error(error.response?.data?.message || 'Failed to refresh FX rates');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const getCurrencyInfo = (code: string) => {
-    return currencies.find((c) => c.code === code) || { code, name: code, symbol: code };
+    return currencies.find((c: any) => c.code === code) || { code, name: code, symbol: code };
   };
 
   const getChangeColor = (change: number) => {
@@ -296,6 +198,31 @@ function FXRatesSection() {
     if (change < 0) return TrendingDown;
     return ArrowUpDown;
   };
+
+  if (currenciesLoading || fxRatesLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Summary Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatsCard key={i} />
+          ))}
+        </div>
+        
+        {/* Filters Skeleton */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 animate-pulse">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full sm:max-w-md"></div>
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-64"></div>
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+          </div>
+        </div>
+        
+        {/* Table Skeleton */}
+        <SkeletonTable rows={10} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -377,7 +304,7 @@ function FXRatesSection() {
               <CustomDropdown
                 value={baseCurrency}
                 onChange={setBaseCurrency}
-                options={currencies.map((c) => ({
+                options={currencies.map((c: any) => ({
                   value: c.code,
                   label: `${c.code} - ${c.name}`,
                 }))}
@@ -618,18 +545,18 @@ function FXRatesSection() {
 interface FXRateDetailsModalProps {
   rate: any;
   onClose: () => void;
-  currencies: { code: CurrencyCode; name: string; symbol: string }[];
+  currencies: any[];
 }
 
 function FXRateDetailsModal({ rate, onClose, currencies }: FXRateDetailsModalProps) {
   if (!rate) return null;
 
-  const fromCurrencyInfo = currencies.find((c) => c.code === rate.fromCurrency) || {
+  const fromCurrencyInfo = currencies.find((c: any) => c.code === rate.fromCurrency) || {
     code: rate.fromCurrency,
     name: rate.fromCurrency,
     symbol: rate.fromCurrency,
   };
-  const toCurrencyInfo = currencies.find((c) => c.code === rate.toCurrency) || {
+  const toCurrencyInfo = currencies.find((c: any) => c.code === rate.toCurrency) || {
     code: rate.toCurrency,
     name: rate.toCurrency,
     symbol: rate.toCurrency,
@@ -814,47 +741,39 @@ function MarketCurrencySettingsSection() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const queryClient = useQueryClient();
 
-  // Common markets/regions
-  const markets: { code: string; name: string; region: string }[] = [
-    { code: 'US', name: 'United States', region: 'North America' },
-    { code: 'GB', name: 'United Kingdom', region: 'Europe' },
-    { code: 'EU', name: 'European Union', region: 'Europe' },
-    { code: 'CA', name: 'Canada', region: 'North America' },
-    { code: 'AU', name: 'Australia', region: 'Oceania' },
-    { code: 'JP', name: 'Japan', region: 'Asia' },
-    { code: 'CN', name: 'China', region: 'Asia' },
-    { code: 'IN', name: 'India', region: 'Asia' },
-    { code: 'BR', name: 'Brazil', region: 'South America' },
-    { code: 'MX', name: 'Mexico', region: 'North America' },
-    { code: 'ZA', name: 'South Africa', region: 'Africa' },
-  ];
-
-  // Load market currency settings from localStorage
-  const [marketSettings, setMarketSettings] = useState<any[]>(() => {
-    const saved = localStorage.getItem('market-currency-settings');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Generate default settings
-    return markets.map((market) => ({
-      id: `market-${market.code}`,
-      marketCode: market.code,
-      marketName: market.name,
-      region: market.region,
-      defaultCurrency: market.code === 'US' ? 'USD' : market.code === 'GB' ? 'GBP' : market.code === 'EU' ? 'EUR' : 'USD',
-      supportedCurrencies: market.code === 'US' ? ['USD'] : market.code === 'GB' ? ['GBP', 'EUR'] : market.code === 'EU' ? ['EUR', 'GBP'] : ['USD'],
-      isActive: true,
-      autoUpdateRates: true,
-      roundingPrecision: 2,
-      createdAt: new Date().toISOString(),
-    }));
+  // Fetch markets from API
+  const { data: marketsData, isLoading: marketsLoading } = useQuery({
+    queryKey: ['markets'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/markets');
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching markets:', error);
+        return [];
+      }
+    },
   });
 
-  // Save market settings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('market-currency-settings', JSON.stringify(marketSettings));
-  }, [marketSettings]);
+  const markets = marketsData || [];
+
+  // Fetch market currency settings from API
+  const { data: marketSettingsData, isLoading: marketSettingsLoading, refetch: refetchMarketSettings } = useQuery({
+    queryKey: ['market-currency-settings'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/market-currency-settings');
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching market currency settings:', error);
+        return [];
+      }
+    },
+  });
+
+  const marketSettings = marketSettingsData || [];
 
   // Filter markets
   const filteredMarkets = useMemo(() => {
@@ -898,30 +817,74 @@ function MarketCurrencySettingsSection() {
     };
   }, [filteredMarkets]);
 
-  const handleCreateMarket = (marketData: any) => {
-    const newMarket = {
-      id: `market-${Date.now()}`,
-      ...marketData,
-      createdAt: new Date().toISOString(),
-    };
-    setMarketSettings([...marketSettings, newMarket]);
-    setShowCreateModal(false);
-    toast.success('Market currency setting created successfully!');
+  const handleCreateMarket = async (marketData: any) => {
+    try {
+      const response = await api.post('/market-currency-settings', marketData);
+      if (response.data) {
+        await queryClient.invalidateQueries({ queryKey: ['market-currency-settings'] });
+        await refetchMarketSettings();
+        setShowCreateModal(false);
+        toast.success('Market currency setting created successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error creating market setting:', error);
+      toast.error(error.response?.data?.message || 'Failed to create market currency setting');
+    }
   };
 
-  const handleUpdateMarket = (marketId: string, updates: any) => {
-    setMarketSettings(marketSettings.map((m: any) =>
-      m.id === marketId ? { ...m, ...updates, updatedAt: new Date().toISOString() } : m
-    ));
-    toast.success('Market currency setting updated successfully!');
+  const handleUpdateMarket = async (marketId: string, updates: any) => {
+    try {
+      const response = await api.put(`/market-currency-settings/${marketId}`, updates);
+      if (response.data) {
+        await queryClient.invalidateQueries({ queryKey: ['market-currency-settings'] });
+        await refetchMarketSettings();
+        toast.success('Market currency setting updated successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error updating market setting:', error);
+      toast.error(error.response?.data?.message || 'Failed to update market currency setting');
+    }
   };
 
-  const handleDeleteMarket = (marketId: string) => {
-    setMarketSettings(marketSettings.filter((m: any) => m.id !== marketId));
-    setShowDeleteModal(false);
-    setMarketToDelete(null);
-    toast.success('Market currency setting deleted successfully!');
+  const handleDeleteMarket = async (marketId: string) => {
+    try {
+      const response = await api.delete(`/market-currency-settings/${marketId}`);
+      if (response.data) {
+        await queryClient.invalidateQueries({ queryKey: ['market-currency-settings'] });
+        await refetchMarketSettings();
+        setShowDeleteModal(false);
+        setMarketToDelete(null);
+        toast.success('Market currency setting deleted successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error deleting market setting:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete market currency setting');
+    }
   };
+
+  if (marketsLoading || marketSettingsLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Summary Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonStatsCard key={i} />
+          ))}
+        </div>
+        
+        {/* Filters Skeleton */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 animate-pulse">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full sm:max-w-md"></div>
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+          </div>
+        </div>
+        
+        {/* Table Skeleton */}
+        <SkeletonTable rows={10} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -1006,15 +969,6 @@ function MarketCurrencySettingsSection() {
                 ? 'Try adjusting your search criteria.'
                 : 'No market currency settings configured. Create a new market setting to get started.'}
             </p>
-            {!searchQuery && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Create First Market
-              </button>
-            )}
           </div>
         </div>
       ) : (
@@ -1264,8 +1218,10 @@ function MarketCurrencySettingsSection() {
 
       {/* Delete Market Modal */}
       {showDeleteModal && marketToDelete && (
-        <DeleteMarketModal
-          market={marketToDelete}
+        <DeleteModal
+          title="Delete Market Currency Setting"
+          message="Are you sure you want to delete the market currency setting for"
+          itemName={`${marketToDelete.marketName} (${marketToDelete.marketCode})`}
           onClose={() => {
             setShowDeleteModal(false);
             setMarketToDelete(null);
@@ -1294,7 +1250,22 @@ function CreateMarketModal({ onClose, onCreate }: CreateMarketModalProps) {
   const [autoUpdateRates, setAutoUpdateRates] = useState(true);
   const [roundingPrecision, setRoundingPrecision] = useState(2);
 
-  const currencyOptions = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'ZAR'];
+  // Fetch currencies for dropdown options
+  const { data: currencyOptionsData, isLoading: isLoadingCurrencies } = useQuery({
+    queryKey: ['currencies', 'options'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/currencies');
+        const currencies = response.data?.data || response.data || [];
+        return currencies.map((c: any) => c.code);
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+        return ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'ZAR'];
+      }
+    },
+  });
+
+  const currencyOptions = currencyOptionsData || ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'ZAR'];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1354,79 +1325,84 @@ function CreateMarketModal({ onClose, onCreate }: CreateMarketModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Market Code <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={marketCode}
-                onChange={(e) => setMarketCode(e.target.value)}
-                className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                placeholder="e.g., US, GB, EU"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Market Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={marketName}
-                onChange={(e) => setMarketName(e.target.value)}
-                className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                placeholder="e.g., United States"
-                required
-              />
-            </div>
+        {isLoadingCurrencies ? (
+          <div className="p-6">
+            <SkeletonForm fields={6} />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Region
-            </label>
-            <input
-              type="text"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              placeholder="e.g., North America, Europe, Asia"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Default Currency
-            </label>
-            <div className="min-w-[240px]">
-              <CustomDropdown
-                value={defaultCurrency}
-                onChange={setDefaultCurrency}
-                options={currencyOptions.map((c) => ({ value: c, label: c }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Supported Currencies
-            </label>
-            <div className="grid grid-cols-4 gap-2 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
-              {currencyOptions.map((currency) => (
-                <label key={currency} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={supportedCurrencies.includes(currency)}
-                    onChange={() => toggleCurrency(currency)}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{currency}</span>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Market Code <span className="text-red-500">*</span>
                 </label>
-              ))}
+                <input
+                  type="text"
+                  value={marketCode}
+                  onChange={(e) => setMarketCode(e.target.value)}
+                  className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="e.g., US, GB, EU"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Market Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={marketName}
+                  onChange={(e) => setMarketName(e.target.value)}
+                  className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="e.g., United States"
+                  required
+                />
+              </div>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Region
+              </label>
+              <input
+                type="text"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full px-4 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="e.g., North America, Europe, Asia"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Default Currency
+              </label>
+              <div className="min-w-[240px]">
+                <CustomDropdown
+                  value={defaultCurrency}
+                  onChange={setDefaultCurrency}
+                  options={currencyOptions.map((c: string) => ({ value: c, label: c }))}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Supported Currencies
+              </label>
+              <div className="grid grid-cols-4 gap-2 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
+                {currencyOptions.map((currency: string) => (
+                  <label key={currency} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={supportedCurrencies.includes(currency)}
+                      onChange={() => toggleCurrency(currency)}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{currency}</span>
+                  </label>
+                ))}
+              </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               Selected: {supportedCurrencies.join(', ')}
             </p>
@@ -1496,6 +1472,7 @@ function CreateMarketModal({ onClose, onCreate }: CreateMarketModalProps) {
             </div>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
@@ -1627,15 +1604,6 @@ function MarketViewModal({ market, onClose }: MarketViewModalProps) {
             </div>
           )}
         </div>
-
-        <div className="sticky text-[14px] bottom-0 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -1659,7 +1627,22 @@ function MarketEditModal({ market, onClose, onUpdate }: MarketEditModalProps) {
   const [autoUpdateRates, setAutoUpdateRates] = useState(market.autoUpdateRates);
   const [roundingPrecision, setRoundingPrecision] = useState(market.roundingPrecision || 2);
 
-  const currencyOptions = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'ZAR'];
+  // Fetch currencies for dropdown options
+  const { data: currencyOptionsData } = useQuery({
+    queryKey: ['currencies', 'options'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/currencies');
+        const currencies = response.data?.data || response.data || [];
+        return currencies.map((c: any) => c.code);
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+        return ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'ZAR'];
+      }
+    },
+  });
+
+  const currencyOptions = currencyOptionsData || ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'ZAR'];
 
   const handleSave = () => {
     onUpdate(market.id, {
@@ -1709,7 +1692,7 @@ function MarketEditModal({ market, onClose, onUpdate }: MarketEditModalProps) {
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-3">
           {/* Status Section */}
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
             <div className="flex items-center justify-between">
@@ -1784,7 +1767,7 @@ function MarketEditModal({ market, onClose, onUpdate }: MarketEditModalProps) {
                 <CustomDropdown
                   value={defaultCurrency}
                   onChange={setDefaultCurrency}
-                  options={currencyOptions.map((c) => ({ value: c, label: c }))}
+                  options={currencyOptions.map((c: string) => ({ value: c, label: c }))}
                 />
               </div>
             </div>
@@ -1795,7 +1778,7 @@ function MarketEditModal({ market, onClose, onUpdate }: MarketEditModalProps) {
               Supported Currencies
             </label>
             <div className="grid grid-cols-4 gap-2 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
-              {currencyOptions.map((currency) => (
+              {currencyOptions.map((currency: string) => (
                 <label key={currency} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1864,7 +1847,7 @@ function MarketEditModal({ market, onClose, onUpdate }: MarketEditModalProps) {
           </div>
         </div>
 
-        <div className="sticky bottom-0 text-[14px] pt-0 px-6 pb-4 flex justify-end gap-2">
+        <div className="sticky bottom-0 text-[14px] pt-0 px-6 pb-4 flex justify-end gap-2 z-50">
           <div className='flex items-center text-[14px] gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 w-full justify-end'>
             <button
               onClick={onClose}
@@ -1885,54 +1868,3 @@ function MarketEditModal({ market, onClose, onUpdate }: MarketEditModalProps) {
   );
 }
 
-// Delete Market Modal Component
-interface DeleteMarketModalProps {
-  market: any;
-  onClose: () => void;
-  onConfirm: () => void;
-}
-
-function DeleteMarketModal({ market, onClose, onConfirm }: DeleteMarketModalProps) {
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">Delete Market Currency Setting</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Are you sure you want to delete the market currency setting for <span className="font-medium text-gray-900 dark:text-white">{market.marketName} ({market.marketCode})</span>? This action cannot be undone.
-          </p>
-        </div>
-
-        <div className="sticky text-[14px] bottom-0 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

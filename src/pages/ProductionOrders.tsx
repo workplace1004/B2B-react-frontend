@@ -1,19 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import {
   ClipboardList,
   Plus,
   X,
-  ChevronsLeft,
-  ChevronsRight,
   Edit,
   Trash2,
-  ChevronDown,
-  Search,
   Building2,
   CheckCircle2,
+  Search,
   Clock,
   FileText,
   TrendingUp,
@@ -22,9 +19,17 @@ import {
   Factory,
   Layers,
   Hash,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronDown,
 } from 'lucide-react';
 import { SkeletonPage } from '../components/Skeleton';
-import Breadcrumb from '../components/Breadcrumb';
+import { ButtonWithWaves } from '../components/ui';
+import {
+  PageHeader,
+  CustomDropdown,
+  DatePicker,
+} from '../components/ui';
 
 // Types
 interface ProductionOrder {
@@ -152,192 +157,6 @@ interface Batch {
   notes?: string;
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  display: 'block',
-                  width: '100%',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Waves effect button component
-const ButtonWithWaves = ({ 
-  children, 
-  onClick, 
-  className = '',
-  disabled = false 
-}: { 
-  children: React.ReactNode; 
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-
-    const button = buttonRef.current;
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const id = Date.now();
-
-    setRipples((prev) => [...prev, { x, y, id }]);
-
-    setTimeout(() => {
-      setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
-    }, 600);
-
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <button
-      ref={buttonRef}
-      onClick={handleClick}
-      disabled={disabled}
-      className={`btn-primary-lg relative overflow-hidden ${className} ${disabled ? 'opacity-65 cursor-not-allowed pointer-events-none' : ''}`}
-    >
-      {children}
-      {ripples.map((ripple) => (
-        <span
-          key={ripple.id}
-          className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-          style={{
-            left: `${ripple.x}px`,
-            top: `${ripple.y}px`,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      ))}
-    </button>
-  );
-};
 
 export default function ProductionOrders() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -367,8 +186,8 @@ export default function ProductionOrders() {
 
   // Handle body scroll lock when modal is open
   useEffect(() => {
-    const modalsOpen = isModalOpen || isEditModalOpen || isViewModalOpen || 
-                      isApprovalModalOpen || isWIPTrackingModalOpen || isBatchModalOpen;
+    const modalsOpen = isModalOpen || isEditModalOpen || isViewModalOpen ||
+      isApprovalModalOpen || isWIPTrackingModalOpen || isBatchModalOpen;
     if (modalsOpen) {
       document.body.classList.add('modal-open');
       requestAnimationFrame(() => {
@@ -390,8 +209,8 @@ export default function ProductionOrders() {
       setIsWIPTrackingModalShowing(false);
       setIsBatchModalShowing(false);
     }
-  }, [isModalOpen, isEditModalOpen, isViewModalOpen, 
-      isApprovalModalOpen, isWIPTrackingModalOpen, isBatchModalOpen]);
+  }, [isModalOpen, isEditModalOpen, isViewModalOpen,
+    isApprovalModalOpen, isWIPTrackingModalOpen, isBatchModalOpen]);
 
   // Fetch purchase orders (using suppliers endpoint as placeholder)
   const { data, isLoading } = useQuery({
@@ -460,7 +279,7 @@ export default function ProductionOrders() {
   // Filter and search orders
   const filteredOrders = useMemo(() => {
     if (!productionOrders) return [];
-    
+
     let filtered = productionOrders;
 
     // Filter by search query
@@ -504,13 +323,13 @@ export default function ProductionOrders() {
 
     const total = productionOrders.length;
     const draft = productionOrders.filter((o) => o.status === PurchaseOrderStatus.DRAFT).length;
-    const confirmed = productionOrders.filter((o) => 
+    const confirmed = productionOrders.filter((o) =>
       o.status === PurchaseOrderStatus.CONFIRMED || o.status === PurchaseOrderStatus.SENT
     ).length;
-    const inProgress = productionOrders.filter((o) => 
+    const inProgress = productionOrders.filter((o) =>
       o.status === PurchaseOrderStatus.PARTIALLY_RECEIVED
     ).length;
-    const completed = productionOrders.filter((o) => 
+    const completed = productionOrders.filter((o) =>
       o.status === PurchaseOrderStatus.RECEIVED
     ).length;
 
@@ -605,19 +424,21 @@ export default function ProductionOrders() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Production Orders" />
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Production Orders</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
-              Manage production orders linked to BOMs, track approvals, WIP, and batch/lot traceability
-            </p>
+      <div className='flex items-center justify-between'>
+        <PageHeader
+          title="Production Orders"
+          description="Manage production orders linked to BOMs, track approvals, WIP, and batch/lot traceability"
+          breadcrumbPage="Production Orders"
+        />
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <ButtonWithWaves className='text-[14px]' onClick={openModal}>
+                <Plus className="w-4 h-4" />
+                Create PO
+              </ButtonWithWaves>
+            </div>
           </div>
-          <ButtonWithWaves onClick={openModal}>
-            <Plus className="w-5 h-5" />
-            Create PO
-          </ButtonWithWaves>
         </div>
       </div>
 
@@ -707,11 +528,11 @@ export default function ProductionOrders() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full pl-10 pr-4 ::placeholder-[12px] text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="w-full md:w-48">
-            <CustomSelect
+            <CustomDropdown
               value={statusFilter}
               onChange={(value) => {
                 setStatusFilter(value);
@@ -744,12 +565,6 @@ export default function ProductionOrders() {
                 ? 'Try adjusting your search or filter criteria'
                 : 'Get started by creating your first production order'}
             </p>
-            {!searchQuery && statusFilter === 'all' && (
-              <ButtonWithWaves onClick={openModal}>
-                <Plus className="w-5 h-5" />
-                Create PO
-              </ButtonWithWaves>
-            )}
           </div>
         ) : (
           <>
@@ -1054,15 +869,13 @@ function CreatePOModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
-        isShowing ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isShowing ? 'opacity-100' : 'opacity-0'
+        }`}
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
@@ -1081,7 +894,7 @@ function CreatePOModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Supplier <span className="text-red-500">*</span>
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.supplierId}
                 onChange={(value) => {
                   setFormData({ ...formData, supplierId: value });
@@ -1101,7 +914,7 @@ function CreatePOModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 BOM <span className="text-red-500">*</span>
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.bomId}
                 onChange={(value) => {
                   setFormData({ ...formData, bomId: value });
@@ -1121,11 +934,10 @@ function CreatePOModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Expected Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.expectedDate}
-                onChange={(e) => setFormData({ ...formData, expectedDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => setFormData({ ...formData, expectedDate: date || '' })}
+                placeholder="Select expected date"
               />
             </div>
 
@@ -1133,7 +945,7 @@ function CreatePOModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Currency
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.currency}
                 onChange={(value) => setFormData({ ...formData, currency: value })}
                 options={[
@@ -1185,7 +997,7 @@ function CreatePOModal({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-[14px]">
             <button
               type="button"
               onClick={onClose}
@@ -1225,15 +1037,13 @@ function ViewOrderModal({
 }) {
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
-        isShowing ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isShowing ? 'opacity-100' : 'opacity-0'
+        }`}
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
@@ -1451,15 +1261,13 @@ function ApprovalsModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
-        isShowing ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isShowing ? 'opacity-100' : 'opacity-0'
+        }`}
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
@@ -1642,9 +1450,8 @@ function AddEditApprovalModal({
                   setFormData({ ...formData, approverName: e.target.value });
                   if (errors.approverName) setErrors({ ...errors, approverName: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.approverName ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.approverName ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Approver name"
               />
               {errors.approverName && <p className="mt-1 text-sm text-red-500">{errors.approverName}</p>}
@@ -1654,7 +1461,7 @@ function AddEditApprovalModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status <span className="text-red-500">*</span>
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.status}
                 onChange={(value) => setFormData({ ...formData, status: value as 'PENDING' | 'APPROVED' | 'REJECTED' })}
                 options={[
@@ -1676,9 +1483,8 @@ function AddEditApprovalModal({
                   setFormData({ ...formData, level: e.target.value });
                   if (errors.level) setErrors({ ...errors, level: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.level ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.level ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="1"
                 min="1"
               />
@@ -1689,16 +1495,13 @@ function AddEditApprovalModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Date <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.date}
-                onChange={(e) => {
-                  setFormData({ ...formData, date: e.target.value });
+                onChange={(date) => {
+                  setFormData({ ...formData, date: date || '' });
                   if (errors.date) setErrors({ ...errors, date: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.date ? 'border-red-500' : 'border-gray-300'
-                }`}
+                placeholder="Select date"
               />
               {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date}</p>}
             </div>
@@ -1843,15 +1646,13 @@ function WIPTrackingModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
-        isShowing ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isShowing ? 'opacity-100' : 'opacity-0'
+        }`}
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
@@ -2087,9 +1888,8 @@ function AddEditWIPModal({
                   setFormData({ ...formData, stage: e.target.value });
                   if (errors.stage) setErrors({ ...errors, stage: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.stage ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.stage ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="e.g., Cutting, Sewing, Finishing"
               />
               {errors.stage && <p className="mt-1 text-sm text-red-500">{errors.stage}</p>}
@@ -2106,9 +1906,8 @@ function AddEditWIPModal({
                   setFormData({ ...formData, quantity: e.target.value });
                   if (errors.quantity) setErrors({ ...errors, quantity: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.quantity ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.quantity ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="0"
                 min="0"
               />
@@ -2126,9 +1925,8 @@ function AddEditWIPModal({
                   setFormData({ ...formData, completedQty: e.target.value });
                   if (errors.completedQty) setErrors({ ...errors, completedQty: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.completedQty ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.completedQty ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="0"
                 min="0"
               />
@@ -2139,7 +1937,7 @@ function AddEditWIPModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status <span className="text-red-500">*</span>
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.status}
                 onChange={(value) => setFormData({ ...formData, status: value as 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'ON_HOLD' })}
                 options={[
@@ -2155,11 +1953,10 @@ function AddEditWIPModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Start Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => setFormData({ ...formData, startDate: date || '' })}
+                placeholder="Select start date"
               />
             </div>
 
@@ -2167,11 +1964,10 @@ function AddEditWIPModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Completion Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.completionDate}
-                onChange={(e) => setFormData({ ...formData, completionDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => setFormData({ ...formData, completionDate: date || '' })}
+                placeholder="Select completion date"
               />
             </div>
 
@@ -2317,15 +2113,13 @@ function BatchModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
-        isShowing ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isShowing ? 'opacity-100' : 'opacity-0'
+        }`}
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
@@ -2558,9 +2352,8 @@ function AddEditBatchModal({
                   setFormData({ ...formData, batchNumber: e.target.value });
                   if (errors.batchNumber) setErrors({ ...errors, batchNumber: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.batchNumber ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.batchNumber ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="BATCH-001"
               />
               {errors.batchNumber && <p className="mt-1 text-sm text-red-500">{errors.batchNumber}</p>}
@@ -2590,9 +2383,8 @@ function AddEditBatchModal({
                   setFormData({ ...formData, quantity: e.target.value });
                   if (errors.quantity) setErrors({ ...errors, quantity: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.quantity ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.quantity ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="0"
                 min="0"
               />
@@ -2603,7 +2395,7 @@ function AddEditBatchModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status <span className="text-red-500">*</span>
               </label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.status}
                 onChange={(value) => setFormData({ ...formData, status: value as 'PENDING' | 'COMPLETED' | 'IN_PRODUCTION' | 'QUARANTINED' })}
                 options={[
@@ -2619,11 +2411,10 @@ function AddEditBatchModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Production Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.productionDate}
-                onChange={(e) => setFormData({ ...formData, productionDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => setFormData({ ...formData, productionDate: date || '' })}
+                placeholder="Select production date"
               />
             </div>
 
@@ -2631,11 +2422,10 @@ function AddEditBatchModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Expiry Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.expiryDate}
-                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => setFormData({ ...formData, expiryDate: date || '' })}
+                placeholder="Select expiry date"
               />
             </div>
 

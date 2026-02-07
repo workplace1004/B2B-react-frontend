@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { FileText, Receipt, Plus, Search, X, Edit, Trash2, Eye, Download, Send, ChevronDown, Inbox, Package, Calendar, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
+import { FileText, Receipt, Plus, Search, X, Edit, Trash2, Eye, Download, Send, ChevronDown,  Package, Calendar, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type TabType = 'quote-builder' | 'proforma-invoices';
 
@@ -59,205 +60,6 @@ export default function QuotesProformas() {
   );
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
-
-  // Calculate dropdown position
-  const calculateDropdownPosition = () => {
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const dropdownHeight = Math.min(400, options.length * 42 + 8); // Approximate height
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      
-      // Open upward if not enough space below, otherwise open downward
-      const openUpward = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
-      
-      // Calculate left position to keep dropdown aligned with button
-      let left = rect.left;
-      const viewportWidth = window.innerWidth;
-      const dropdownWidth = rect.width;
-      
-      // Ensure dropdown doesn't go off-screen
-      if (left + dropdownWidth > viewportWidth) {
-        left = viewportWidth - dropdownWidth - 16;
-      }
-      if (left < 16) {
-        left = 16;
-      }
-      
-      setDropdownPosition({
-        top: openUpward ? Math.max(16, rect.top - dropdownHeight - 4) : Math.min(rect.bottom + 4, viewportHeight - dropdownHeight - 16),
-        left: left,
-        width: dropdownWidth,
-      });
-    }
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        selectRef.current && !selectRef.current.contains(event.target as Node) &&
-        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef.current && !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      calculateDropdownPosition();
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('resize', calculateDropdownPosition);
-      window.addEventListener('scroll', calculateDropdownPosition, true);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        window.removeEventListener('resize', calculateDropdownPosition);
-        window.removeEventListener('scroll', calculateDropdownPosition, true);
-      };
-    }
-  }, [isOpen, options.length]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-  // Debug logging
-  if (value && !selectedOption) {
-    console.log('CustomSelect - value not found in options. Value:', value, 'Options:', options.map(o => o.value));
-  }
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <>
-      <div ref={selectRef} className={`relative ${className}`}>
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={() => {
-            if (!isOpen) {
-              calculateDropdownPosition();
-            }
-            setIsOpen(!isOpen);
-          }}
-          onKeyDown={handleKeyDown}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between bg-white transition-all ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-            } ${isOpen ? 'ring-2 ring-primary-500 border-primary-500' : ''} hover:border-gray-400 dark:hover:border-gray-500`}
-          style={{
-            padding: '0.532rem 0.6rem 0.532rem 1.2rem',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            lineHeight: 1.6,
-          }}
-        >
-          <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-          <ChevronDown
-            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          />
-        </button>
-      </div>
-
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-[10000]" onClick={() => setIsOpen(false)} />
-          <div
-            ref={dropdownRef}
-            className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden custom-dropdown-menu"
-            style={{
-              zIndex: 10001,
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`,
-              width: `${Math.max(dropdownPosition.width || 200, 200)}px`,
-              minWidth: '200px',
-              maxHeight: '400px',
-              overflowY: 'auto',
-            }}
-          >
-          {options.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
-            </div>
-          ) : (
-            options.map((option, index) => {
-              const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex && !isSelected;
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${isSelected
-                    ? 'bg-blue-500 text-white font-medium'
-                    : isHighlighted
-                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: isSelected ? 500 : 400,
-                    display: 'block',
-                    width: '100%',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
-            })
-          )}
-          </div>
-        </>
-      )}
-    </>
-  );
-};
 
 // Quote Builder Section Component
 function QuoteBuilderSection() {
@@ -339,7 +141,7 @@ function QuoteBuilderSection() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <CustomSelect
+              <CustomDropdown
                 value={statusFilter}
                 onChange={(value) => setStatusFilter(value)}
                 options={[
@@ -844,7 +646,7 @@ function QuoteModal({ quote, onClose, onSave }: { quote?: any; onClose: () => vo
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer *</label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.customerId}
                 onChange={(value) => setFormData({ ...formData, customerId: value })}
                 options={(customersData || []).map((c: any) => ({ value: c.id.toString(), label: c.name }))}
@@ -1051,7 +853,7 @@ function QuoteModal({ quote, onClose, onSave }: { quote?: any; onClose: () => vo
                       return (
                         <tr key={index}>
                           <td className="px-4 py-3">
-                            <CustomSelect
+                            <CustomDropdown
                               value={productIdValue}
                               onChange={(value) => {
                                 console.log('onChange called with value:', value, 'type:', typeof value);
@@ -1289,7 +1091,7 @@ function ProformaInvoicesSection() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <CustomSelect
+              <CustomDropdown
                 value={statusFilter}
                 onChange={(value) => setStatusFilter(value)}
                 options={[
@@ -1795,7 +1597,7 @@ function ProformaInvoiceModal({ invoice, onClose, onSave }: { invoice?: any; onC
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer *</label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.customerId}
                 onChange={(value) => setFormData({ ...formData, customerId: value })}
                 options={(customersData || []).map((c: any) => ({ value: c.id.toString(), label: c.name }))}
@@ -1805,7 +1607,7 @@ function ProformaInvoiceModal({ invoice, onClose, onSave }: { invoice?: any; onC
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quote (Optional)</label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.quoteId}
                 onChange={(value) => setFormData({ ...formData, quoteId: value })}
                 options={(quotesData || []).map((q: any) => ({ value: q.id.toString(), label: `Quote ${q.quoteNumber || q.id}` }))}
@@ -2007,7 +1809,7 @@ function ProformaInvoiceModal({ invoice, onClose, onSave }: { invoice?: any; onC
                         return (
                           <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-4 py-3">
-                              <CustomSelect
+                              <CustomDropdown
                                 value={line.productId}
                                 onChange={(value) => handleLineChange(index, 'productId', value)}
                                 options={(productsData || []).map((p: any) => ({ value: p.id.toString(), label: `${p.name} (${p.sku})` }))}
@@ -2017,7 +1819,7 @@ function ProformaInvoiceModal({ invoice, onClose, onSave }: { invoice?: any; onC
                             </td>
                             <td className="px-4 py-3">
                               {product?.sizes && product.sizes.length > 0 ? (
-                                <CustomSelect
+                                <CustomDropdown
                                   value={line.size || ''}
                                   onChange={(value) => handleLineChange(index, 'size', value)}
                                   options={product.sizes.map((size: string) => ({ value: size, label: size }))}
@@ -2036,7 +1838,7 @@ function ProformaInvoiceModal({ invoice, onClose, onSave }: { invoice?: any; onC
                             </td>
                             <td className="px-4 py-3">
                               {product?.colors && product.colors.length > 0 ? (
-                                <CustomSelect
+                                <CustomDropdown
                                   value={line.color || ''}
                                   onChange={(value) => handleLineChange(index, 'color', value)}
                                   options={product.colors.map((color: string) => ({ value: color, label: color }))}

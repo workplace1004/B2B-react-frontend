@@ -1,10 +1,7 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Search,
-  Filter,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Settings,
@@ -19,8 +16,15 @@ import {
   Clock,
   Database,
   MapPin,
+  Search,
+  Filter,
 } from 'lucide-react';
-import Breadcrumb from '../components/Breadcrumb';
+import api from '../lib/api';
+import {
+  PageHeader,
+  TabsNavigation,
+  CustomDropdown,
+} from '../components/ui';
 
 type TabType = 'mapping' | 'sync-logs';
 type SyncStatus = 'success' | 'failed' | 'in-progress' | 'pending';
@@ -36,39 +40,17 @@ export default function AccountingIntegrations() {
 
   return (
     <div>
-      <Breadcrumb currentPage="Accounting Integrations" />
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[24px] font-bold text-gray-900 dark:text-white">Accounting Integrations</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
-              Visma/eAccounting mapping and sync logs management
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Accounting Integrations"
+        description="Visma/eAccounting mapping and sync logs management"
+        breadcrumbPage="Accounting Integrations"
+      />
 
-      {/* Tabs Navigation */}
-      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8" aria-label="Tabs">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <TabsNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(tabId) => setActiveTab(tabId as TabType)}
+      />
 
       {/* Tab Content */}
       <div>
@@ -79,142 +61,6 @@ export default function AccountingIntegrations() {
   );
 }
 
-// Custom Dropdown Component
-interface CustomDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}
-
-function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
-        setIsOpen(false);
-      }
-    };
-
-    // Calculate position based on available space and button position
-    const calculatePosition = () => {
-      if (!buttonRef.current) return;
-      
-      const buttonRect = buttonRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - buttonRect.bottom;
-      const spaceAbove = buttonRect.top;
-      const estimatedItemHeight = 40; // Approximate height per option
-      const menuHeight = Math.min(options.length * estimatedItemHeight, 200); // Max 200px
-      const menuWidth = buttonRect.width;
-      const padding = 4; // Gap between button and menu
-      
-      // Use fixed positioning to escape modal overflow
-      const style: React.CSSProperties = {
-        position: 'fixed',
-        width: `${menuWidth}px`,
-        left: `${buttonRect.left}px`,
-        zIndex: 9999,
-      };
-      
-      // Determine if we should open upward or downward
-      // Open upward if:
-      // 1. Not enough space below AND more space above, OR
-      // 2. Space above is significantly more than space below
-      const shouldOpenUpward = (spaceBelow < menuHeight + padding && spaceAbove > spaceBelow) || 
-                               (spaceAbove > spaceBelow + 50);
-      
-      if (shouldOpenUpward) {
-        // Position above the button
-        const bottomPosition = window.innerHeight - buttonRect.top + padding;
-        style.bottom = `${bottomPosition}px`;
-        style.maxHeight = `${Math.min(spaceAbove - padding, 200)}px`;
-      } else {
-        // Position below the button
-        style.top = `${buttonRect.bottom + padding}px`;
-        style.maxHeight = `${Math.min(spaceBelow - padding, 200)}px`;
-      }
-      
-      setMenuStyle(style);
-    };
-
-    // Calculate position immediately
-    calculatePosition();
-
-    // Add event listener with a slight delay to avoid immediate closure when opening
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-      // Recalculate after a brief moment to ensure accurate positioning
-      calculatePosition();
-    }, 10);
-
-    // Recalculate on scroll or resize
-    window.addEventListener('scroll', calculatePosition, true);
-    window.addEventListener('resize', calculatePosition);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', calculatePosition, true);
-      window.removeEventListener('resize', calculatePosition);
-    };
-  }, [isOpen, options.length]);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm flex items-center justify-between cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${isOpen
-            ? 'border-primary-500 ring-2 ring-primary-500/20'
-            : 'hover:border-gray-400 dark:hover:border-gray-500'
-          }`}
-      >
-        <span>{selectedOption?.label || placeholder || 'Select...'}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''
-            }`}
-        />
-      </button>
-
-      {isOpen && createPortal(
-        <div 
-          ref={menuRef}
-          className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden overflow-y-auto"
-          style={menuStyle}
-        >
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${option.value === value
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
 
 // Visma/eAccounting Mapping Section
 function VismaMappingSection() {
@@ -227,82 +73,55 @@ function VismaMappingSection() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const queryClient = useQueryClient();
 
-  // Common accounting fields
-  const accountingFields = [
-    { id: 'customer', label: 'Customer', type: 'entity' },
-    { id: 'supplier', label: 'Supplier', type: 'entity' },
-    { id: 'product', label: 'Product', type: 'entity' },
-    { id: 'invoice', label: 'Invoice', type: 'document' },
-    { id: 'credit-note', label: 'Credit Note', type: 'document' },
-    { id: 'payment', label: 'Payment', type: 'transaction' },
-    { id: 'tax-code', label: 'Tax Code', type: 'reference' },
-    { id: 'account', label: 'Account', type: 'reference' },
-    { id: 'cost-center', label: 'Cost Center', type: 'reference' },
-    { id: 'project', label: 'Project', type: 'reference' },
-  ];
-
-  // Visma/eAccounting fields
-  const vismaFields = [
-    { id: 'customer-id', label: 'Customer ID', category: 'customer' },
-    { id: 'customer-name', label: 'Customer Name', category: 'customer' },
-    { id: 'supplier-id', label: 'Supplier ID', category: 'supplier' },
-    { id: 'supplier-name', label: 'Supplier Name', category: 'supplier' },
-    { id: 'product-code', label: 'Product Code', category: 'product' },
-    { id: 'product-name', label: 'Product Name', category: 'product' },
-    { id: 'invoice-number', label: 'Invoice Number', category: 'invoice' },
-    { id: 'invoice-date', label: 'Invoice Date', category: 'invoice' },
-    { id: 'invoice-amount', label: 'Invoice Amount', category: 'invoice' },
-    { id: 'tax-amount', label: 'Tax Amount', category: 'invoice' },
-    { id: 'account-code', label: 'Account Code', category: 'account' },
-    { id: 'tax-code', label: 'Tax Code', category: 'tax' },
-  ];
-
-  // Load mappings from localStorage
-  const [mappings, setMappings] = useState<any[]>(() => {
-    const saved = localStorage.getItem('visma-mappings');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Default mappings
-    return [
-      {
-        id: 1,
-        name: 'Customer Mapping',
-        sourceField: 'customer',
-        targetField: 'customer-id',
-        status: 'active' as MappingStatus,
-        syncDirection: 'bidirectional',
-        transformation: 'none',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Invoice Mapping',
-        sourceField: 'invoice',
-        targetField: 'invoice-number',
-        status: 'active' as MappingStatus,
-        syncDirection: 'export',
-        transformation: 'none',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: 'Product Mapping',
-        sourceField: 'product',
-        targetField: 'product-code',
-        status: 'active' as MappingStatus,
-        syncDirection: 'bidirectional',
-        transformation: 'uppercase',
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  // Fetch accounting fields from API
+  const { data: accountingFieldsData, isLoading: accountingFieldsLoading } = useQuery({
+    queryKey: ['accounting-fields'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/accounting-fields');
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching accounting fields:', error);
+        return [];
+      }
+    },
   });
 
-  // Save mappings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('visma-mappings', JSON.stringify(mappings));
-  }, [mappings]);
+  const accountingFields = accountingFieldsData || [];
+
+  // Fetch Visma/eAccounting fields from API
+  const { data: vismaFieldsData, isLoading: vismaFieldsLoading } = useQuery({
+    queryKey: ['visma-fields'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/visma-fields');
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching visma fields:', error);
+        return [];
+      }
+    },
+  });
+
+  const vismaFields = vismaFieldsData || [];
+
+  // Fetch mappings from API
+  const { data: mappingsData, isLoading: mappingsLoading, refetch: refetchMappings } = useQuery({
+    queryKey: ['visma-mappings'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/visma-mappings');
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching mappings:', error);
+        return [];
+      }
+    },
+  });
+
+  const mappings = mappingsData || [];
 
   // Filter mappings
   const filteredMappings = useMemo(() => {
@@ -353,27 +172,47 @@ function VismaMappingSection() {
     };
   }, [filteredMappings]);
 
-  const handleCreateMapping = (mappingData: any) => {
-    const newMapping = {
-      id: Date.now(),
-      ...mappingData,
-      createdAt: new Date().toISOString(),
-    };
-    setMappings([...mappings, newMapping]);
-    setShowCreateModal(false);
-    toast.success('Mapping created successfully!');
+  const handleCreateMapping = async (mappingData: any) => {
+    try {
+      const response = await api.post('/visma-mappings', mappingData);
+      if (response.data) {
+        await queryClient.invalidateQueries({ queryKey: ['visma-mappings'] });
+        await refetchMappings();
+        setShowCreateModal(false);
+        toast.success('Mapping created successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error creating mapping:', error);
+      toast.error(error.response?.data?.message || 'Failed to create mapping');
+    }
   };
 
-  const handleUpdateMapping = (mappingId: number, updates: any) => {
-    setMappings(mappings.map((m: any) =>
-      m.id === mappingId ? { ...m, ...updates, updatedAt: new Date().toISOString() } : m
-    ));
-    toast.success('Mapping updated successfully!');
+  const handleUpdateMapping = async (mappingId: number, updates: any) => {
+    try {
+      const response = await api.put(`/visma-mappings/${mappingId}`, updates);
+      if (response.data) {
+        await queryClient.invalidateQueries({ queryKey: ['visma-mappings'] });
+        await refetchMappings();
+        toast.success('Mapping updated successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error updating mapping:', error);
+      toast.error(error.response?.data?.message || 'Failed to update mapping');
+    }
   };
 
-  const handleDeleteMapping = (mappingId: number) => {
-    setMappings(mappings.filter((m: any) => m.id !== mappingId));
-    toast.success('Mapping deleted successfully!');
+  const handleDeleteMapping = async (mappingId: number) => {
+    try {
+      const response = await api.delete(`/visma-mappings/${mappingId}`);
+      if (response.data) {
+        await queryClient.invalidateQueries({ queryKey: ['visma-mappings'] });
+        await refetchMappings();
+        toast.success('Mapping deleted successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error deleting mapping:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete mapping');
+    }
   };
 
   const getStatusColor = (status: MappingStatus) => {
@@ -388,6 +227,14 @@ function VismaMappingSection() {
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
     }
   };
+
+  if (accountingFieldsLoading || vismaFieldsLoading || mappingsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-gray-500 dark:text-gray-400">Loading mappings...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -540,12 +387,12 @@ function VismaMappingSection() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {accountingFields.find((f) => f.id === mapping.sourceField)?.label || mapping.sourceField}
+                        {accountingFields.find((f: any) => f.id === mapping.sourceField)?.label || mapping.sourceField}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {vismaFields.find((f) => f.id === mapping.targetField)?.label || mapping.targetField}
+                        {vismaFields.find((f: any) => f.id === mapping.targetField)?.label || mapping.targetField}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -817,7 +664,7 @@ function CreateMappingModal({ onClose, onCreate, accountingFields, vismaFields }
               <CustomDropdown
                 value={sourceField}
                 onChange={setSourceField}
-                options={accountingFields.map((field) => ({
+                options={accountingFields.map((field: any) => ({
                   value: field.id,
                   label: field.label,
                 }))}
@@ -832,7 +679,7 @@ function CreateMappingModal({ onClose, onCreate, accountingFields, vismaFields }
               <CustomDropdown
                 value={targetField}
                 onChange={setTargetField}
-                options={vismaFields.map((field) => ({
+                options={vismaFields.map((field: any) => ({
                   value: field.id,
                   label: field.label,
                 }))}
@@ -943,20 +790,20 @@ function MappingViewModal({ mapping, onClose, accountingFields, vismaFields }: M
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">View Mapping</h2>
+            <h2 className="text-[18px] font-bold text-gray-900 dark:text-white">View Mapping</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{mapping.name}</p>
           </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
           {/* Status Badge */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 p-3 rounded-lg">
             <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
             <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(mapping.status)}`}>
               {mapping.status}
@@ -980,7 +827,7 @@ function MappingViewModal({ mapping, onClose, accountingFields, vismaFields }: M
                   Source Field (System)
                 </label>
                 <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
-                  {accountingFields.find((f) => f.id === mapping.sourceField)?.label || mapping.sourceField}
+                  {accountingFields.find((f: any) => f.id === mapping.sourceField)?.label || mapping.sourceField}
                 </div>
               </div>
 
@@ -989,7 +836,7 @@ function MappingViewModal({ mapping, onClose, accountingFields, vismaFields }: M
                   Target Field (Visma/eAccounting)
                 </label>
                 <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
-                  {vismaFields.find((f) => f.id === mapping.targetField)?.label || mapping.targetField}
+                  {vismaFields.find((f: any) => f.id === mapping.targetField)?.label || mapping.targetField}
                 </div>
               </div>
             </div>
@@ -1040,16 +887,6 @@ function MappingViewModal({ mapping, onClose, accountingFields, vismaFields }: M
                 </span>
               </div>
             )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Close
-            </button>
           </div>
         </div>
       </div>
@@ -1110,20 +947,20 @@ function MappingEditModal({ mapping, onClose, onUpdate, accountingFields, vismaF
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Mapping</h2>
+            <h2 className="text-[18px] font-bold text-gray-900 dark:text-white">Edit Mapping</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{mapping.name}</p>
           </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
           {/* Status Badge */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 p-3 rounded-lg">
             <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
             <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(status)}`}>
               {status}
@@ -1140,7 +977,8 @@ function MappingEditModal({ mapping, onClose, onUpdate, accountingFields, vismaF
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="e.g., Customer ID Mapping"
+                className="w-full ::placeholder-[12px] text-[14px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
 
@@ -1242,7 +1080,7 @@ function MappingEditModal({ mapping, onClose, onUpdate, accountingFields, vismaF
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center text-[14px] justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
@@ -1294,7 +1132,7 @@ function DeleteMappingModal({ mapping, onClose, onDelete }: DeleteMappingModalPr
           <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
             Are you sure you want to delete the mapping <span className="font-medium text-gray-900 dark:text-white">"{mapping.name}"</span>? This action cannot be undone.
           </p>
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3 text-[14px]">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
@@ -1321,40 +1159,28 @@ function SyncLogsSection() {
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isStartingSync, setIsStartingSync] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Load sync logs from localStorage
-  const [syncLogs, setSyncLogs] = useState<any[]>(() => {
-    const saved = localStorage.getItem('sync-logs');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Generate default sync logs
-    const logs = [];
-    const now = new Date();
-    for (let i = 0; i < 20; i++) {
-      const date = new Date(now);
-      date.setHours(date.getHours() - i);
-      const statuses: SyncStatus[] = ['success', 'failed', 'in-progress', 'pending'];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      logs.push({
-        id: i + 1,
-        syncType: ['customer', 'invoice', 'product', 'payment'][Math.floor(Math.random() * 4)],
-        status,
-        recordsProcessed: Math.floor(Math.random() * 1000),
-        recordsFailed: status === 'failed' ? Math.floor(Math.random() * 50) : 0,
-        startedAt: date.toISOString(),
-        completedAt: status === 'in-progress' || status === 'pending' ? null : new Date(date.getTime() + Math.random() * 3600000).toISOString(),
-        errorMessage: status === 'failed' ? 'Connection timeout' : null,
-        mappingId: Math.floor(Math.random() * 3) + 1,
-      });
-    }
-    return logs;
+  // Fetch sync logs from API
+  const { data: syncLogsData, isLoading: syncLogsLoading, refetch: refetchSyncLogs } = useQuery({
+    queryKey: ['sync-logs', statusFilter],
+    queryFn: async () => {
+      try {
+        const params: any = {};
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
+        const response = await api.get('/sync-logs', { params });
+        return response.data?.data || response.data || [];
+      } catch (error) {
+        console.error('Error fetching sync logs:', error);
+        return [];
+      }
+    },
   });
 
-  // Save sync logs to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('sync-logs', JSON.stringify(syncLogs));
-  }, [syncLogs]);
+  const syncLogs = syncLogsData || [];
 
   // Filter sync logs
   const filteredLogs = useMemo(() => {
@@ -1437,6 +1263,14 @@ function SyncLogsSection() {
         return AlertCircle;
     }
   };
+
+  if (syncLogsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-gray-500 dark:text-gray-400">Loading sync logs...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -1542,26 +1376,26 @@ function SyncLogsSection() {
               />
             </div>
             <button
-              onClick={() => {
-                // Refresh sync logs
-                const now = new Date();
-                const newLog = {
-                  id: Date.now(),
-                  syncType: ['customer', 'invoice', 'product', 'payment'][Math.floor(Math.random() * 4)],
-                  status: 'in-progress' as SyncStatus,
-                  recordsProcessed: 0,
-                  recordsFailed: 0,
-                  startedAt: now.toISOString(),
-                  completedAt: null,
-                  errorMessage: null,
-                  mappingId: Math.floor(Math.random() * 3) + 1,
-                };
-                setSyncLogs([newLog, ...syncLogs]);
-                toast.success('Sync started');
+              onClick={async () => {
+                setIsStartingSync(true);
+                try {
+                  const response = await api.post('/sync-logs/start');
+                  if (response.data) {
+                    await queryClient.invalidateQueries({ queryKey: ['sync-logs'] });
+                    await refetchSyncLogs();
+                    toast.success('Sync started successfully!');
+                  }
+                } catch (error: any) {
+                  console.error('Error starting sync:', error);
+                  toast.error(error.response?.data?.message || 'Failed to start sync');
+                } finally {
+                  setIsStartingSync(false);
+                }
               }}
-              className="flex items-center text-[14px] gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              disabled={isStartingSync}
+              className="flex items-center text-[14px] gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isStartingSync ? 'animate-spin' : ''}`} />
               Start Sync
             </button>
           </div>

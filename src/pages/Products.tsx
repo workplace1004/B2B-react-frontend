@@ -2,209 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
-import { Package, Plus, X, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Edit, Trash2, AlertTriangle, Upload, Inbox, Eye, ChevronLeft } from 'lucide-react';
+import { Package, Plus, X, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Edit, Trash2, AlertTriangle, Upload,  Eye, ChevronLeft } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { generateEAN13 } from '../utils/ean';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { ButtonWithWaves, CustomDropdown } from '../components/ui';
 
-// Custom Select Component with beautiful dropdown
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${error ? 'border-red-500' : 'border-gray-300'
-          } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl custom-dropdown-menu"
-          style={{
-            zIndex: 10000,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            maxHeight: '400px',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-          }}
-        >
-          {options.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
-            </div>
-          ) : (
-            options.map((option, index) => {
-              const isSelected = option.value === value;
-              const isHighlighted = index === highlightedIndex;
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected
-                      ? 'bg-primary-500 text-white'
-                      : isHighlighted
-                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    display: 'block',
-                    width: '100%',
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Waves effect button component matching sample
-const ButtonWithWaves = ({
-  children,
-  onClick,
-  className = '',
-  disabled = false
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-
-    const button = buttonRef.current;
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const id = Date.now();
-
-    setRipples((prev) => [...prev, { x, y, id }]);
-
-    setTimeout(() => {
-      setRipples((prev) => prev.filter((ripple) => ripple.id !== id));
-    }, 600);
-
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <button
-      ref={buttonRef}
-      onClick={handleClick}
-      disabled={disabled}
-      className={`btn-primary-lg relative overflow-hidden ${className} ${disabled ? 'opacity-65 cursor-not-allowed pointer-events-none' : ''}`}
-    >
-      {children}
-      {ripples.map((ripple) => (
-        <span
-          key={ripple.id}
-          className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-          style={{
-            left: `${ripple.x}px`,
-            top: `${ripple.y}px`,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      ))}
-    </button>
-  );
-};
 
 export default function Products() {
   const [page, setPage] = useState(0);
@@ -703,10 +507,6 @@ export default function Products() {
                 <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
                   Get started by adding your first product to the inventory.
                 </p>
-                <ButtonWithWaves onClick={openModal}>
-                  <Plus className="w-5 h-5" />
-                  Add Catalog
-                </ButtonWithWaves>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-5">
@@ -1578,7 +1378,7 @@ function AddProductModal({
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Collection <span className="text-red-500">*</span>
                       </label>
-                      <CustomSelect
+                      <CustomDropdown
                         value={formData.collectionId}
                         onChange={(value) => handleChange('collectionId', value)}
                         options={collections.map((collection: any) => ({
@@ -2650,7 +2450,7 @@ function EditProductModal({
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Collection <span className="text-red-500">*</span>
                     </label>
-                    <CustomSelect
+                    <CustomDropdown
                       value={formData.collectionId}
                       onChange={(value) => handleChange('collectionId', value)}
                       options={collections.map((collection: any) => ({
@@ -3478,7 +3278,7 @@ function AttributeModal({ attribute, onClose, onSave }: {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-            <CustomSelect
+            <CustomDropdown
               value={type}
               onChange={(value) => setType(value as any)}
               options={[
@@ -3820,7 +3620,7 @@ function BundleModal({ bundle, products, onClose, onSave }: {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-            <CustomSelect
+            <CustomDropdown
               value={type}
               onChange={(value) => setType(value as 'static' | 'dynamic')}
               options={[
@@ -3847,7 +3647,7 @@ function BundleModal({ bundle, products, onClose, onSave }: {
                 {selectedProducts.map((item, index) => (
                   <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="flex-1">
-                      <CustomSelect
+                      <CustomDropdown
                         value={item.productId > 0 ? item.productId.toString() : ''}
                         onChange={(value) => updateProduct(index, 'productId', Number(value))}
                         options={products && products.length > 0 ? products.map((p: any) => ({
@@ -3993,16 +3793,16 @@ function ViewProductModal({
     if (thumbnailRefs.current[currentImageIndex] && thumbnailContainerRef.current) {
       const thumbnail = thumbnailRefs.current[currentImageIndex];
       const container = thumbnailContainerRef.current;
-      
+
       if (thumbnail) {
         const containerRect = container.getBoundingClientRect();
         const thumbnailRect = thumbnail.getBoundingClientRect();
-        
+
         // Check if thumbnail is not fully visible
-        const isVisible = 
+        const isVisible =
           thumbnailRect.left >= containerRect.left &&
           thumbnailRect.right <= containerRect.right;
-        
+
         if (!isVisible) {
           thumbnail.scrollIntoView({
             behavior: 'smooth',
@@ -4116,7 +3916,7 @@ function ViewProductModal({
 
                       {/* Thumbnail Navigation */}
                       {images.length > 1 && (
-                        <div 
+                        <div
                           ref={thumbnailContainerRef}
                           className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
                         >

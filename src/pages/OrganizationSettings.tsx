@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
@@ -9,7 +8,6 @@ import {
   Plus,
   Search,
   Filter,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Globe,
@@ -26,6 +24,7 @@ import {
   Edit,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type TabType = 'multi-brand-market' | 'localization';
 type BrandStatus = 'active' | 'inactive' | 'ACTIVE' | 'INACTIVE';
@@ -75,132 +74,6 @@ interface Localization {
   lengthUnit: string;
   createdAt: string;
   updatedAt?: string;
-}
-
-// Custom Dropdown Component
-interface CustomDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}
-
-function CustomDropdown({ value, onChange, options, placeholder }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
-        setIsOpen(false);
-      }
-    };
-
-    // Calculate position based on available space and button position
-    const calculatePosition = () => {
-      if (!buttonRef.current || !menuRef.current) return;
-      
-      const buttonRect = buttonRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - buttonRect.bottom;
-      const spaceAbove = buttonRect.top;
-      const menuHeight = Math.min(options.length * 40, 200); // Max 5 options visible
-      const menuWidth = buttonRect.width;
-      
-      // Use fixed positioning to escape modal overflow
-      const style: React.CSSProperties = {
-        position: 'fixed',
-        width: `${menuWidth}px`,
-        left: `${buttonRect.left}px`,
-        zIndex: 9999,
-      };
-      
-      // Position downward by default, upward if not enough space
-      if (spaceBelow >= menuHeight || spaceBelow >= spaceAbove) {
-        style.top = `${buttonRect.bottom + 4}px`;
-      } else {
-        style.bottom = `${window.innerHeight - buttonRect.top + 4}px`;
-      }
-      
-      setMenuStyle(style);
-    };
-
-    // Add event listener with a slight delay to avoid immediate closure when opening
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-      calculatePosition();
-    }, 10);
-
-    // Recalculate on scroll or resize
-    window.addEventListener('scroll', calculatePosition, true);
-    window.addEventListener('resize', calculatePosition);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', calculatePosition, true);
-      window.removeEventListener('resize', calculatePosition);
-    };
-  }, [isOpen, options.length]);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  // Calculate max height to show only 5 options at a time
-  // Each option is approximately 40px (py-2.5 = 10px top + 10px bottom + ~20px text)
-  const optionHeight = 40;
-  const visibleOptions = 5;
-  const maxHeight = `${visibleOptions * optionHeight}px`;
-
-  return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm flex items-center justify-between cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${isOpen
-          ? 'border-primary-500 ring-2 ring-primary-500/20'
-          : 'hover:border-gray-400 dark:hover:border-gray-500'
-          }`}
-      >
-        <span>{selectedOption?.label || placeholder || 'Select...'}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''
-            }`}
-        />
-      </button>
-
-      {isOpen && createPortal(
-        <div 
-          ref={menuRef}
-          className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden overflow-y-auto"
-          style={{ ...menuStyle, maxHeight }}
-        >
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${option.value === value
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
 }
 
 export default function OrganizationSettings() {

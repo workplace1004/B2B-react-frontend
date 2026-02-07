@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import {
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 // Types
 interface BOPISOrder {
@@ -171,135 +172,6 @@ interface Warehouse {
   country?: string;
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 9999 : 'auto' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between bg-white ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.8rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            const isHighlighted = index === highlightedIndex && !isSelected;
-            
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                  isSelected
-                    ? 'bg-blue-500 text-white font-medium'
-                    : isHighlighted
-                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: isSelected ? 500 : 400,
-                  display: 'block',
-                  width: '100%',
-                  lineHeight: '1.5',
-                }}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function Omnichannel() {
   const [activeTab, setActiveTab] = useState<'bopis' | 'boris' | 'endless-aisle' | 'stores'>('bopis');
@@ -797,7 +669,7 @@ export default function Omnichannel() {
                   />
                 </div>
                 <div>
-                  <CustomSelect
+                  <CustomDropdown
                     value={statusFilter}
                     onChange={(value) => {
                       setStatusFilter(value);
@@ -814,7 +686,7 @@ export default function Omnichannel() {
                   />
                 </div>
                 <div>
-                  <CustomSelect
+                  <CustomDropdown
                     value={storeFilter}
                     onChange={(value) => {
                       setStoreFilter(value);
@@ -1011,7 +883,7 @@ export default function Omnichannel() {
                   />
                 </div>
                 <div>
-                  <CustomSelect
+                  <CustomDropdown
                     value={statusFilter}
                     onChange={(value) => {
                       setStatusFilter(value);
@@ -1029,7 +901,7 @@ export default function Omnichannel() {
                   />
                 </div>
                 <div>
-                  <CustomSelect
+                  <CustomDropdown
                     value={storeFilter}
                     onChange={(value) => {
                       setStoreFilter(value);

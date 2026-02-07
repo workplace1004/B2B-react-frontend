@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   FileText,
@@ -16,11 +16,11 @@ import {
   CheckCircle,
   Clock,
   TrendingUp,
-  ChevronDown,
 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown } from '../components/ui';
 
 type PaymentTermType = 'NET_15' | 'NET_30' | 'NET_45' | 'NET_60' | 'DUE_ON_RECEIPT' | 'CUSTOM';
 type CreditStatus = 'ACTIVE' | 'SUSPENDED' | 'EXCEEDED' | 'PENDING_APPROVAL';
@@ -54,76 +54,6 @@ interface B2BTerms {
   updatedAt: string;
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-2 text-left bg-white dark:bg-gray-700 border ${
-          error ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
-        } rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white flex items-center justify-between`}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
-      </button>
-      {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2 text-left hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                value === option.value ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-white'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function B2BTerms() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -434,7 +364,7 @@ export default function B2BTerms() {
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[200px]">
-              <CustomSelect
+              <CustomDropdown
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={[
@@ -749,7 +679,7 @@ function AddTermsModal({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Customer <span className="text-red-500">*</span>
                 </label>
-                <CustomSelect
+                <CustomDropdown
                   value={formData.customerId}
                   onChange={handleCustomerChange}
                   options={customers.map((c) => ({ value: c.id.toString(), label: c.name }))}
@@ -790,7 +720,7 @@ function AddTermsModal({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Payment Terms <span className="text-red-500">*</span>
                 </label>
-                <CustomSelect
+                <CustomDropdown
                   value={formData.paymentTermType}
                   onChange={(value) => {
                     setFormData({ ...formData, paymentTermType: value as PaymentTermType });
@@ -991,7 +921,7 @@ function EditTermsModal({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Payment Terms <span className="text-red-500">*</span>
                 </label>
-                <CustomSelect
+                <CustomDropdown
                   value={formData.paymentTermType}
                   onChange={(value) => {
                     setFormData({ ...formData, paymentTermType: value as PaymentTermType });
@@ -1037,7 +967,7 @@ function EditTermsModal({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Status
                 </label>
-                <CustomSelect
+                <CustomDropdown
                   value={formData.status}
                   onChange={(value) => setFormData({ ...formData, status: value as CreditStatus })}
                   options={[

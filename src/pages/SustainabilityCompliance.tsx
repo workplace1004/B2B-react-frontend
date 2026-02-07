@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Search, Plus, Shield, Globe, X, Edit, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Calendar, Inbox } from 'lucide-react';
+import { Search, Plus, Shield, Globe, X, Edit, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Calendar } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
+import { CustomDropdown, DatePicker, ScrollIndicator } from '../components/ui';
 
 type TabType = 'dpp' | 'compliance';
 
@@ -60,141 +61,6 @@ export default function SustainabilityCompliance() {
   );
 }
 
-// Custom Select Component
-const CustomSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select...',
-  className = '',
-  error = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-  className?: string;
-  error?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setHighlightedIndex(-1);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const selectedOption = options.find((opt) => opt.value === value);
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev < options.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(options[highlightedIndex].value);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 10001 : 'auto', position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center justify-between ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${isOpen ? 'ring-2 ring-primary-500' : ''}`}
-        style={{
-          padding: '0.532rem 0.6rem 0.532rem 1.2rem',
-          fontSize: '0.875rem',
-          fontWeight: 500,
-          lineHeight: 1.6,
-        }}
-      >
-        <span className={selectedOption ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div 
-          className="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-auto custom-dropdown-menu"
-          style={{
-            zIndex: 10001,
-            top: '100%',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            position: 'absolute',
-            maxHeight: '400px',
-          }}
-        >
-          {options.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                <Inbox className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">No data available</p>
-            </div>
-          ) : (
-            options.map((option, index) => {
-              const isSelected = option.value === value;
-              
-              
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isSelected
-                      ? 'bg-primary-500 text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
-                  } ${index === 0 ? 'rounded-t-lg' : ''} ${index === options.length - 1 ? 'rounded-b-lg' : ''}`}
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    display: 'block',
-                    width: '100%',
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Digital Product Passport Section Component
 function DigitalProductPassportSection() {
@@ -766,7 +632,7 @@ function DPPModal({ passport, products, onClose, onSave, isShowing }: { passport
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product *</label>
-                    <CustomSelect
+                    <CustomDropdown
                       value={formData.productId.toString()}
                       onChange={(value) => setFormData({ ...formData, productId: value })}
                       options={products.map((p) => ({ value: p.id.toString(), label: p.name }))}
@@ -1000,7 +866,7 @@ function DPPModal({ passport, products, onClose, onSave, isShowing }: { passport
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recyclability</label>
-                      <CustomSelect
+                      <CustomDropdown
                         value={formData.recyclability}
                         onChange={(value) => setFormData({ ...formData, recyclability: value })}
                         options={[
@@ -1013,7 +879,7 @@ function DPPModal({ passport, products, onClose, onSave, isShowing }: { passport
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Repairability</label>
-                      <CustomSelect
+                      <CustomDropdown
                         value={formData.repairability}
                         onChange={(value) => setFormData({ ...formData, repairability: value })}
                         options={[
@@ -1170,17 +1036,12 @@ function ComplianceEvidenceSection() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600 dark:text-gray-400">Filter by type:</span>
-            <select
+            <CustomDropdown
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            >
-              {evidenceTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setFilterType(value)}
+              options={evidenceTypes}
+              placeholder="Select type..."
+            />
           </div>
         </div>
       </div>
@@ -1378,6 +1239,7 @@ function ComplianceEvidenceSection() {
 // Compliance Evidence Modal Component
 function ComplianceEvidenceModal({ evidence, products, onClose, onSave }: { evidence?: any; products: any[]; onClose: () => void; onSave: () => void }) {
   const [isSaving, setIsSaving] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     productId: evidence?.productId?.toString() || '',
     name: evidence?.name || '',
@@ -1394,6 +1256,20 @@ function ComplianceEvidenceModal({ evidence, products, onClose, onSave }: { evid
   });
   const [newStandard, setNewStandard] = useState('');
   const [newTag, setNewTag] = useState('');
+
+  // Handle click outside to close modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1465,7 +1341,11 @@ function ComplianceEvidenceModal({ evidence, products, onClose, onSave }: { evid
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]">
+        <div 
+          ref={modalRef}
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar"
+        >
         <div className="sticky z-[50] top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
           <h3 className="text-[16px] font-semibold text-gray-900 dark:text-white">
             {evidence ? 'Edit' : 'Add'} Compliance Evidence
@@ -1477,10 +1357,17 @@ function ComplianceEvidenceModal({ evidence, products, onClose, onSave }: { evid
             <X className="w-5 h-5" />
           </button>
         </div>
+        
+        <ScrollIndicator 
+          scrollableRef={modalRef} 
+          topOffset={73}
+          dependencies={[formData]}
+        />
+        
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product</label>
-            <CustomSelect
+            <CustomDropdown
               value={formData.productId}
               onChange={(value) => setFormData({ ...formData, productId: value })}
               options={[
@@ -1504,7 +1391,7 @@ function ComplianceEvidenceModal({ evidence, products, onClose, onSave }: { evid
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type *</label>
-              <CustomSelect
+              <CustomDropdown
                 value={formData.type}
                 onChange={(value) => setFormData({ ...formData, type: value })}
                 options={[
@@ -1553,20 +1440,18 @@ function ComplianceEvidenceModal({ evidence, products, onClose, onSave }: { evid
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Issue Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.issueDate}
-                onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => setFormData({ ...formData, issueDate: date || '' })}
+                placeholder="mm/dd/yyyy"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expiry Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={formData.expiryDate}
-                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => setFormData({ ...formData, expiryDate: date || '' })}
+                placeholder="mm/dd/yyyy"
               />
             </div>
           </div>
@@ -1687,6 +1572,7 @@ function ComplianceEvidenceModal({ evidence, products, onClose, onSave }: { evid
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
