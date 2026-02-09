@@ -393,10 +393,10 @@ function PriorityQueueSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <SearchInput
-            value={searchQuery}
+              value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search actions..."
-          />
+            />
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[180px]">
@@ -843,10 +843,10 @@ function ExceptionTriageSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <SearchInput
-            value={searchQuery}
+              value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search exceptions..."
-          />
+            />
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[180px]">
@@ -1235,10 +1235,10 @@ function AutomatedTasksSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <SearchInput
-            value={searchQuery}
+              value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search tasks..."
-          />
+            />
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[180px]">

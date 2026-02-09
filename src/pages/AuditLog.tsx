@@ -151,8 +151,8 @@ export default function AuditLog() {
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search by user, action, or entity..."
-        />
+            placeholder="Search by user, action, or entity..."
+          />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">

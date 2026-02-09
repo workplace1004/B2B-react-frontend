@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { toast } from 'react-hot-toast';
 import {
   Hash,
   Plus,
@@ -12,13 +13,15 @@ import {
   Clock,
   Calendar,
   Play,
-  Pause,
   RefreshCw,
   BarChart3,
+  X,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import api from '../lib/api';
 import Breadcrumb from '../components/Breadcrumb';
-import { SearchInput } from '../components/ui';
+import { SearchInput, DeleteModal, DatePicker } from '../components/ui';
 import { ButtonWithWaves, CustomDropdown } from '../components/ui';
 import { SkeletonPage } from '../components/Skeleton';
 
@@ -107,17 +110,29 @@ interface PhysicalInventoryItem {
 
 export default function Counting() {
   const [activeTab, setActiveTab] = useState<'cycle-counts' | 'physical-inventory'>('cycle-counts');
-  const [cycleCounts, setCycleCounts] = useState<CycleCount[]>([]);
-  const [physicalInventories, setPhysicalInventories] = useState<PhysicalInventory[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Local storage keys
-  const CYCLE_COUNTS_KEY = 'counting_cycle_counts';
-  const PHYSICAL_INVENTORY_KEY = 'counting_physical_inventory';
+  // Modal states for Cycle Counts
+  const [isCycleCountCreateModalOpen, setIsCycleCountCreateModalOpen] = useState(false);
+  const [isCycleCountViewModalOpen, setIsCycleCountViewModalOpen] = useState(false);
+  const [isCycleCountEditModalOpen, setIsCycleCountEditModalOpen] = useState(false);
+  const [isCycleCountDeleteModalOpen, setIsCycleCountDeleteModalOpen] = useState(false);
+  const [selectedCycleCount, setSelectedCycleCount] = useState<CycleCount | null>(null);
+  const [cycleCountToDelete, setCycleCountToDelete] = useState<CycleCount | null>(null);
+
+  // Modal states for Physical Inventory
+  const [isPhysicalInventoryCreateModalOpen, setIsPhysicalInventoryCreateModalOpen] = useState(false);
+  const [isPhysicalInventoryViewModalOpen, setIsPhysicalInventoryViewModalOpen] = useState(false);
+  const [isPhysicalInventoryEditModalOpen, setIsPhysicalInventoryEditModalOpen] = useState(false);
+  const [isPhysicalInventoryDeleteModalOpen, setIsPhysicalInventoryDeleteModalOpen] = useState(false);
+  const [selectedPhysicalInventory, setSelectedPhysicalInventory] = useState<PhysicalInventory | null>(null);
+  const [physicalInventoryToDelete, setPhysicalInventoryToDelete] = useState<PhysicalInventory | null>(null);
+
+  const queryClient = useQueryClient();
 
   // Fetch warehouses
   const { data: warehousesData, isLoading: isLoadingWarehouses } = useQuery({
@@ -137,44 +152,266 @@ export default function Counting() {
     return Array.isArray(warehousesData) ? warehousesData : (warehousesData?.data || []);
   }, [warehousesData]);
 
-  // Load data from localStorage
-  useEffect(() => {
-    try {
-      const storedCycleCounts = localStorage.getItem(CYCLE_COUNTS_KEY);
-      if (storedCycleCounts) {
-        setCycleCounts(JSON.parse(storedCycleCounts));
+  // Fetch cycle counts
+  const { data: cycleCountsData } = useQuery({
+    queryKey: ['cycle-counts', warehouseFilter !== 'all' ? warehouseFilter : undefined, statusFilter !== 'all' ? statusFilter : undefined],
+    queryFn: async () => {
+      try {
+        const params: any = {};
+        if (warehouseFilter !== 'all') params.warehouseId = warehouseFilter;
+        if (statusFilter !== 'all') params.status = statusFilter;
+        const response = await api.get('/counting/cycle-counts', { params });
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching cycle counts:', error);
+        return [];
       }
-    } catch (error) {
-      console.error('Error loading cycle counts:', error);
-    }
+    },
+  });
 
-    try {
-      const storedPhysicalInventory = localStorage.getItem(PHYSICAL_INVENTORY_KEY);
-      if (storedPhysicalInventory) {
-        setPhysicalInventories(JSON.parse(storedPhysicalInventory));
+  // Fetch physical inventories
+  const { data: physicalInventoriesData } = useQuery({
+    queryKey: ['physical-inventory', warehouseFilter !== 'all' ? warehouseFilter : undefined, statusFilter !== 'all' ? statusFilter : undefined],
+    queryFn: async () => {
+      try {
+        const params: any = {};
+        if (warehouseFilter !== 'all') params.warehouseId = warehouseFilter;
+        if (statusFilter !== 'all') params.status = statusFilter;
+        const response = await api.get('/counting/physical-inventory', { params });
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching physical inventories:', error);
+        return [];
       }
-    } catch (error) {
-      console.error('Error loading physical inventory:', error);
-    }
-  }, []);
+    },
+  });
 
-  // Save cycle counts (unused but kept for future use)
-  // const saveCycleCounts = (counts: CycleCount[]) => {
-  //   try {
-  //     localStorage.setItem(CYCLE_COUNTS_KEY, JSON.stringify(counts));
-  //   } catch (error) {
-  //     console.error('Error saving cycle counts:', error);
-  //   }
-  // };
+  // Transform API data to match frontend types
+  const cycleCounts: CycleCount[] = useMemo(() => {
+    if (!cycleCountsData) return [];
+    return Array.isArray(cycleCountsData) ? cycleCountsData.map((cc: any) => ({
+      id: cc.id,
+      countNumber: cc.countNumber,
+      warehouseId: cc.warehouseId,
+      warehouseName: cc.warehouse?.name || '',
+      countType: cc.countType,
+      status: cc.status,
+      scheduledDate: cc.scheduledDate,
+      startDate: cc.startDate,
+      completedDate: cc.completedDate,
+      assignedTo: cc.assignedTo,
+      notes: cc.notes,
+      items: cc.items || [],
+      createdAt: cc.createdAt,
+      updatedAt: cc.updatedAt,
+    })) : [];
+  }, [cycleCountsData]);
 
-  // Save physical inventory (unused but kept for future use)
-  // const savePhysicalInventory = (inventories: PhysicalInventory[]) => {
-  //   try {
-  //     localStorage.setItem(PHYSICAL_INVENTORY_KEY, JSON.stringify(inventories));
-  //   } catch (error) {
-  //     console.error('Error saving physical inventory:', error);
-  //   }
-  // };
+  const physicalInventories: PhysicalInventory[] = useMemo(() => {
+    if (!physicalInventoriesData) return [];
+    return Array.isArray(physicalInventoriesData) ? physicalInventoriesData.map((pi: any) => ({
+      id: pi.id,
+      inventoryNumber: pi.inventoryNumber,
+      warehouseId: pi.warehouseId,
+      warehouseName: pi.warehouse?.name || '',
+      status: pi.status,
+      scheduledDate: pi.scheduledDate,
+      startDate: pi.startDate,
+      completedDate: pi.completedDate,
+      assignedTo: pi.assignedTo,
+      notes: pi.notes,
+      items: pi.items || [],
+      createdAt: pi.createdAt,
+      updatedAt: pi.updatedAt,
+    })) : [];
+  }, [physicalInventoriesData]);
+
+  // Mutations for Cycle Counts
+  const createCycleCountMutation = useMutation({
+    mutationFn: async (data: Omit<CycleCount, 'id' | 'countNumber' | 'createdAt' | 'updatedAt' | 'warehouseName'>) => {
+      const response = await api.post('/counting/cycle-counts', {
+        warehouseId: data.warehouseId,
+        countType: data.countType,
+        scheduledDate: data.scheduledDate,
+        assignedTo: data.assignedTo,
+        notes: data.notes,
+        items: data.items,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cycle-counts'] });
+      setIsCycleCountCreateModalOpen(false);
+      toast.success('Cycle count created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to create cycle count');
+    },
+  });
+
+  const updateCycleCountMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string | number; data: Partial<CycleCount> }) => {
+      const response = await api.patch(`/counting/cycle-counts/${id}`, {
+        warehouseId: data.warehouseId,
+        countType: data.countType,
+        status: data.status,
+        scheduledDate: data.scheduledDate,
+        startDate: data.startDate,
+        completedDate: data.completedDate,
+        assignedTo: data.assignedTo,
+        notes: data.notes,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cycle-counts'] });
+      setIsCycleCountEditModalOpen(false);
+      setSelectedCycleCount(null);
+      toast.success('Cycle count updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update cycle count');
+    },
+  });
+
+  const deleteCycleCountMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await api.delete(`/counting/cycle-counts/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cycle-counts'] });
+      setIsCycleCountDeleteModalOpen(false);
+      setCycleCountToDelete(null);
+      toast.success('Cycle count deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete cycle count');
+    },
+  });
+
+  const startCycleCountMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.patch(`/counting/cycle-counts/${id}/start`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cycle-counts'] });
+      toast.success('Cycle count started!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to start cycle count');
+    },
+  });
+
+  // Mutations for Physical Inventory
+  const createPhysicalInventoryMutation = useMutation({
+    mutationFn: async (data: Omit<PhysicalInventory, 'id' | 'inventoryNumber' | 'createdAt' | 'updatedAt' | 'warehouseName'>) => {
+      const response = await api.post('/counting/physical-inventory', {
+        warehouseId: data.warehouseId,
+        scheduledDate: data.scheduledDate,
+        assignedTo: data.assignedTo,
+        notes: data.notes,
+        items: data.items,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-inventory'] });
+      setIsPhysicalInventoryCreateModalOpen(false);
+      toast.success('Physical inventory created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to create physical inventory');
+    },
+  });
+
+  const updatePhysicalInventoryMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string | number; data: Partial<PhysicalInventory> }) => {
+      const response = await api.patch(`/counting/physical-inventory/${id}`, {
+        warehouseId: data.warehouseId,
+        status: data.status,
+        scheduledDate: data.scheduledDate,
+        startDate: data.startDate,
+        completedDate: data.completedDate,
+        assignedTo: data.assignedTo,
+        notes: data.notes,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-inventory'] });
+      setIsPhysicalInventoryEditModalOpen(false);
+      setSelectedPhysicalInventory(null);
+      toast.success('Physical inventory updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update physical inventory');
+    },
+  });
+
+  const deletePhysicalInventoryMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await api.delete(`/counting/physical-inventory/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-inventory'] });
+      setIsPhysicalInventoryDeleteModalOpen(false);
+      setPhysicalInventoryToDelete(null);
+      toast.success('Physical inventory deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete physical inventory');
+    },
+  });
+
+  const startPhysicalInventoryMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      const response = await api.patch(`/counting/physical-inventory/${id}/start`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-inventory'] });
+      toast.success('Physical inventory started!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to start physical inventory');
+    },
+  });
+
+  // Handler functions
+  const handleCreateCycleCount = (data: Omit<CycleCount, 'id' | 'countNumber' | 'createdAt' | 'updatedAt' | 'warehouseName'>) => {
+    createCycleCountMutation.mutate(data);
+  };
+
+  const handleUpdateCycleCount = (id: string | number, data: Partial<CycleCount>) => {
+    updateCycleCountMutation.mutate({ id, data });
+  };
+
+  const handleDeleteCycleCount = () => {
+    if (!cycleCountToDelete) return;
+    deleteCycleCountMutation.mutate(cycleCountToDelete.id!);
+  };
+
+  const handleStartCycleCount = (id: string | number) => {
+    startCycleCountMutation.mutate(id);
+  };
+
+  const handleCreatePhysicalInventory = (data: Omit<PhysicalInventory, 'id' | 'inventoryNumber' | 'createdAt' | 'updatedAt' | 'warehouseName'>) => {
+    createPhysicalInventoryMutation.mutate(data);
+  };
+
+  const handleUpdatePhysicalInventory = (id: string | number, data: Partial<PhysicalInventory>) => {
+    updatePhysicalInventoryMutation.mutate({ id, data });
+  };
+
+  const handleDeletePhysicalInventory = () => {
+    if (!physicalInventoryToDelete) return;
+    deletePhysicalInventoryMutation.mutate(physicalInventoryToDelete.id!);
+  };
+
+  const handleStartPhysicalInventory = (id: string | number) => {
+    startPhysicalInventoryMutation.mutate(id);
+  };
 
   // Filter cycle counts
   const filteredCycleCounts = useMemo(() => {
@@ -299,6 +536,21 @@ export default function Counting() {
             <p className="text-gray-500 dark:text-gray-400 mt-1  text-[14px]">
               Manage cycle counts and physical inventory counts
             </p>
+          </div>
+          <div>
+            <ButtonWithWaves
+              onClick={() => {
+                if (activeTab === 'cycle-counts') {
+                  setIsCycleCountCreateModalOpen(true);
+                } else {
+                  setIsPhysicalInventoryCreateModalOpen(true);
+                }
+              }}
+              className="!px-4 !py-2"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create {activeTab === 'cycle-counts' ? 'Cycle Count' : 'Physical Inventory'}
+            </ButtonWithWaves>
           </div>
         </div>
       </div>
@@ -510,12 +762,6 @@ export default function Counting() {
                   ? 'No matching items found'
                   : `No ${activeTab === 'cycle-counts' ? 'cycle counts' : 'physical inventory'} found`}
               </p>
-              {!searchQuery && statusFilter === 'all' && warehouseFilter === 'all' && (
-                <ButtonWithWaves onClick={() => {}} className="!px-3 !py-2">
-                  <Plus className="w-4 h-4" />
-                  Create {activeTab === 'cycle-counts' ? 'Cycle Count' : 'Physical Inventory'}
-                </ButtonWithWaves>
-              )}
             </div>
           ) : (
             <>
@@ -598,25 +844,67 @@ export default function Counting() {
                           <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                             <div className="flex items-center justify-end gap-2">
                               <button
+                                onClick={() => {
+                                  if (activeTab === 'cycle-counts') {
+                                    setSelectedCycleCount(item);
+                                    setIsCycleCountViewModalOpen(true);
+                                  } else {
+                                    setSelectedPhysicalInventory(item);
+                                    setIsPhysicalInventoryViewModalOpen(true);
+                                  }
+                                }}
                                 className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                                 title="View Details"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {item.status === 'DRAFT' && (
+                                <button
+                                  onClick={() => {
+                                    if (activeTab === 'cycle-counts') {
+                                      setSelectedCycleCount(item);
+                                      setIsCycleCountEditModalOpen(true);
+                                    } else {
+                                      setSelectedPhysicalInventory(item);
+                                      setIsPhysicalInventoryEditModalOpen(true);
+                                    }
+                                  }}
+                                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                  title="Edit"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              )}
                               {item.status === 'SCHEDULED' && (
                                 <button
+                                  onClick={() => {
+                                    if (activeTab === 'cycle-counts') {
+                                      handleStartCycleCount(item.id!);
+                                    } else {
+                                      handleStartPhysicalInventory(item.id!);
+                                    }
+                                  }}
                                   className="text-green-600 hover:text-green-900 dark:text-green-400 p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                                   title="Start Count"
                                 >
                                   <Play className="w-4 h-4" />
                                 </button>
                               )}
-                              {item.status === 'IN_PROGRESS' && (
+                              {(item.status === 'DRAFT' || item.status === 'SCHEDULED' || item.status === 'CANCELLED') && (
                                 <button
-                                  className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 p-1 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded transition-colors"
-                                  title="Pause Count"
+                                  onClick={() => {
+                                    if (activeTab === 'cycle-counts') {
+                                      setCycleCountToDelete(item);
+                                      setIsCycleCountDeleteModalOpen(true);
+                                    } else {
+                                      setPhysicalInventoryToDelete(item);
+                                      setIsPhysicalInventoryDeleteModalOpen(true);
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                  title="Delete"
                                 >
-                                  <Pause className="w-4 h-4" />
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               )}
                             </div>
@@ -673,6 +961,765 @@ export default function Counting() {
               )}
             </>
           )}
+        </div>
+      </div>
+
+      {/* Cycle Count Modals */}
+      {isCycleCountCreateModalOpen && (
+        <CreateEditCycleCountModal
+          warehouses={warehouses}
+          onClose={() => setIsCycleCountCreateModalOpen(false)}
+          onSubmit={handleCreateCycleCount}
+        />
+      )}
+
+      {isCycleCountEditModalOpen && selectedCycleCount && (
+        <CreateEditCycleCountModal
+          cycleCount={selectedCycleCount}
+          warehouses={warehouses}
+          onClose={() => {
+            setIsCycleCountEditModalOpen(false);
+            setSelectedCycleCount(null);
+          }}
+          onSubmit={(data) => handleUpdateCycleCount(selectedCycleCount.id!, data)}
+        />
+      )}
+
+      {isCycleCountViewModalOpen && selectedCycleCount && (
+        <ViewCycleCountModal
+          cycleCount={selectedCycleCount}
+          warehouses={warehouses}
+          onClose={() => {
+            setIsCycleCountViewModalOpen(false);
+            setSelectedCycleCount(null);
+          }}
+        />
+      )}
+
+      {isCycleCountDeleteModalOpen && cycleCountToDelete && (
+        <DeleteModal
+          title="Delete Cycle Count"
+          message="Are you sure you want to delete cycle count"
+          itemName={cycleCountToDelete.countNumber}
+          onClose={() => {
+            setIsCycleCountDeleteModalOpen(false);
+            setCycleCountToDelete(null);
+          }}
+          onConfirm={handleDeleteCycleCount}
+        />
+      )}
+
+      {/* Physical Inventory Modals */}
+      {isPhysicalInventoryCreateModalOpen && (
+        <CreateEditPhysicalInventoryModal
+          warehouses={warehouses}
+          onClose={() => setIsPhysicalInventoryCreateModalOpen(false)}
+          onSubmit={handleCreatePhysicalInventory}
+        />
+      )}
+
+      {isPhysicalInventoryEditModalOpen && selectedPhysicalInventory && (
+        <CreateEditPhysicalInventoryModal
+          physicalInventory={selectedPhysicalInventory}
+          warehouses={warehouses}
+          onClose={() => {
+            setIsPhysicalInventoryEditModalOpen(false);
+            setSelectedPhysicalInventory(null);
+          }}
+          onSubmit={(data) => handleUpdatePhysicalInventory(selectedPhysicalInventory.id!, data)}
+        />
+      )}
+
+      {isPhysicalInventoryViewModalOpen && selectedPhysicalInventory && (
+        <ViewPhysicalInventoryModal
+          physicalInventory={selectedPhysicalInventory}
+          warehouses={warehouses}
+          onClose={() => {
+            setIsPhysicalInventoryViewModalOpen(false);
+            setSelectedPhysicalInventory(null);
+          }}
+        />
+      )}
+
+      {isPhysicalInventoryDeleteModalOpen && physicalInventoryToDelete && (
+        <DeleteModal
+          title="Delete Physical Inventory"
+          message="Are you sure you want to delete physical inventory"
+          itemName={physicalInventoryToDelete.inventoryNumber}
+          onClose={() => {
+            setIsPhysicalInventoryDeleteModalOpen(false);
+            setPhysicalInventoryToDelete(null);
+          }}
+          onConfirm={handleDeletePhysicalInventory}
+        />
+      )}
+    </div>
+  );
+}
+
+// Create/Edit Cycle Count Modal Component
+function CreateEditCycleCountModal({
+  cycleCount,
+  warehouses,
+  onClose,
+  onSubmit,
+}: {
+  cycleCount?: CycleCount;
+  warehouses: Warehouse[];
+  onClose: () => void;
+  onSubmit: (data: Omit<CycleCount, 'id' | 'countNumber' | 'createdAt' | 'updatedAt'>) => void;
+}) {
+  const [formData, setFormData] = useState({
+    warehouseId: cycleCount?.warehouseId.toString() || '',
+    countType: cycleCount?.countType || 'ABC',
+    scheduledDate: cycleCount?.scheduledDate || new Date().toISOString().split('T')[0],
+    assignedTo: cycleCount?.assignedTo || '',
+    notes: cycleCount?.notes || '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.warehouseId) {
+      newErrors.warehouseId = 'Warehouse is required';
+    }
+    if (!formData.scheduledDate) {
+      newErrors.scheduledDate = 'Scheduled date is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    onSubmit({
+      warehouseId: Number(formData.warehouseId),
+      warehouseName: warehouses.find((w) => w.id === Number(formData.warehouseId))?.name,
+      countType: formData.countType as CycleCount['countType'],
+      status: cycleCount?.status || 'DRAFT',
+      scheduledDate: formData.scheduledDate,
+      assignedTo: formData.assignedTo || undefined,
+      items: cycleCount?.items || [],
+      notes: formData.notes || undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {cycleCount ? 'Edit Cycle Count' : 'Create Cycle Count'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Warehouse <span className="text-red-500">*</span>
+              </label>
+              <CustomDropdown
+                value={formData.warehouseId}
+                onChange={(value) => {
+                  setFormData({ ...formData, warehouseId: value });
+                  if (errors.warehouseId) setErrors({ ...errors, warehouseId: '' });
+                }}
+                options={warehouses.map((w) => ({ value: w.id.toString(), label: w.name }))}
+                placeholder="Select warehouse"
+                error={!!errors.warehouseId}
+              />
+              {errors.warehouseId && <p className="mt-1 text-sm text-red-500">{errors.warehouseId}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Count Type <span className="text-red-500">*</span>
+              </label>
+              <CustomDropdown
+                value={formData.countType}
+                onChange={(value) => setFormData({ ...formData, countType: value as 'ABC' | 'FULL' | 'RANDOM' | 'LOCATION_BASED' })}
+                options={[
+                  { value: 'ABC', label: 'ABC Analysis' },
+                  { value: 'FULL', label: 'Full Count' },
+                  { value: 'RANDOM', label: 'Random Sample' },
+                  { value: 'LOCATION_BASED', label: 'Location Based' },
+                ]}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Scheduled Date <span className="text-red-500">*</span>
+              </label>
+              <DatePicker
+                value={formData.scheduledDate || null}
+                onChange={(date) => {
+                  setFormData({ ...formData, scheduledDate: date || '' });
+                  if (errors.scheduledDate) setErrors({ ...errors, scheduledDate: '' });
+                }}
+                placeholder="Select date"
+              />
+              {errors.scheduledDate && <p className="mt-1 text-sm text-red-500">{errors.scheduledDate}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assigned To</label>
+              <input
+                type="text"
+                value={formData.assignedTo}
+                onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="User name or email"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Additional notes..."
+            />
+          </div>
+
+          <div className="flex text-[14px] items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              {cycleCount ? 'Update' : 'Create'} Cycle Count
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// View Cycle Count Modal Component
+function ViewCycleCountModal({
+  cycleCount,
+  warehouses,
+  onClose,
+}: {
+  cycleCount: CycleCount;
+  warehouses: Warehouse[];
+  onClose: () => void;
+}) {
+  const warehouse = warehouses.find((w) => w.id === cycleCount.warehouseId);
+  const itemsCount = cycleCount.items?.length || 0;
+  const completedItems = cycleCount.items?.filter((i) => i.status === 'COUNTED' || i.status === 'VERIFIED').length || 0;
+  const progress = itemsCount > 0 ? Math.round((completedItems / itemsCount) * 100) : 0;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+      case 'SCHEDULED':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'IN_PROGRESS':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  const getCountTypeColor = (type: string) => {
+    switch (type) {
+      case 'ABC':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'FULL':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'RANDOM':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'LOCATION_BASED':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Cycle Count Details</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Count Number</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{cycleCount.countNumber}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(cycleCount.status)}`}>
+                {cycleCount.status.replace('_', ' ')}
+              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Warehouse</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{warehouse?.name || cycleCount.warehouseName || 'Unknown'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Count Type</label>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCountTypeColor(cycleCount.countType)}`}>
+                {cycleCount.countType}
+              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Scheduled Date</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {new Date(cycleCount.scheduledDate).toLocaleDateString()}
+              </p>
+            </div>
+            {cycleCount.startDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Start Date</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(cycleCount.startDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+            {cycleCount.completedDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Completed Date</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(cycleCount.completedDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+            {cycleCount.assignedTo && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Assigned To</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{cycleCount.assignedTo}</p>
+              </div>
+            )}
+          </div>
+
+          {cycleCount.notes && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</label>
+              <p className="text-sm text-gray-900 dark:text-white">{cycleCount.notes}</p>
+            </div>
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">Progress</label>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{completedItems} / {itemsCount} items</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-primary-600 h-2 rounded-full transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          {cycleCount.items && cycleCount.items.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Items</label>
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Product</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">SKU</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">System Qty</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Counted Qty</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Variance</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {cycleCount.items.map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.productName || 'Unknown'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{item.sku || 'N/A'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.systemQuantity}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.countedQuantity ?? '—'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
+                          {item.variance !== undefined ? (item.variance > 0 ? '+' : '') + item.variance : '—'}
+                        </td>
+                        <td className="px-4 py-2 text-sm">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            item.status === 'COUNTED' || item.status === 'VERIFIED'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : item.status === 'DISCREPANCY'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Create/Edit Physical Inventory Modal Component
+function CreateEditPhysicalInventoryModal({
+  physicalInventory,
+  warehouses,
+  onClose,
+  onSubmit,
+}: {
+  physicalInventory?: PhysicalInventory;
+  warehouses: Warehouse[];
+  onClose: () => void;
+  onSubmit: (data: Omit<PhysicalInventory, 'id' | 'inventoryNumber' | 'createdAt' | 'updatedAt'>) => void;
+}) {
+  const [formData, setFormData] = useState({
+    warehouseId: physicalInventory?.warehouseId.toString() || '',
+    scheduledDate: physicalInventory?.scheduledDate || new Date().toISOString().split('T')[0],
+    assignedTo: physicalInventory?.assignedTo || '',
+    notes: physicalInventory?.notes || '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.warehouseId) {
+      newErrors.warehouseId = 'Warehouse is required';
+    }
+    if (!formData.scheduledDate) {
+      newErrors.scheduledDate = 'Scheduled date is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    onSubmit({
+      warehouseId: Number(formData.warehouseId),
+      warehouseName: warehouses.find((w) => w.id === Number(formData.warehouseId))?.name,
+      status: physicalInventory?.status || 'DRAFT',
+      scheduledDate: formData.scheduledDate,
+      assignedTo: formData.assignedTo || undefined,
+      items: physicalInventory?.items || [],
+      notes: formData.notes || undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {physicalInventory ? 'Edit Physical Inventory' : 'Create Physical Inventory'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Warehouse <span className="text-red-500">*</span>
+              </label>
+              <CustomDropdown
+                value={formData.warehouseId}
+                onChange={(value) => {
+                  setFormData({ ...formData, warehouseId: value });
+                  if (errors.warehouseId) setErrors({ ...errors, warehouseId: '' });
+                }}
+                options={warehouses.map((w) => ({ value: w.id.toString(), label: w.name }))}
+                placeholder="Select warehouse"
+                error={!!errors.warehouseId}
+              />
+              {errors.warehouseId && <p className="mt-1 text-sm text-red-500">{errors.warehouseId}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Scheduled Date <span className="text-red-500">*</span>
+              </label>
+              <DatePicker
+                value={formData.scheduledDate || null}
+                onChange={(date) => {
+                  setFormData({ ...formData, scheduledDate: date || '' });
+                  if (errors.scheduledDate) setErrors({ ...errors, scheduledDate: '' });
+                }}
+                placeholder="Select date"
+              />
+              {errors.scheduledDate && <p className="mt-1 text-sm text-red-500">{errors.scheduledDate}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assigned To</label>
+              <input
+                type="text"
+                value={formData.assignedTo}
+                onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="User name or email"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Additional notes..."
+            />
+          </div>
+
+          <div className="flex text-[14px] items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              {physicalInventory ? 'Update' : 'Create'} Physical Inventory
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// View Physical Inventory Modal Component
+function ViewPhysicalInventoryModal({
+  physicalInventory,
+  warehouses,
+  onClose,
+}: {
+  physicalInventory: PhysicalInventory;
+  warehouses: Warehouse[];
+  onClose: () => void;
+}) {
+  const warehouse = warehouses.find((w) => w.id === physicalInventory.warehouseId);
+  const itemsCount = physicalInventory.items?.length || 0;
+  const completedItems = physicalInventory.items?.filter((i) => i.status === 'COUNTED' || i.status === 'VERIFIED').length || 0;
+  const progress = itemsCount > 0 ? Math.round((completedItems / itemsCount) * 100) : 0;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+      case 'SCHEDULED':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'IN_PROGRESS':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Physical Inventory Details</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Inventory Number</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{physicalInventory.inventoryNumber}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(physicalInventory.status)}`}>
+                {physicalInventory.status.replace('_', ' ')}
+              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Warehouse</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{warehouse?.name || physicalInventory.warehouseName || 'Unknown'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Scheduled Date</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {new Date(physicalInventory.scheduledDate).toLocaleDateString()}
+              </p>
+            </div>
+            {physicalInventory.startDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Start Date</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(physicalInventory.startDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+            {physicalInventory.completedDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Completed Date</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(physicalInventory.completedDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+            {physicalInventory.assignedTo && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Assigned To</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{physicalInventory.assignedTo}</p>
+              </div>
+            )}
+          </div>
+
+          {physicalInventory.notes && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</label>
+              <p className="text-sm text-gray-900 dark:text-white">{physicalInventory.notes}</p>
+            </div>
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">Progress</label>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{completedItems} / {itemsCount} items</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-primary-600 h-2 rounded-full transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          {physicalInventory.items && physicalInventory.items.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Items</label>
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Product</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">SKU</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">System Qty</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Counted Qty</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Variance</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {physicalInventory.items.map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.productName || 'Unknown'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{item.sku || 'N/A'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.systemQuantity}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.countedQuantity ?? '—'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
+                          {item.variance !== undefined ? (item.variance > 0 ? '+' : '') + item.variance : '—'}
+                        </td>
+                        <td className="px-4 py-2 text-sm">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            item.status === 'COUNTED' || item.status === 'VERIFIED'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : item.status === 'DISCREPANCY'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import {
@@ -10,7 +11,6 @@ import {
   ChevronsRight,
   Edit,
   Trash2,
-  AlertTriangle,
   ChevronDown,
   Search,
   Warehouse,
@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
-import { ButtonWithWaves, CustomDropdown, SearchInput } from '../components/ui';
+import { ButtonWithWaves, CustomDropdown, SearchInput, DeleteModal } from '../components/ui';
 
 // Types
 interface Warehouse {
@@ -96,7 +96,6 @@ export default function WarehousesLocations() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditModalShowing, setIsEditModalShowing] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeleteModalShowing, setIsDeleteModalShowing] = useState(false);
   const [isBinsModalOpen, setIsBinsModalOpen] = useState(false);
   const [isBinsModalShowing, setIsBinsModalShowing] = useState(false);
   const [isPutAwayRulesModalOpen, setIsPutAwayRulesModalOpen] = useState(false);
@@ -119,7 +118,6 @@ export default function WarehousesLocations() {
         requestAnimationFrame(() => {
           if (isModalOpen) setIsModalShowing(true);
           if (isEditModalOpen) setIsEditModalShowing(true);
-          if (isDeleteModalOpen) setIsDeleteModalShowing(true);
           if (isBinsModalOpen) setIsBinsModalShowing(true);
           if (isPutAwayRulesModalOpen) setIsPutAwayRulesModalShowing(true);
         });
@@ -128,7 +126,6 @@ export default function WarehousesLocations() {
       document.body.classList.remove('modal-open');
       setIsModalShowing(false);
       setIsEditModalShowing(false);
-      setIsDeleteModalShowing(false);
       setIsBinsModalShowing(false);
       setIsPutAwayRulesModalShowing(false);
     }
@@ -319,11 +316,8 @@ export default function WarehousesLocations() {
   };
 
   const closeDeleteModal = () => {
-    setIsDeleteModalShowing(false);
-    setTimeout(() => {
-      setIsDeleteModalOpen(false);
-      setSelectedWarehouse(null);
-    }, 300);
+    setIsDeleteModalOpen(false);
+    setSelectedWarehouse(null);
   };
 
   const openBinsModal = (warehouse: Warehouse) => {
@@ -513,7 +507,7 @@ export default function WarehousesLocations() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Rules
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -593,7 +587,7 @@ export default function WarehousesLocations() {
                             {rules.length} rule{rules.length !== 1 ? 's' : ''}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-start gap-2">
                               <button
                                 onClick={() => openBinsModal(warehouse)}
                                 className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
@@ -833,12 +827,13 @@ export default function WarehousesLocations() {
 
       {/* Delete Warehouse Modal */}
       {isDeleteModalOpen && selectedWarehouse && (
-        <DeleteWarehouseModal
-          warehouse={selectedWarehouse}
+        <DeleteModal
+          title="Delete Warehouse"
+          message="Are you sure you want to delete"
+          itemName={selectedWarehouse.name}
           onClose={closeDeleteModal}
           onConfirm={() => deleteWarehouseMutation.mutate(selectedWarehouse.id)}
           isLoading={deleteWarehouseMutation.isPending}
-          isShowing={isDeleteModalShowing}
         />
       )}
 
@@ -1287,73 +1282,6 @@ function EditWarehouseModal({
   );
 }
 
-// Delete Warehouse Modal Component
-function DeleteWarehouseModal({
-  warehouse,
-  onClose,
-  onConfirm,
-  isLoading,
-  isShowing,
-}: {
-  warehouse: Warehouse;
-  onClose: () => void;
-  onConfirm: () => void;
-  isLoading: boolean;
-  isShowing: boolean;
-}) {
-  return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
-        isShowing ? 'opacity-100' : 'opacity-0'
-      }`}
-      onClick={onClose}
-    >
-      <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md transform transition-all duration-300 ${
-          isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Delete Warehouse</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                This action cannot be undone
-              </p>
-            </div>
-          </div>
-
-          <p className="text-gray-700 dark:text-gray-300 mb-6">
-            Are you sure you want to delete <span className="font-semibold">{warehouse.name}</span>? This will
-            permanently remove the warehouse from your database.
-          </p>
-
-          <div className="flex items-center text-[14px] justify-end gap-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={isLoading}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? 'Deleting...' : 'Delete Warehouse'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Bins Modal Component
 function BinsModal({
@@ -1534,14 +1462,14 @@ function BinsModal({
         <div className="p-6">
           {/* Search and Filters */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 relative">
+            <div className="md:col-span-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Search by bin code, location, or zone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full text-[14px] ::placeholder-[12px] pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
             <div>
@@ -1762,8 +1690,10 @@ function AddEditBinModal({
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -1793,7 +1723,7 @@ function AddEditBinModal({
                   setFormData({ ...formData, binCode: e.target.value });
                   if (errors.binCode) setErrors({ ...errors, binCode: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                className={`w-full text-[14px] ::placeholder-[12px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                   errors.binCode ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="A-01-01"
@@ -1812,7 +1742,7 @@ function AddEditBinModal({
                 type="text"
                 value={formData.zone}
                 onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Zone identifier"
               />
             </div>
@@ -1825,7 +1755,7 @@ function AddEditBinModal({
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Location description"
               />
             </div>
@@ -1858,7 +1788,7 @@ function AddEditBinModal({
                   setFormData({ ...formData, maxCapacity: e.target.value });
                   if (errors.maxCapacity) setErrors({ ...errors, maxCapacity: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                className={`w-full px-4 py-2 ::placeholder-[12px] text-[14px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                   errors.maxCapacity ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="0"
@@ -1868,7 +1798,7 @@ function AddEditBinModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm ::placeholder-[12px] text-[14px] font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Current Capacity
               </label>
               <input
@@ -1897,7 +1827,7 @@ function AddEditBinModal({
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Additional notes..."
               />
             </div>
@@ -1915,7 +1845,7 @@ function AddEditBinModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex text-[14px] items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
@@ -1932,7 +1862,8 @@ function AddEditBinModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -2078,7 +2009,7 @@ function PutAwayRulesModal({
                 placeholder="Search rules by name, description, category, or zone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full text-[14px] ::placeholder-[12px] pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -2342,8 +2273,10 @@ function AddEditPutAwayRuleModal({
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -2374,7 +2307,7 @@ function AddEditPutAwayRuleModal({
                   setFormData({ ...formData, name: e.target.value });
                   if (errors.name) setErrors({ ...errors, name: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                className={`w-full px-4 py-2 ::placeholder-[12px] text-[14px] border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                   errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., Heavy Items - Zone A"
@@ -2393,7 +2326,7 @@ function AddEditPutAwayRuleModal({
                   setFormData({ ...formData, priority: e.target.value });
                   if (errors.priority) setErrors({ ...errors, priority: '' });
                 }}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                className={`w-full text-[14px] ::placeholder-[12px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                   errors.priority ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="0"
@@ -2427,7 +2360,7 @@ function AddEditPutAwayRuleModal({
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={2}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Rule description..."
               />
             </div>
@@ -2445,7 +2378,7 @@ function AddEditPutAwayRuleModal({
                   type="text"
                   value={formData.productCategory}
                   onChange={(e) => setFormData({ ...formData, productCategory: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Electronics"
                 />
               </div>
@@ -2458,7 +2391,7 @@ function AddEditPutAwayRuleModal({
                   type="text"
                   value={formData.productType}
                   onChange={(e) => setFormData({ ...formData, productType: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Fragile"
                 />
               </div>
@@ -2471,7 +2404,7 @@ function AddEditPutAwayRuleModal({
                   type="text"
                   value={formData.size}
                   onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Large"
                 />
               </div>
@@ -2504,7 +2437,7 @@ function AddEditPutAwayRuleModal({
                   type="text"
                   value={formData.temperature}
                   onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Cold, Room Temp"
                 />
               </div>
@@ -2540,7 +2473,7 @@ function AddEditPutAwayRuleModal({
                   type="text"
                   value={formData.preferredZone}
                   onChange={(e) => setFormData({ ...formData, preferredZone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-ful l px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Zone A"
                 />
               </div>
@@ -2571,7 +2504,7 @@ function AddEditPutAwayRuleModal({
                   type="text"
                   value={formData.avoidZones}
                   onChange={(e) => setFormData({ ...formData, avoidZones: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full text-[14px] ::placeholder-[12px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., Zone B, Zone C"
                 />
               </div>
@@ -2587,7 +2520,7 @@ function AddEditPutAwayRuleModal({
                     setFormData({ ...formData, maxHeight: e.target.value });
                     if (errors.maxHeight) setErrors({ ...errors, maxHeight: '' });
                   }}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                  className={`w-full text-[14px] ::placeholder-[12px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                     errors.maxHeight ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="0"
@@ -2605,7 +2538,7 @@ function AddEditPutAwayRuleModal({
                     type="checkbox"
                     checked={formData.stackingAllowed}
                     onChange={(e) => setFormData({ ...formData, stackingAllowed: e.target.checked })}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    className="w-4 h-4 ::placeholder-[12px] text-[14px] text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Allow Stacking
@@ -2615,7 +2548,7 @@ function AddEditPutAwayRuleModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex text-[14px] items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
@@ -2632,7 +2565,8 @@ function AddEditPutAwayRuleModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

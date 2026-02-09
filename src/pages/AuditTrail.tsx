@@ -339,9 +339,9 @@ export default function AuditTrail() {
           <SearchInput
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search by transaction ID, entity name, user, description..."
+              placeholder="Search by transaction ID, entity name, user, description..."
             className="w-full lg:max-w-md"
-          />
+            />
           <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[180px]">

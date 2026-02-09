@@ -509,11 +509,11 @@ function AuditLogsSection() {
           {/* Search */}
           <div className="lg:col-span-2">
             <SearchInput
-              value={searchQuery}
+                value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search logs..."
               className="w-full"
-            />
+              />
           </div>
 
           {/* Action Filter */}
@@ -1357,11 +1357,11 @@ function SystemLogsSection() {
           {/* Search */}
           <div className="lg:col-span-2">
             <SearchInput
-              value={searchQuery}
+                value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search logs..."
               className="w-full"
-            />
+              />
           </div>
 
           {/* Level Filter */}

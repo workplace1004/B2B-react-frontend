@@ -655,14 +655,14 @@ export default function Omnichannel() {
               {/* Search and Filters */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <SearchInput
-                  value={searchQuery}
+                    value={searchQuery}
                   onChange={(value) => {
                     setSearchQuery(value);
-                    setCurrentPage(1);
-                  }}
+                      setCurrentPage(1);
+                    }}
                   placeholder="Search BOPIS orders..."
                   className="md:col-span-2"
-                />
+                  />
                 <div>
                   <CustomDropdown
                     value={statusFilter}
@@ -865,14 +865,14 @@ export default function Omnichannel() {
               {/* Search and Filters */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <SearchInput
-                  value={searchQuery}
+                    value={searchQuery}
                   onChange={(value) => {
                     setSearchQuery(value);
-                    setCurrentPage(1);
-                  }}
+                      setCurrentPage(1);
+                    }}
                   placeholder="Search BORIS returns..."
                   className="md:col-span-2"
-                />
+                  />
                 <div>
                   <CustomDropdown
                     value={statusFilter}
@@ -1087,13 +1087,13 @@ export default function Omnichannel() {
               {/* Search */}
               <div className="mb-6">
                 <SearchInput
-                  value={searchQuery}
+                    value={searchQuery}
                   onChange={(value) => {
                     setSearchQuery(value);
-                    setCurrentPage(1);
-                  }}
+                      setCurrentPage(1);
+                    }}
                   placeholder="Search endless aisle products..."
-                />
+                  />
               </div>
 
               {/* Endless Aisle Products Grid */}
@@ -1278,13 +1278,13 @@ export default function Omnichannel() {
               {/* Search */}
               <div className="mb-6">
                 <SearchInput
-                  value={searchQuery}
+                    value={searchQuery}
                   onChange={(value) => {
                     setSearchQuery(value);
-                    setCurrentPage(1);
-                  }}
+                      setCurrentPage(1);
+                    }}
                   placeholder="Search stores..."
-                />
+                  />
               </div>
 
               {/* Stores Grid */}

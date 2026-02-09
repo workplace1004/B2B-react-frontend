@@ -242,11 +242,11 @@ export default function SizeFit() {
           {/* Filters */}
           <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <SearchInput
-          value={searchQuery}
+            value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search size charts..."
           className="flex-1"
-        />
+          />
         <div className="relative" ref={categoryFilterRef}>
           <button
             type="button"

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DatePickerProps {
@@ -24,7 +25,13 @@ export default function DatePicker({
   // Close calendar when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        datePickerRef.current && 
+        !datePickerRef.current.contains(target) &&
+        calendarRef.current &&
+        !calendarRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -172,33 +179,32 @@ export default function DatePicker({
     days.push(day);
   }
 
-  // Calculate position based on available space and use fixed positioning in modals
+  // Calculate position - always position below input, use fixed positioning to avoid overflow clipping
   useEffect(() => {
     if (isOpen && inputRef.current && calendarRef.current) {
       const inputRect = inputRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - inputRect.bottom;
-      const spaceAbove = inputRect.top;
       const calendarHeight = 320; // Approximate calendar height
 
-      // Update calendar position
-      if (spaceBelow < calendarHeight && spaceAbove > spaceBelow) {
-        // Position above input
-        calendarRef.current.style.top = 'auto';
-        calendarRef.current.style.bottom = `${window.innerHeight - inputRect.top + 4}px`;
-      } else {
-        // Position below input
-        calendarRef.current.style.bottom = 'auto';
-        calendarRef.current.style.top = `${inputRect.bottom + 4}px`;
+      // Always position below the input field
+      let topPosition = inputRect.bottom + 4;
+      
+      // If calendar would go off-screen, adjust to fit within viewport
+      if (topPosition + calendarHeight > window.innerHeight) {
+        // Position it so it fits, but still try to keep it as close to below as possible
+        topPosition = Math.max(4, window.innerHeight - calendarHeight - 4);
       }
+
+      calendarRef.current.style.top = `${topPosition}px`;
       calendarRef.current.style.left = `${inputRect.left}px`;
       calendarRef.current.style.width = `${Math.max(inputRect.width, 320)}px`;
       calendarRef.current.style.maxWidth = '320px';
+      calendarRef.current.style.position = 'fixed';
     }
   }, [isOpen, currentMonth]);
 
   return (
-    <div ref={datePickerRef} className={`relative ${className}`}>
-      <div className="relative">
+    <div ref={datePickerRef} className={`relative w-full ${className}` }>
+      <div className="relative w-full">
         <input
           ref={inputRef}
           type="text"
@@ -207,7 +213,7 @@ export default function DatePicker({
           disabled={disabled}
           readOnly
           onClick={() => !disabled && setIsOpen(!isOpen)}
-          className={`w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+          className={`w-full px-4 py-2 pr-10 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
             disabled ? '' : 'hover:border-primary-400 dark:hover:border-primary-500'
           }`}
         />
@@ -225,10 +231,10 @@ export default function DatePicker({
         </div>
       </div>
 
-      {isOpen && !disabled && (
+      {isOpen && !disabled && typeof document !== 'undefined' && createPortal(
         <div 
           ref={calendarRef}
-          className="fixed bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-[10000] p-4"
+          className="fixed z-[100] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-4"
           style={{ 
             position: 'fixed',
             minWidth: '320px',
@@ -279,7 +285,7 @@ export default function DatePicker({
               const isTodayDay = isToday(day);
               const isCurrentMonthDay = isCurrentMonth(day);
 
-  return (
+              return (
                 <button
                   key={`calendar-cell-${index}`}
                   type="button"
@@ -300,7 +306,8 @@ export default function DatePicker({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

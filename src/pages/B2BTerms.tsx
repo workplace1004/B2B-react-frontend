@@ -389,10 +389,10 @@ export default function B2BTerms() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <SearchInput
-            value={searchQuery}
+              value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search by customer name..."
-          />
+            />
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[200px]">
@@ -703,132 +703,132 @@ function AddTermsModal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <div
+        <div
         onClick={(e) => e.stopPropagation()}
         className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden transform transition-all ${
-          isShowing ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-        }`}
-      >
+            isShowing ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+          }`}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add B2B Terms</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add B2B Terms</h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+          </div>
 
-        <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
           <div className="bg-white dark:bg-gray-800 px-6 py-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
-            {/* Customer Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Customer <span className="text-red-500">*</span>
-              </label>
-              <CustomDropdown
-                value={formData.customerId}
-                onChange={handleCustomerChange}
-                options={customers.map((c) => ({ value: c.id.toString(), label: c.name }))}
-                placeholder="Select customer..."
-                error={!!errors.customerId}
-              />
-              {errors.customerId && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.customerId}</p>
-              )}
-            </div>
-
-            {/* Credit Limit */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Credit Limit ($) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.creditLimit}
-                onChange={(e) => {
-                  setFormData({ ...formData, creditLimit: e.target.value });
-                  setErrors({ ...errors, creditLimit: '' });
-                }}
-                className={`w-full ::placeholder-[12px] text-[14px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                  errors.creditLimit ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
-                }`}
-                placeholder="0.00"
-              />
-              {errors.creditLimit && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.creditLimit}</p>
-              )}
-            </div>
-
-            {/* Payment Terms Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Payment Terms <span className="text-red-500">*</span>
-              </label>
-              <CustomDropdown
-                value={formData.paymentTermType}
-                onChange={(value) => {
-                  setFormData({ ...formData, paymentTermType: value as PaymentTermType });
-                  setErrors({ ...errors, customDescription: '' });
-                }}
-                options={[
-                  { value: 'NET_15', label: 'Net 15' },
-                  { value: 'NET_30', label: 'Net 30' },
-                  { value: 'NET_45', label: 'Net 45' },
-                  { value: 'NET_60', label: 'Net 60' },
-                  { value: 'DUE_ON_RECEIPT', label: 'Due on Receipt' },
-                  { value: 'CUSTOM', label: 'Custom' },
-                ]}
-              />
-            </div>
-
-            {/* Custom Payment Terms */}
-            {formData.paymentTermType === 'CUSTOM' && (
+              {/* Customer Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Custom Description <span className="text-red-500">*</span>
+                  Customer <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={formData.customDescription}
-                  onChange={(e) => {
-                    setFormData({ ...formData, customDescription: e.target.value });
-                    setErrors({ ...errors, customDescription: '' });
-                  }}
-                  className={`w-full ::placeholder-[12px] text-[14px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
-                    errors.customDescription ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="e.g., Net 90 with 2% discount if paid within 30 days"
+                <CustomDropdown
+                  value={formData.customerId}
+                  onChange={handleCustomerChange}
+                  options={customers.map((c) => ({ value: c.id.toString(), label: c.name }))}
+                  placeholder="Select customer..."
+                  error={!!errors.customerId}
                 />
-                {errors.customDescription && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.customDescription}</p>
+                {errors.customerId && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.customerId}</p>
                 )}
               </div>
-            )}
-          </div>
 
-          <div className="bg-gray-200 dark:bg-gray-700 text-[14px] px-6 py-4 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Add Terms
-            </button>
-          </div>
-        </form>
+              {/* Credit Limit */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Credit Limit ($) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.creditLimit}
+                  onChange={(e) => {
+                    setFormData({ ...formData, creditLimit: e.target.value });
+                    setErrors({ ...errors, creditLimit: '' });
+                  }}
+                  className={`w-full ::placeholder-[12px] text-[14px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
+                    errors.creditLimit ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  placeholder="0.00"
+                />
+                {errors.creditLimit && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.creditLimit}</p>
+                )}
+              </div>
+
+              {/* Payment Terms Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Payment Terms <span className="text-red-500">*</span>
+                </label>
+                <CustomDropdown
+                  value={formData.paymentTermType}
+                  onChange={(value) => {
+                    setFormData({ ...formData, paymentTermType: value as PaymentTermType });
+                    setErrors({ ...errors, customDescription: '' });
+                  }}
+                  options={[
+                    { value: 'NET_15', label: 'Net 15' },
+                    { value: 'NET_30', label: 'Net 30' },
+                    { value: 'NET_45', label: 'Net 45' },
+                    { value: 'NET_60', label: 'Net 60' },
+                    { value: 'DUE_ON_RECEIPT', label: 'Due on Receipt' },
+                    { value: 'CUSTOM', label: 'Custom' },
+                  ]}
+                />
+              </div>
+
+              {/* Custom Payment Terms */}
+              {formData.paymentTermType === 'CUSTOM' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Custom Description <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.customDescription}
+                    onChange={(e) => {
+                      setFormData({ ...formData, customDescription: e.target.value });
+                      setErrors({ ...errors, customDescription: '' });
+                    }}
+                    className={`w-full ::placeholder-[12px] text-[14px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white ${
+                      errors.customDescription ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                    placeholder="e.g., Net 90 with 2% discount if paid within 30 days"
+                  />
+                  {errors.customDescription && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.customDescription}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gray-200 dark:bg-gray-700 text-[14px] px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Add Terms
+              </button>
+            </div>
+          </form>
       </div>
     </div>
   );
@@ -887,32 +887,32 @@ function EditTermsModal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <div
+        <div
         onClick={(e) => e.stopPropagation()}
         className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden transform transition-all ${
-          isShowing ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-        }`}
-      >
+            isShowing ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+          }`}
+        >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit B2B Terms</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{terms.customerName}</p>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit B2B Terms</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{terms.customerName}</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
 
-        <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
           <div className="bg-white dark:bg-gray-800 px-6 py-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
-            {/* Current Balance Info */}
+              {/* Current Balance Info */}
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1020,24 +1020,24 @@ function EditTermsModal({
                   ]}
                 />
               </div>
-          </div>
+            </div>
 
-          <div className="bg-gray-200 dark:bg-gray-700 text-[14px] px-6 py-4 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Update Terms
-            </button>
-          </div>
-        </form>
+            <div className="bg-gray-200 dark:bg-gray-700 text-[14px] px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Update Terms
+              </button>
+            </div>
+          </form>
       </div>
     </div>
   );

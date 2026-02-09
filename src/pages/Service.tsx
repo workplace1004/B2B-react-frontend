@@ -310,10 +310,10 @@ function ReturnStatusSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <SearchInput
-            value={searchQuery}
+              value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search by RMA number, order number, product, SKU..."
-          />
+            />
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[240px]">
@@ -803,10 +803,10 @@ function CaseLogSection() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <SearchInput
-            value={searchQuery}
+              value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search cases by number, title, description..."
-          />
+            />
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <div className="min-w-[240px]">

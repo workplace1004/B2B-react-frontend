@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
@@ -216,10 +216,7 @@ export default function PickPackShip() {
   const [isCreatePackSlipModalOpen, setIsCreatePackSlipModalOpen] = useState(false);
   const [isCreateShippingLabelModalOpen, setIsCreateShippingLabelModalOpen] = useState(false);
 
-  // Local storage keys
-  const PICK_LISTS_KEY = 'pick_pack_ship_pick_lists';
-  const PACK_SLIPS_KEY = 'pick_pack_ship_pack_slips';
-  const SHIPPING_LABELS_KEY = 'pick_pack_ship_shipping_labels';
+  const queryClient = useQueryClient();
 
   // Fetch orders for creating pick lists
   const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
@@ -272,116 +269,211 @@ export default function PickPackShip() {
     return Array.isArray(warehousesData) ? warehousesData : (warehousesData?.data || []);
   }, [warehousesData]);
 
-  // Load pick lists, pack slips, and shipping labels from localStorage
-  const [pickLists, setPickLists] = useState<PickList[]>([]);
-  const [packSlips, setPackSlips] = useState<PackSlip[]>([]);
-  const [shippingLabels, setShippingLabels] = useState<ShippingLabel[]>([]);
-
-  useEffect(() => {
-    try {
-      const storedPickLists = localStorage.getItem(PICK_LISTS_KEY);
-      if (storedPickLists) {
-        setPickLists(JSON.parse(storedPickLists));
+  // Fetch pick lists from API
+  const { data: pickListsData } = useQuery({
+    queryKey: ['pick-lists', currentPage, itemsPerPage, statusFilter, warehouseFilter],
+    queryFn: async () => {
+      try {
+        const params: any = {
+          skip: (currentPage - 1) * itemsPerPage,
+          take: itemsPerPage,
+        };
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
+        if (warehouseFilter !== 'all') {
+          params.warehouseId = warehouseFilter;
+        }
+        const response = await api.get('/pick-lists', { params });
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        console.error('Error fetching pick lists:', error);
+        return { data: [], total: 0 };
       }
-    } catch (error) {
-      console.error('Error loading pick lists:', error);
-    }
+    },
+  });
 
-    try {
-      const storedPackSlips = localStorage.getItem(PACK_SLIPS_KEY);
-      if (storedPackSlips) {
-        setPackSlips(JSON.parse(storedPackSlips));
+  const pickLists: PickList[] = useMemo(() => {
+    const listsData = pickListsData?.data || [];
+    if (!Array.isArray(listsData)) return [];
+    return listsData.map((pl: any) => ({
+      id: pl.id,
+      pickListNumber: pl.pickListNumber,
+      orderId: pl.orderId,
+      orderNumber: pl.order?.orderNumber,
+      warehouseId: pl.warehouseId,
+      warehouseName: pl.warehouse?.name,
+      status: pl.status,
+      assignedTo: pl.assignedTo,
+      items: pl.items || [],
+      createdAt: pl.createdAt,
+      startedAt: pl.startedAt,
+      completedAt: pl.completedAt,
+      notes: pl.notes,
+    }));
+  }, [pickListsData]);
+
+  // Fetch pack slips from API
+  const { data: packSlipsData } = useQuery({
+    queryKey: ['pack-slips', currentPage, itemsPerPage, statusFilter, warehouseFilter],
+    queryFn: async () => {
+      try {
+        const params: any = {
+          skip: (currentPage - 1) * itemsPerPage,
+          take: itemsPerPage,
+        };
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
+        if (warehouseFilter !== 'all') {
+          params.warehouseId = warehouseFilter;
+        }
+        const response = await api.get('/pack-slips', { params });
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        console.error('Error fetching pack slips:', error);
+        return { data: [], total: 0 };
       }
-    } catch (error) {
-      console.error('Error loading pack slips:', error);
-    }
+    },
+  });
 
-    try {
-      const storedShippingLabels = localStorage.getItem(SHIPPING_LABELS_KEY);
-      if (storedShippingLabels) {
-        setShippingLabels(JSON.parse(storedShippingLabels));
+  const packSlips: PackSlip[] = useMemo(() => {
+    const slipsData = packSlipsData?.data || [];
+    if (!Array.isArray(slipsData)) return [];
+    return slipsData.map((ps: any) => ({
+      id: ps.id,
+      packSlipNumber: ps.packSlipNumber,
+      orderId: ps.orderId,
+      orderNumber: ps.order?.orderNumber,
+      pickListId: ps.pickListId,
+      warehouseId: ps.warehouseId,
+      warehouseName: ps.warehouse?.name,
+      status: ps.status,
+      packedBy: ps.packedBy,
+      items: ps.items || [],
+      createdAt: ps.createdAt,
+      packedAt: ps.packedAt,
+      notes: ps.notes,
+    }));
+  }, [packSlipsData]);
+
+  // Fetch shipping labels from API
+  const { data: shippingLabelsData } = useQuery({
+    queryKey: ['shipping-labels', currentPage, itemsPerPage, statusFilter],
+    queryFn: async () => {
+      try {
+        const params: any = {
+          skip: (currentPage - 1) * itemsPerPage,
+          take: itemsPerPage,
+        };
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
+        const response = await api.get('/shipping-labels', { params });
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        console.error('Error fetching shipping labels:', error);
+        return { data: [], total: 0 };
       }
-    } catch (error) {
-      console.error('Error loading shipping labels:', error);
-    }
-  }, []);
+    },
+  });
 
-  // Save functions
-  const savePickLists = (lists: PickList[]) => {
-    try {
-      localStorage.setItem(PICK_LISTS_KEY, JSON.stringify(lists));
-      setPickLists(lists);
-    } catch (error) {
-      console.error('Error saving pick lists:', error);
-      toast.error('Failed to save pick lists');
-    }
-  };
+  const shippingLabels: ShippingLabel[] = useMemo(() => {
+    const labelsData = shippingLabelsData?.data || [];
+    if (!Array.isArray(labelsData)) return [];
+    return labelsData.map((sl: any) => ({
+      id: sl.id,
+      labelNumber: sl.labelNumber,
+      orderId: sl.orderId,
+      orderNumber: sl.order?.orderNumber,
+      packSlipId: sl.packSlipId,
+      carrier: sl.carrier as 'FEDEX' | 'UPS' | 'DHL' | 'USPS' | 'OTHER',
+      trackingNumber: sl.trackingNumber,
+      serviceType: sl.serviceType,
+      status: sl.status as 'DRAFT' | 'GENERATED' | 'PRINTED' | 'SHIPPED' | 'CANCELLED',
+      weight: sl.weight ? parseFloat(sl.weight.toString()) : undefined,
+      dimensions: sl.dimensions,
+      cost: sl.cost ? parseFloat(sl.cost.toString()) : undefined,
+      printedAt: sl.printedAt,
+      shippedAt: sl.shippedAt,
+      createdAt: sl.createdAt,
+      notes: sl.notes,
+      fromAddress: {
+        name: '',
+        address: '',
+        city: '',
+        postalCode: '',
+        country: '',
+      },
+      toAddress: {
+        name: '',
+        address: '',
+        city: '',
+        postalCode: '',
+        country: '',
+      },
+    }));
+  }, [shippingLabelsData]);
+
+  // Mutations
+  const createPickListMutation = useMutation({
+    mutationFn: async (pickListData: Omit<PickList, 'id' | 'pickListNumber' | 'createdAt'>) => {
+      const response = await api.post('/pick-lists', pickListData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pick-lists'] });
+      toast.success('Pick list created successfully');
+      setIsCreatePickListModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to create pick list');
+    },
+  });
+
+  const createPackSlipMutation = useMutation({
+    mutationFn: async (packSlipData: Omit<PackSlip, 'id' | 'packSlipNumber' | 'createdAt'>) => {
+      const response = await api.post('/pack-slips', packSlipData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pack-slips'] });
+      toast.success('Pack slip created successfully');
+      setIsCreatePackSlipModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to create pack slip');
+    },
+  });
+
+  const createShippingLabelMutation = useMutation({
+    mutationFn: async (labelData: Omit<ShippingLabel, 'id' | 'labelNumber' | 'createdAt'>) => {
+      const response = await api.post('/shipping-labels', labelData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shipping-labels'] });
+      toast.success('Shipping label created successfully');
+      setIsCreateShippingLabelModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to create shipping label');
+    },
+  });
 
   const handleCreatePickList = (pickListData: Omit<PickList, 'id' | 'pickListNumber' | 'createdAt'>) => {
-    const pickListNumber = `PL-${Date.now()}`;
-    const newPickList: PickList = {
-      ...pickListData,
-      id: Date.now(),
-      pickListNumber,
-      createdAt: new Date().toISOString(),
-      status: 'DRAFT',
-    };
-    const updatedPickLists = [...pickLists, newPickList];
-    savePickLists(updatedPickLists);
-    toast.success('Pick list created successfully');
-    setIsCreatePickListModalOpen(false);
-  };
-
-  const savePackSlips = (slips: PackSlip[]) => {
-    try {
-      localStorage.setItem(PACK_SLIPS_KEY, JSON.stringify(slips));
-      setPackSlips(slips);
-    } catch (error) {
-      console.error('Error saving pack slips:', error);
-      toast.error('Failed to save pack slips');
-    }
+    createPickListMutation.mutate(pickListData);
   };
 
   const handleCreatePackSlip = (packSlipData: Omit<PackSlip, 'id' | 'packSlipNumber' | 'createdAt'>) => {
-    const packSlipNumber = `PS-${Date.now()}`;
-    const newPackSlip: PackSlip = {
-      ...packSlipData,
-      id: Date.now(),
-      packSlipNumber,
-      createdAt: new Date().toISOString(),
-      status: 'DRAFT',
-    };
-    const updatedPackSlips = [...packSlips, newPackSlip];
-    savePackSlips(updatedPackSlips);
-    toast.success('Pack slip created successfully');
-    setIsCreatePackSlipModalOpen(false);
-  };
-
-  const saveShippingLabels = (labels: ShippingLabel[]) => {
-    try {
-      localStorage.setItem(SHIPPING_LABELS_KEY, JSON.stringify(labels));
-      setShippingLabels(labels);
-    } catch (error) {
-      console.error('Error saving shipping labels:', error);
-      toast.error('Failed to save shipping labels');
-    }
+    createPackSlipMutation.mutate(packSlipData);
   };
 
   const handleCreateShippingLabel = (labelData: Omit<ShippingLabel, 'id' | 'labelNumber' | 'createdAt'>) => {
-    const labelNumber = `SL-${Date.now()}`;
-    const newShippingLabel: ShippingLabel = {
-      ...labelData,
-      id: Date.now(),
-      labelNumber,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedLabels = [...shippingLabels, newShippingLabel];
-    saveShippingLabels(updatedLabels);
-    toast.success('Shipping label created successfully');
-    setIsCreateShippingLabelModalOpen(false);
+    createShippingLabelMutation.mutate(labelData);
   };
 
-  // Filter pick lists
+  // Filter pick lists (client-side search only, other filters done by API)
   const filteredPickLists = useMemo(() => {
     let filtered = pickLists;
 
@@ -396,22 +488,10 @@ export default function PickPackShip() {
       );
     }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((list) => list.status === statusFilter);
-    }
+    return filtered;
+  }, [pickLists, searchQuery]);
 
-    if (warehouseFilter !== 'all') {
-      filtered = filtered.filter((list) => list.warehouseId === Number(warehouseFilter));
-    }
-
-    return filtered.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  }, [pickLists, searchQuery, statusFilter, warehouseFilter]);
-
-  // Filter pack slips
+  // Filter pack slips (client-side search only, other filters done by API)
   const filteredPackSlips = useMemo(() => {
     let filtered = packSlips;
 
@@ -426,22 +506,10 @@ export default function PickPackShip() {
       );
     }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((slip) => slip.status === statusFilter);
-    }
+    return filtered;
+  }, [packSlips, searchQuery]);
 
-    if (warehouseFilter !== 'all') {
-      filtered = filtered.filter((slip) => slip.warehouseId === Number(warehouseFilter));
-    }
-
-    return filtered.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  }, [packSlips, searchQuery, statusFilter, warehouseFilter]);
-
-  // Filter shipping labels
+  // Filter shipping labels (client-side search only, other filters done by API)
   const filteredShippingLabels = useMemo(() => {
     let filtered = shippingLabels;
 
@@ -456,16 +524,8 @@ export default function PickPackShip() {
       );
     }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((label) => label.status === statusFilter);
-    }
-
-    return filtered.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  }, [shippingLabels, searchQuery, statusFilter]);
+    return filtered;
+  }, [shippingLabels, searchQuery]);
 
   // Get current tab data
   const currentData = useMemo(() => {
@@ -474,34 +534,75 @@ export default function PickPackShip() {
     return filteredShippingLabels;
   }, [activeTab, filteredPickLists, filteredPackSlips, filteredShippingLabels]);
 
-  // Pagination
-  const totalItems = currentData.length;
+  // Pagination - use API pagination
+  const totalItems = activeTab === 'pick-lists' 
+    ? (pickListsData?.total || 0)
+    : activeTab === 'pack-slips'
+    ? (packSlipsData?.total || 0)
+    : (shippingLabelsData?.total || 0);
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return currentData.slice(startIndex, startIndex + itemsPerPage);
-  }, [currentData, currentPage, itemsPerPage]);
+  const paginatedData = currentData; // Already paginated by API
 
-  // Summary metrics
+  // Summary metrics - fetch all for metrics
+  const { data: allPickListsData } = useQuery({
+    queryKey: ['pick-lists-metrics'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/pick-lists?skip=0&take=10000');
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        return { data: [], total: 0 };
+      }
+    },
+  });
+
+  const { data: allPackSlipsData } = useQuery({
+    queryKey: ['pack-slips-metrics'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/pack-slips?skip=0&take=10000');
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        return { data: [], total: 0 };
+      }
+    },
+  });
+
+  const { data: allShippingLabelsData } = useQuery({
+    queryKey: ['shipping-labels-metrics'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/shipping-labels?skip=0&take=10000');
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        return { data: [], total: 0 };
+      }
+    },
+  });
+
   const summaryMetrics = useMemo(() => {
-    const pickListsTotal = pickLists.length;
-    const pickListsInProgress = pickLists.filter((l) => l.status === 'IN_PROGRESS' || l.status === 'ASSIGNED').length;
-    const pickListsCompleted = pickLists.filter((l) => l.status === 'COMPLETED').length;
+    const allPickLists = allPickListsData?.data || [];
+    const allPackSlips = allPackSlipsData?.data || [];
+    const allShippingLabels = allShippingLabelsData?.data || [];
 
-    const packSlipsTotal = packSlips.length;
-    const packSlipsPacking = packSlips.filter((s) => s.status === 'PACKING').length;
-    const packSlipsPacked = packSlips.filter((s) => s.status === 'PACKED').length;
+    const pickListsTotal = allPickLists.length;
+    const pickListsInProgress = allPickLists.filter((l: any) => l.status === 'IN_PROGRESS' || l.status === 'ASSIGNED').length;
+    const pickListsCompleted = allPickLists.filter((l: any) => l.status === 'COMPLETED').length;
 
-    const shippingLabelsTotal = shippingLabels.length;
-    const shippingLabelsGenerated = shippingLabels.filter((l) => l.status === 'GENERATED' || l.status === 'PRINTED').length;
-    const shippingLabelsShipped = shippingLabels.filter((l) => l.status === 'SHIPPED').length;
+    const packSlipsTotal = allPackSlips.length;
+    const packSlipsPacking = allPackSlips.filter((s: any) => s.status === 'PACKING').length;
+    const packSlipsPacked = allPackSlips.filter((s: any) => s.status === 'PACKED').length;
+
+    const shippingLabelsTotal = allShippingLabels.length;
+    const shippingLabelsGenerated = allShippingLabels.filter((l: any) => l.status === 'PRINTED').length;
+    const shippingLabelsShipped = allShippingLabels.filter((l: any) => l.status === 'SHIPPED').length;
 
     return {
       pickLists: { total: pickListsTotal, inProgress: pickListsInProgress, completed: pickListsCompleted },
       packSlips: { total: packSlipsTotal, packing: packSlipsPacking, packed: packSlipsPacked },
       shippingLabels: { total: shippingLabelsTotal, generated: shippingLabelsGenerated, shipped: shippingLabelsShipped },
     };
-  }, [pickLists, packSlips, shippingLabels]);
+  }, [allPickListsData, allPackSlipsData, allShippingLabelsData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -740,14 +841,14 @@ export default function PickPackShip() {
           {/* Search, Filters, and Create Button */}
           <div className="flex flex-col md:flex-row gap-4 mb-6 items-start md:items-center">
             <SearchInput
-              value={searchQuery}
+                value={searchQuery}
               onChange={(value) => {
                 setSearchQuery(value);
-                setCurrentPage(1);
-              }}
+                  setCurrentPage(1);
+                }}
               placeholder={`Search ${activeTab === 'pick-lists' ? 'pick lists' : activeTab === 'pack-slips' ? 'pack slips' : 'shipping labels'}...`}
               className="flex-1"
-            />
+              />
             {(activeTab === 'pick-lists' || activeTab === 'pack-slips') && (
               <div className="w-full md:w-auto md:min-w-[180px]">
                 <CustomDropdown

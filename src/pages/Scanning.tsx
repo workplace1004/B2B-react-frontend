@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
@@ -16,7 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
-import { SearchInput } from '../components/ui';
+import { SearchInput, DeleteModal } from '../components/ui';
 import { CustomDropdown } from '../components/ui';
 import { SkeletonPage } from '../components/Skeleton';
 
@@ -53,31 +53,22 @@ interface Warehouse {
   location?: string;
 }
 
-interface ScanHistory {
-  id: string;
-  code: string;
-  codeType: 'BARCODE' | 'QR' | 'RFID';
-  result: ScanResult | null;
-  scannedAt: string;
-  scannedBy?: string;
-}
 
 
 export default function Scanning() {
   const [activeMode, setActiveMode] = useState<'BARCODE' | 'QR' | 'RFID'>('BARCODE');
   const [scanInput, setScanInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [scanHistory, setScanHistory] = useState<ScanHistory[]>([]);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('all');
   const [actionType, setActionType] = useState<string>('LOOKUP');
   const [searchQuery, setSearchQuery] = useState('');
   const [codeTypeFilter, setCodeTypeFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const itemsPerPage = 10;
   const scanInputRef = useRef<HTMLInputElement>(null);
 
-  // Local storage key
-  const SCAN_HISTORY_KEY = 'scanning_history';
+  const queryClient = useQueryClient();
 
   // Fetch warehouses
   const { data: warehousesData, isLoading: isLoadingWarehouses } = useQuery({
@@ -97,26 +88,93 @@ export default function Scanning() {
     return Array.isArray(warehousesData) ? warehousesData : (warehousesData?.data || []);
   }, [warehousesData]);
 
-  // Load scan history from localStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(SCAN_HISTORY_KEY);
-      if (stored) {
-        setScanHistory(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.error('Error loading scan history:', error);
-    }
-  }, []);
+  // Mutations for scan history
+  const createScanHistoryMutation = useMutation({
+    mutationFn: async (scanData: {
+      code: string;
+      codeType: 'BARCODE' | 'QR' | 'RFID';
+      productId?: number;
+      warehouseId?: number;
+      action: string;
+      quantity?: number;
+      status: 'SUCCESS' | 'ERROR' | 'WARNING';
+      message?: string;
+      metadata?: Record<string, any>;
+    }) => {
+      const response = await api.post('/scan-history', scanData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scan-history'] });
+    },
+  });
 
-  // Save scan history to localStorage
-  const saveScanHistory = (history: ScanHistory[]) => {
-    try {
-      localStorage.setItem(SCAN_HISTORY_KEY, JSON.stringify(history));
-    } catch (error) {
-      console.error('Error saving scan history:', error);
-    }
+  const deleteAllScanHistoryMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete('/scan-history');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scan-history'] });
+      setIsDeleteModalOpen(false);
+      toast.success('Scan history cleared');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to clear scan history');
+    },
+  });
+
+  // Handle clear history
+  const handleClearHistory = () => {
+    deleteAllScanHistoryMutation.mutate();
   };
+
+  // Fetch scan history from API
+  const { data: scanHistoryData } = useQuery({
+    queryKey: ['scan-history', currentPage, itemsPerPage, codeTypeFilter],
+    queryFn: async () => {
+      try {
+        const params: any = {
+          skip: (currentPage - 1) * itemsPerPage,
+          take: itemsPerPage,
+        };
+        if (codeTypeFilter !== 'all') {
+          params.codeType = codeTypeFilter;
+        }
+        const response = await api.get('/scan-history', { params });
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        console.error('Error fetching scan history:', error);
+        return { data: [], total: 0 };
+      }
+    },
+  });
+
+  const scanHistory: any[] = useMemo(() => {
+    const historyData = scanHistoryData?.data || [];
+    if (!Array.isArray(historyData)) return [];
+    return historyData.map((h: any) => ({
+      id: h.id,
+      code: h.code,
+      codeType: h.codeType,
+      result: {
+        id: h.id,
+        code: h.code,
+        codeType: h.codeType,
+        productId: h.productId,
+        productName: h.product?.name,
+        sku: h.product?.sku,
+        warehouseId: h.warehouseId,
+        warehouseName: h.warehouse?.name,
+        action: h.action as ScanResult['action'],
+        status: h.status as ScanResult['status'],
+        message: h.message,
+        scannedAt: h.scannedAt,
+        metadata: h.metadata,
+      },
+      scannedAt: h.scannedAt,
+      scannedBy: h.scannedBy,
+    }));
+  }, [scanHistoryData]);
 
   // Focus on scan input when mode changes
   useEffect(() => {
@@ -201,18 +259,7 @@ export default function Scanning() {
         },
       };
 
-      // Add to history
-      const historyEntry: ScanHistory = {
-        id: scanId,
-        code,
-        codeType,
-        result,
-        scannedAt: new Date().toISOString(),
-      };
-
-      const updatedHistory = [historyEntry, ...scanHistory].slice(0, 1000); // Keep last 1000 scans
-      setScanHistory(updatedHistory);
-      saveScanHistory(updatedHistory);
+      // Save to API (already done by createScanHistoryMutation)
 
       // Show toast
       if (result.status === 'SUCCESS') {
@@ -227,27 +274,19 @@ export default function Scanning() {
         scanInputRef.current.focus();
       }
     } catch (error) {
-      const errorResult: ScanResult = {
-        id: scanId,
+      // Save error to API
+      createScanHistoryMutation.mutate({
         code,
-        codeType: 'BARCODE',
+        codeType,
         action: 'LOOKUP',
         status: 'ERROR',
         message: 'Error processing scan',
-        scannedAt: new Date().toISOString(),
-      };
-
-      const historyEntry: ScanHistory = {
-        id: scanId,
-        code,
-        codeType,
-        result: errorResult,
-        scannedAt: new Date().toISOString(),
-      };
-
-      const updatedHistory = [historyEntry, ...scanHistory];
-      setScanHistory(updatedHistory);
-      saveScanHistory(updatedHistory);
+        metadata: {
+          mode: activeMode,
+          action: actionType,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      });
 
       toast.error('Error processing scan');
     } finally {
@@ -263,43 +302,36 @@ export default function Scanning() {
     }
   };
 
-  // Filter scan history
+  // Filter scan history (client-side search only, other filters done by API)
   const filteredHistory = useMemo(() => {
     let filtered = scanHistory;
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (entry) =>
+        (entry: any) =>
           entry.code.toLowerCase().includes(query) ||
           entry.result?.productName?.toLowerCase().includes(query) ||
           entry.result?.sku?.toLowerCase().includes(query)
       );
     }
 
-    if (codeTypeFilter !== 'all') {
-      filtered = filtered.filter((entry) => entry.codeType === codeTypeFilter);
-    }
-
     return filtered;
-  }, [scanHistory, searchQuery, codeTypeFilter]);
+  }, [scanHistory, searchQuery]);
 
-  // Pagination
-  const totalHistory = filteredHistory.length;
+  // Pagination - use API pagination
+  const totalHistory = scanHistoryData?.total || 0;
   const totalPages = Math.ceil(totalHistory / itemsPerPage);
-  const paginatedHistory = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredHistory.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredHistory, currentPage, itemsPerPage]);
+  const paginatedHistory = filteredHistory; // Already paginated by API
 
   // Summary metrics
   const summaryMetrics = useMemo(() => {
     const total = scanHistory.length;
-    const successful = scanHistory.filter((h) => h.result?.status === 'SUCCESS').length;
-    const errors = scanHistory.filter((h) => h.result?.status === 'ERROR').length;
-    const warnings = scanHistory.filter((h) => h.result?.status === 'WARNING').length;
+    const successful = scanHistory.filter((h: any) => h.result?.status === 'SUCCESS').length;
+    const errors = scanHistory.filter((h: any) => h.result?.status === 'ERROR').length;
+    const warnings = scanHistory.filter((h: any) => h.result?.status === 'WARNING').length;
     const today = scanHistory.filter(
-      (h) => new Date(h.scannedAt).toDateString() === new Date().toDateString()
+      (h: any) => new Date(h.scannedAt).toDateString() === new Date().toDateString()
     ).length;
 
     return { total, successful, errors, warnings, today };
@@ -540,13 +572,7 @@ export default function Scanning() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Scan History</h2>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  if (window.confirm('Clear all scan history?')) {
-                    setScanHistory([]);
-                    saveScanHistory([]);
-                    toast.success('Scan history cleared');
-                  }
-                }}
+                onClick={() => setIsDeleteModalOpen(true)}
                 className="px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
                 <Trash2 className="w-4 h-4 inline mr-1" />
@@ -619,7 +645,7 @@ export default function Scanning() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedHistory.map((entry) => (
+                    {paginatedHistory.map((entry: any) => (
                       <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {new Date(entry.scannedAt).toLocaleString()}
@@ -718,6 +744,17 @@ export default function Scanning() {
           )}
         </div>
       </div>
+
+      {/* Delete Modal */}
+      {isDeleteModalOpen && (
+        <DeleteModal
+          title="Clear Scan History"
+          message="Are you sure you want to clear all scan history? This action cannot be undone."
+          itemName="all scan history"
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleClearHistory}
+        />
+      )}
     </div>
   );
 }

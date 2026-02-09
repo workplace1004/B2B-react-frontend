@@ -550,7 +550,7 @@ function ForecastByChannelWarehouseRegionSection() {
         name: warehouse.country || warehouse.city || 'Unknown',
         forecast: 0,
         confidence: 0.75,
-      }));
+    }));
     }
   }, [forecastDimension, forecasts, orders, warehouses]);
 
@@ -737,7 +737,7 @@ function SeasonalityDetectionSection() {
       }
 
       return {
-        month,
+      month,
         sales,
         seasonality,
       };
@@ -962,7 +962,7 @@ function AnomalyDetectionSection() {
         }
       });
     });
-
+    
     return anomalyType === 'all' 
       ? anomaliesList 
       : anomaliesList.filter((a) => a.type === anomalyType);

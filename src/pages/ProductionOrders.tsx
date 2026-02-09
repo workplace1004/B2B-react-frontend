@@ -180,10 +180,6 @@ export default function ProductionOrders() {
   const [selectedOrder, setSelectedOrder] = useState<ProductionOrder | null>(null);
   const itemsPerPage = 10;
 
-  // Local storage keys for approvals, WIP tracking, and batches
-  const APPROVALS_KEY = 'production_order_approvals';
-  const WIP_TRACKING_KEY = 'production_order_wip_tracking';
-  const BATCHES_KEY = 'production_order_batches';
 
   // Handle body scroll lock when modal is open
   useEffect(() => {
@@ -213,20 +209,23 @@ export default function ProductionOrders() {
   }, [isModalOpen, isEditModalOpen, isViewModalOpen,
     isApprovalModalOpen, isWIPTrackingModalOpen, isBatchModalOpen]);
 
-  // Fetch purchase orders (using suppliers endpoint as placeholder)
-  const { data, isLoading } = useQuery({
-    queryKey: ['purchase-orders', currentPage, itemsPerPage],
+  // Fetch purchase orders from API
+  const { data: purchaseOrdersData, isLoading } = useQuery({
+    queryKey: ['purchase-orders', currentPage, itemsPerPage, statusFilter],
     queryFn: async () => {
       try {
-        // Note: This would be /purchase-orders in a real implementation
-        // For now, we'll create a structure that can work with the existing schema
-        const response = await api.get('/suppliers');
-        // Transform suppliers data to mock production orders structure
-        // In real implementation, this would be a dedicated endpoint
-        return response.data || [];
+        const params: any = {
+          skip: (currentPage - 1) * itemsPerPage,
+          take: itemsPerPage,
+        };
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
+        const response = await api.get('/purchase-orders', { params });
+        return response.data || { data: [], total: 0 };
       } catch (error) {
         console.error('Error fetching production orders:', error);
-        return [];
+        return { data: [], total: 0 };
       }
     },
   });
@@ -257,25 +256,33 @@ export default function ProductionOrders() {
     },
   });
 
-  // Transform data to ProductionOrder format (mock structure for now)
+  // Transform purchase orders data to ProductionOrder format
   const productionOrders = useMemo(() => {
-    if (!data || !Array.isArray(data)) return [];
-    // In a real implementation, this would come from a dedicated endpoint
-    // For now, we'll create a mock structure
-    return data.map((supplier: any, index: number) => ({
-      id: supplier.id || index + 1,
-      poNumber: `PO-${String(supplier.id || index + 1).padStart(6, '0')}`,
-      supplierId: supplier.id,
-      status: PurchaseOrderStatus.DRAFT,
-      totalAmount: 0,
-      currency: 'USD',
-      orderDate: new Date().toISOString(),
-      supplier: {
-        id: supplier.id,
-        name: supplier.name,
-      },
+    const ordersData = purchaseOrdersData?.data || [];
+    if (!Array.isArray(ordersData)) return [];
+    
+    return ordersData.map((po: any) => ({
+      id: po.id,
+      poNumber: po.poNumber,
+      supplierId: po.supplierId,
+      bomId: po.bomId,
+      status: po.status,
+      totalAmount: parseFloat(po.totalAmount?.toString() || '0'),
+      currency: po.currency || 'USD',
+      orderDate: po.orderDate,
+      expectedDate: po.expectedDate,
+      receivedDate: po.receivedDate,
+      notes: po.notes,
+      createdAt: po.createdAt,
+      updatedAt: po.updatedAt,
+      supplier: po.supplier,
+      bom: po.bom,
+      lines: po.lines || [],
+      approvals: po.approvals || [],
+      wipTracking: po.wipTracking || [],
+      batches: po.batches || [],
     })) as ProductionOrder[];
-  }, [data]);
+  }, [purchaseOrdersData]);
 
   // Filter and search orders
   const filteredOrders = useMemo(() => {
@@ -294,13 +301,10 @@ export default function ProductionOrders() {
       );
     }
 
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((order) => order.status === statusFilter);
-    }
+    // Status filtering is done by API, so no need to filter here
 
     return filtered;
-  }, [productionOrders, searchQuery, statusFilter]);
+  }, [productionOrders, searchQuery]);
 
   // Pagination
   const totalOrders = filteredOrders.length;
@@ -767,7 +771,6 @@ export default function ProductionOrders() {
           order={selectedOrder}
           onClose={closeApprovalModal}
           isShowing={isApprovalModalShowing}
-          storageKey={APPROVALS_KEY}
         />
       )}
 
@@ -777,7 +780,6 @@ export default function ProductionOrders() {
           order={selectedOrder}
           onClose={closeWIPTrackingModal}
           isShowing={isWIPTrackingModalShowing}
-          storageKey={WIP_TRACKING_KEY}
         />
       )}
 
@@ -787,7 +789,6 @@ export default function ProductionOrders() {
           order={selectedOrder}
           onClose={closeBatchModal}
           isShowing={isBatchModalShowing}
-          storageKey={BATCHES_KEY}
         />
       )}
     </div>
@@ -927,15 +928,17 @@ function CreatePOModal({
               {errors.bomId && <p className="mt-1 text-sm text-red-500">{errors.bomId}</p>}
             </div>
 
-            <div>
+            <div className="relative w-full">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Expected Date
               </label>
-              <DatePicker
-                value={formData.expectedDate}
-                onChange={(date) => setFormData({ ...formData, expectedDate: date || '' })}
-                placeholder="Select expected date"
-              />
+              <div className='w-full'>
+                <DatePicker
+                  value={formData.expectedDate}
+                  onChange={(date) => setFormData({ ...formData, expectedDate: date || '' })}
+                  placeholder="Select expected date"
+                />
+              </div>
             </div>
 
             <div>
@@ -1152,81 +1155,98 @@ function ApprovalsModal({
   order,
   onClose,
   isShowing,
-  storageKey,
 }: {
   order: ProductionOrder;
   onClose: () => void;
   isShowing: boolean;
-  storageKey: string;
 }) {
-  const [approvals, setApprovals] = useState<Approval[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingApproval, setEditingApproval] = useState<Approval | null>(null);
+  const queryClient = useQueryClient();
 
-  // Load approvals from localStorage
-  useEffect(() => {
-    if (isShowing) {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        try {
-          const allApprovals: Approval[] = JSON.parse(stored);
-          const orderApprovals = allApprovals
-            .filter((a) => a.poId === order.id)
-            .sort((a, b) => a.level - b.level || new Date(a.date).getTime() - new Date(b.date).getTime());
-          setApprovals(orderApprovals);
-        } catch (error) {
-          console.error('Error loading approvals:', error);
-        }
-      }
-    }
-  }, [isShowing, order.id, storageKey]);
+  // Fetch approvals from API
+  const { data: approvalsData } = useQuery({
+    queryKey: ['purchase-order-approvals', order.id],
+    queryFn: async () => {
+      const response = await api.get(`/purchase-order-approvals?purchaseOrderId=${order.id}`);
+      return response.data || [];
+    },
+    enabled: isShowing && !!order.id,
+  });
 
-  // Save approvals to localStorage
-  const saveApprovals = (newApprovals: Approval[]) => {
-    const stored = localStorage.getItem(storageKey);
-    let allApprovals: Approval[] = [];
-    if (stored) {
-      try {
-        allApprovals = JSON.parse(stored);
-        allApprovals = allApprovals.filter((a) => a.poId !== order.id);
-      } catch (error) {
-        console.error('Error parsing stored approvals:', error);
-      }
-    }
-    allApprovals = [...allApprovals, ...newApprovals];
-    localStorage.setItem(storageKey, JSON.stringify(allApprovals));
-  };
+  const approvals: Approval[] = useMemo(() => {
+    if (!approvalsData) return [];
+    return approvalsData.map((a: any) => ({
+      id: a.id,
+      poId: a.purchaseOrderId,
+      approverId: a.approverId,
+      approverName: a.approverName,
+      status: a.status,
+      comments: a.comments,
+      date: a.date,
+      level: a.level,
+    })).sort((a: any, b: any) => a.level - b.level || new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [approvalsData]);
+
+  // Mutations for approvals
+  const createApprovalMutation = useMutation({
+    mutationFn: async (approvalData: Omit<Approval, 'id' | 'poId'>) => {
+      const response = await api.post('/purchase-order-approvals', {
+        ...approvalData,
+        purchaseOrderId: order.id,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-approvals', order.id] });
+      setIsAddModalOpen(false);
+      toast.success('Approval added successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to add approval');
+    },
+  });
+
+  const updateApprovalMutation = useMutation({
+    mutationFn: async ({ id, approvalData }: { id: string | number; approvalData: Partial<Approval> }) => {
+      const response = await api.patch(`/purchase-order-approvals/${id}`, approvalData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-approvals', order.id] });
+      setEditingApproval(null);
+      toast.success('Approval updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update approval');
+    },
+  });
+
+  const deleteApprovalMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await api.delete(`/purchase-order-approvals/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-approvals', order.id] });
+      toast.success('Approval deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete approval');
+    },
+  });
 
   const handleAddApproval = (approvalData: Omit<Approval, 'id' | 'poId'> | Partial<Approval>) => {
     const fullData = approvalData as Omit<Approval, 'id' | 'poId'>;
-    const newApproval: Approval = {
-      ...fullData,
-      id: Date.now().toString(),
-      poId: order.id,
-    };
-    const updated = [...approvals, newApproval].sort(
-      (a, b) => a.level - b.level || new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    setApprovals(updated);
-    saveApprovals(updated);
-    setIsAddModalOpen(false);
-    toast.success('Approval added successfully!');
+    createApprovalMutation.mutate(fullData);
   };
 
   const handleUpdateApproval = (id: string | number, approvalData: Partial<Approval>) => {
-    const updated = approvals.map((a) => (a.id === id ? { ...a, ...approvalData } : a));
-    setApprovals(updated);
-    saveApprovals(updated);
-    setEditingApproval(null);
-    toast.success('Approval updated successfully!');
+    updateApprovalMutation.mutate({ id, approvalData });
   };
 
   const handleDeleteApproval = (id: string | number) => {
     if (window.confirm('Are you sure you want to delete this approval?')) {
-      const updated = approvals.filter((a) => a.id !== id);
-      setApprovals(updated);
-      saveApprovals(updated);
-      toast.success('Approval deleted successfully!');
+      deleteApprovalMutation.mutate(id);
     }
   };
 
@@ -1543,81 +1563,99 @@ function WIPTrackingModal({
   order,
   onClose,
   isShowing,
-  storageKey,
 }: {
   order: ProductionOrder;
   onClose: () => void;
   isShowing: boolean;
-  storageKey: string;
 }) {
-  const [wipTracking, setWipTracking] = useState<WIPTracking[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingWIP, setEditingWIP] = useState<WIPTracking | null>(null);
+  const queryClient = useQueryClient();
 
-  // Load WIP tracking from localStorage
-  useEffect(() => {
-    if (isShowing) {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        try {
-          const allWIP: WIPTracking[] = JSON.parse(stored);
-          const orderWIP = allWIP
-            .filter((w) => w.poId === order.id)
-            .sort((a, b) => new Date(b.startDate || b.completionDate || '').getTime() - new Date(a.startDate || a.completionDate || '').getTime());
-          setWipTracking(orderWIP);
-        } catch (error) {
-          console.error('Error loading WIP tracking:', error);
-        }
-      }
-    }
-  }, [isShowing, order.id, storageKey]);
+  // Fetch WIP tracking from API
+  const { data: wipData } = useQuery({
+    queryKey: ['purchase-order-wip-tracking', order.id],
+    queryFn: async () => {
+      const response = await api.get(`/purchase-order-wip-tracking?purchaseOrderId=${order.id}`);
+      return response.data || [];
+    },
+    enabled: isShowing && !!order.id,
+  });
 
-  // Save WIP tracking to localStorage
-  const saveWIPTracking = (newWIP: WIPTracking[]) => {
-    const stored = localStorage.getItem(storageKey);
-    let allWIP: WIPTracking[] = [];
-    if (stored) {
-      try {
-        allWIP = JSON.parse(stored);
-        allWIP = allWIP.filter((w) => w.poId !== order.id);
-      } catch (error) {
-        console.error('Error parsing stored WIP tracking:', error);
-      }
-    }
-    allWIP = [...allWIP, ...newWIP];
-    localStorage.setItem(storageKey, JSON.stringify(allWIP));
-  };
+  const wipTracking: WIPTracking[] = useMemo(() => {
+    if (!wipData) return [];
+    return wipData.map((w: any) => ({
+      id: w.id,
+      poId: w.purchaseOrderId,
+      stage: w.stage,
+      quantity: w.quantity,
+      completedQty: w.completedQty || 0,
+      status: w.status,
+      startDate: w.startDate,
+      completionDate: w.completionDate,
+      notes: w.notes,
+    })).sort((a: any, b: any) => new Date(b.startDate || b.completionDate || '').getTime() - new Date(a.startDate || a.completionDate || '').getTime());
+  }, [wipData]);
+
+  // Mutations for WIP tracking
+  const createWIPMutation = useMutation({
+    mutationFn: async (wipData: Omit<WIPTracking, 'id' | 'poId'>) => {
+      const response = await api.post('/purchase-order-wip-tracking', {
+        ...wipData,
+        purchaseOrderId: order.id,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-wip-tracking', order.id] });
+      setIsAddModalOpen(false);
+      toast.success('WIP tracking entry added successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to add WIP tracking entry');
+    },
+  });
+
+  const updateWIPMutation = useMutation({
+    mutationFn: async ({ id, wipData }: { id: string | number; wipData: Partial<WIPTracking> }) => {
+      const response = await api.patch(`/purchase-order-wip-tracking/${id}`, wipData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-wip-tracking', order.id] });
+      setEditingWIP(null);
+      toast.success('WIP tracking entry updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update WIP tracking entry');
+    },
+  });
+
+  const deleteWIPMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await api.delete(`/purchase-order-wip-tracking/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-wip-tracking', order.id] });
+      toast.success('WIP tracking entry deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete WIP tracking entry');
+    },
+  });
 
   const handleAddWIP = (wipData: Omit<WIPTracking, 'id' | 'poId'> | Partial<WIPTracking>) => {
     const fullData = wipData as Omit<WIPTracking, 'id' | 'poId'>;
-    const newWIP: WIPTracking = {
-      ...fullData,
-      id: Date.now().toString(),
-      poId: order.id,
-    };
-    const updated = [...wipTracking, newWIP].sort(
-      (a, b) => new Date(b.startDate || '').getTime() - new Date(a.startDate || '').getTime()
-    );
-    setWipTracking(updated);
-    saveWIPTracking(updated);
-    setIsAddModalOpen(false);
-    toast.success('WIP tracking entry added successfully!');
+    createWIPMutation.mutate(fullData);
   };
 
   const handleUpdateWIP = (id: string | number, wipData: Partial<WIPTracking>) => {
-    const updated = wipTracking.map((w) => (w.id === id ? { ...w, ...wipData } : w));
-    setWipTracking(updated);
-    saveWIPTracking(updated);
-    setEditingWIP(null);
-    toast.success('WIP tracking entry updated successfully!');
+    updateWIPMutation.mutate({ id, wipData });
   };
 
   const handleDeleteWIP = (id: string | number) => {
     if (window.confirm('Are you sure you want to delete this WIP tracking entry?')) {
-      const updated = wipTracking.filter((w) => w.id !== id);
-      setWipTracking(updated);
-      saveWIPTracking(updated);
-      toast.success('WIP tracking entry deleted successfully!');
+      deleteWIPMutation.mutate(id);
     }
   };
 
@@ -2008,82 +2046,101 @@ function BatchModal({
   order,
   onClose,
   isShowing,
-  storageKey,
 }: {
   order: ProductionOrder;
   onClose: () => void;
   isShowing: boolean;
-  storageKey: string;
 }) {
-  const [batches, setBatches] = useState<Batch[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const queryClient = useQueryClient();
 
-  // Load batches from localStorage
-  useEffect(() => {
-    if (isShowing) {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        try {
-          const allBatches: Batch[] = JSON.parse(stored);
-          const orderBatches = allBatches
-            .filter((b) => b.poId === order.id)
-            .sort((a, b) => new Date(b.productionDate || '').getTime() - new Date(a.productionDate || '').getTime());
-          setBatches(orderBatches);
-        } catch (error) {
-          console.error('Error loading batches:', error);
-        }
-      }
-    }
-  }, [isShowing, order.id, storageKey]);
+  // Fetch batches from API
+  const { data: batchesData } = useQuery({
+    queryKey: ['purchase-order-batches', order.id],
+    queryFn: async () => {
+      const response = await api.get(`/purchase-order-batches?purchaseOrderId=${order.id}`);
+      return response.data || [];
+    },
+    enabled: isShowing && !!order.id,
+  });
 
-  // Save batches to localStorage
-  const saveBatches = (newBatches: Batch[]) => {
-    const stored = localStorage.getItem(storageKey);
-    let allBatches: Batch[] = [];
-    if (stored) {
-      try {
-        allBatches = JSON.parse(stored);
-        allBatches = allBatches.filter((b) => b.poId !== order.id);
-      } catch (error) {
-        console.error('Error parsing stored batches:', error);
-      }
-    }
-    allBatches = [...allBatches, ...newBatches];
-    localStorage.setItem(storageKey, JSON.stringify(allBatches));
-  };
+  const batches: Batch[] = useMemo(() => {
+    if (!batchesData) return [];
+    return batchesData.map((b: any) => ({
+      id: b.id,
+      poId: b.purchaseOrderId,
+      batchNumber: b.batchNumber,
+      lotNumber: b.lotNumber,
+      quantity: b.quantity,
+      productionDate: b.productionDate,
+      expiryDate: b.expiryDate,
+      status: b.status,
+      location: b.location,
+      notes: b.notes,
+    })).sort((a: any, b: any) => new Date(b.productionDate || '').getTime() - new Date(a.productionDate || '').getTime());
+  }, [batchesData]);
+
+  // Mutations for batches
+  const createBatchMutation = useMutation({
+    mutationFn: async (batchData: Omit<Batch, 'id' | 'poId'>) => {
+      const response = await api.post('/purchase-order-batches', {
+        ...batchData,
+        purchaseOrderId: order.id,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-batches', order.id] });
+      setIsAddModalOpen(false);
+      toast.success('Batch/Lot added successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to add batch/lot');
+    },
+  });
+
+  const updateBatchMutation = useMutation({
+    mutationFn: async ({ id, batchData }: { id: string | number; batchData: Partial<Batch> }) => {
+      const response = await api.patch(`/purchase-order-batches/${id}`, batchData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-batches', order.id] });
+      setEditingBatch(null);
+      toast.success('Batch/Lot updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update batch/lot');
+    },
+  });
+
+  const deleteBatchMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await api.delete(`/purchase-order-batches/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-order-batches', order.id] });
+      toast.success('Batch/Lot deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete batch/lot');
+    },
+  });
 
   const handleAddBatch = (batchData: Omit<Batch, 'id' | 'poId'> | Partial<Batch>) => {
     const fullData = batchData as Omit<Batch, 'id' | 'poId'>;
-    const newBatch: Batch = {
-      ...fullData,
-      id: Date.now().toString(),
-      poId: order.id,
-    };
-    const updated = [...batches, newBatch].sort(
-      (a, b) => new Date(b.productionDate || '').getTime() - new Date(a.productionDate || '').getTime()
-    );
-    setBatches(updated);
-    saveBatches(updated);
-    setIsAddModalOpen(false);
-    toast.success('Batch/Lot added successfully!');
+    createBatchMutation.mutate(fullData);
   };
 
   const handleUpdateBatch = (id: string | number, batchData: Partial<Batch>) => {
-    const updated = batches.map((b) => (b.id === id ? { ...b, ...batchData } : b));
-    setBatches(updated);
-    saveBatches(updated);
-    setEditingBatch(null);
-    toast.success('Batch/Lot updated successfully!');
+    updateBatchMutation.mutate({ id, batchData });
   };
 
   const handleDeleteBatch = (id: string | number) => {
     if (window.confirm('Are you sure you want to delete this batch/lot?')) {
-      const updated = batches.filter((b) => b.id !== id);
-      setBatches(updated);
-      saveBatches(updated);
-      toast.success('Batch/Lot deleted successfully!');
+      deleteBatchMutation.mutate(id);
     }
   };
 

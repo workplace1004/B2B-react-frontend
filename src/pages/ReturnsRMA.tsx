@@ -1,5 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
 import {
   RotateCcw,
   Plus,
@@ -130,11 +132,132 @@ export default function ReturnsRMA() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Local storage keys
-  const RMAS_KEY = 'returns_rma_rmas';
-  const REVERSE_LOGISTICS_KEY = 'returns_rma_reverse_logistics';
+  // Fetch orders (not used but kept for future use)
+  const { data: _ordersData } = useQuery({
+    queryKey: ['orders', 'rma'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/orders?skip=0&take=1000');
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        return [];
+      }
+    },
+  });
 
-  // Fetch orders (for future use when creating RMAs)
+  // Fetch RMAs from API
+  const { data: rmasData } = useQuery({
+    queryKey: ['returns', currentPage, itemsPerPage, statusFilter],
+    queryFn: async () => {
+      try {
+        const params: any = {
+          skip: (currentPage - 1) * itemsPerPage,
+          take: itemsPerPage,
+        };
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
+        const response = await api.get('/returns', { params });
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        console.error('Error fetching RMAs:', error);
+        return { data: [], total: 0 };
+      }
+    },
+  });
+
+  const rmas: RMA[] = useMemo(() => {
+    const rmasList = rmasData?.data || [];
+    if (!Array.isArray(rmasList)) return [];
+    return rmasList.map((r: any) => ({
+      id: r.id,
+      rmaNumber: r.rmaNumber,
+      orderId: r.orderId,
+      orderNumber: r.order?.orderNumber,
+      orderLineId: r.orderLineId,
+      productId: r.productId,
+      product: r.product,
+      customerId: r.order?.customerId,
+      customer: r.order?.customer,
+      quantity: r.quantity,
+      reason: r.reason,
+      reasonDetails: r.reasonDetails,
+      status: r.status,
+      refundAmount: r.refundAmount ? parseFloat(r.refundAmount.toString()) : undefined,
+      currency: r.order?.currency || 'USD',
+      notes: r.notes,
+      requestedDate: r.requestedDate,
+      approvedDate: r.approvedDate,
+      processedDate: r.processedDate,
+      completedDate: r.processedDate, // Using processedDate as completedDate
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  }, [rmasData]);
+
+  // Fetch reverse logistics from API
+  const { data: reverseLogisticsData } = useQuery({
+    queryKey: ['reverse-logistics', currentPage, itemsPerPage, statusFilter],
+    queryFn: async () => {
+      try {
+        const params: any = {
+          skip: (currentPage - 1) * itemsPerPage,
+          take: itemsPerPage,
+        };
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
+        const response = await api.get('/reverse-logistics', { params });
+        return response.data || { data: [], total: 0 };
+      } catch (error) {
+        console.error('Error fetching reverse logistics:', error);
+        return { data: [], total: 0 };
+      }
+    },
+  });
+
+  const reverseLogistics: ReverseLogistics[] = useMemo(() => {
+    const logisticsList = reverseLogisticsData?.data || [];
+    if (!Array.isArray(logisticsList)) return [];
+    return logisticsList.map((rl: any) => ({
+      id: rl.id,
+      rmaId: rl.rmaId,
+      rmaNumber: rl.rma?.rmaNumber,
+      trackingNumber: rl.trackingNumber,
+      carrier: rl.carrier,
+      status: rl.status,
+      originAddress: rl.originAddress ? {
+        name: rl.originName || '',
+        address: rl.originAddress,
+        city: rl.originCity || '',
+        state: rl.originState,
+        postalCode: rl.originPostalCode || '',
+        country: rl.originCountry || '',
+      } : undefined,
+      destinationAddress: rl.destinationAddress ? {
+        name: rl.destinationName || '',
+        address: rl.destinationAddress,
+        city: rl.destinationCity || '',
+        state: rl.destinationState,
+        postalCode: rl.destinationPostalCode || '',
+        country: rl.destinationCountry || '',
+      } : undefined,
+      shippedDate: rl.shippedDate,
+      receivedDate: rl.receivedDate,
+      inspectedDate: rl.inspectedDate,
+      processedDate: rl.processedDate,
+      estimatedDeliveryDate: rl.estimatedDeliveryDate,
+      notes: rl.notes,
+      createdAt: rl.createdAt,
+      updatedAt: rl.updatedAt,
+    }));
+  }, [reverseLogisticsData]);
+
+  // Mutations for RMAs and reverse logistics are defined inline where needed in the UI
+  // These were removed to avoid unused variable warnings
+
+  // Old localStorage code - remove it
   // const { data: ordersData } = useQuery({
   //   queryKey: ['orders', 'rma'],
   //   queryFn: async () => {
@@ -172,50 +295,6 @@ export default function ReturnsRMA() {
   //   return Array.isArray(productsData) ? productsData : [];
   // }, [productsData]);
 
-  // Load RMAs and reverse logistics from localStorage
-  const [rmas, setRmas] = useState<RMA[]>([]);
-  const [reverseLogistics, setReverseLogistics] = useState<ReverseLogistics[]>([]);
-
-  useEffect(() => {
-    try {
-      const storedRmas = localStorage.getItem(RMAS_KEY);
-      if (storedRmas) {
-        setRmas(JSON.parse(storedRmas));
-      }
-    } catch (error) {
-      console.error('Error loading RMAs:', error);
-    }
-
-    try {
-      const storedReverseLogistics = localStorage.getItem(REVERSE_LOGISTICS_KEY);
-      if (storedReverseLogistics) {
-        setReverseLogistics(JSON.parse(storedReverseLogistics));
-      }
-    } catch (error) {
-      console.error('Error loading reverse logistics:', error);
-    }
-  }, []);
-
-  // Save functions (used when creating/updating items)
-  // const saveRmas = (rmasList: RMA[]) => {
-  //   try {
-  //     localStorage.setItem(RMAS_KEY, JSON.stringify(rmasList));
-  //     setRmas(rmasList);
-  //   } catch (error) {
-  //     console.error('Error saving RMAs:', error);
-  //     toast.error('Failed to save RMAs');
-  //   }
-  // };
-
-  // const saveReverseLogistics = (logisticsList: ReverseLogistics[]) => {
-  //   try {
-  //     localStorage.setItem(REVERSE_LOGISTICS_KEY, JSON.stringify(logisticsList));
-  //     setReverseLogistics(logisticsList);
-  //   } catch (error) {
-  //     console.error('Error saving reverse logistics:', error);
-  //     toast.error('Failed to save reverse logistics');
-  //   }
-  // };
 
   // Filter RMAs
   const filteredRmas = useMemo(() => {
@@ -477,14 +556,14 @@ export default function ReturnsRMA() {
               {/* Search and Filters */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <SearchInput
-                  value={searchQuery}
+                    value={searchQuery}
                   onChange={(value) => {
                     setSearchQuery(value);
-                    setCurrentPage(1);
-                  }}
+                      setCurrentPage(1);
+                    }}
                   placeholder="Search RMAs..."
                   className="md:col-span-2"
-                />
+                  />
                 <div>
                   <CustomDropdown
                     value={statusFilter}
@@ -716,14 +795,14 @@ export default function ReturnsRMA() {
               {/* Search and Filters */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <SearchInput
-                  value={searchQuery}
+                    value={searchQuery}
                   onChange={(value) => {
                     setSearchQuery(value);
-                    setCurrentPage(1);
-                  }}
+                      setCurrentPage(1);
+                    }}
                   placeholder="Search reverse logistics..."
                   className="md:col-span-2"
-                />
+                  />
                 <div>
                   <CustomDropdown
                     value={statusFilter}

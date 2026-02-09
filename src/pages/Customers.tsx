@@ -228,8 +228,8 @@ export default function Customers() {
   };
 
   const closeDeleteModal = () => {
-    setIsDeleteModalOpen(false);
-    setSelectedCustomer(null);
+      setIsDeleteModalOpen(false);
+      setSelectedCustomer(null);
   };
 
   const closeContactModal = () => {
@@ -367,11 +367,11 @@ export default function Customers() {
           {/* Search */}
           <div className="lg:col-span-2">
             <SearchInput
-              value={searchQuery}
+                value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search customers..."
               className="w-full"
-            />
+              />
           </div>
 
           {/* Segment Filter */}

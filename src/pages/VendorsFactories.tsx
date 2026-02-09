@@ -93,10 +93,6 @@ export default function VendorsFactories() {
   const itemsPerPage = 10;
   const queryClient = useQueryClient();
 
-  // Local storage keys for price history and negotiation notes
-  const PRICE_HISTORY_KEY = 'vendor_price_history';
-  const NEGOTIATION_NOTES_KEY = 'vendor_negotiation_notes';
-
   // Handle body scroll lock when modal is open
   useEffect(() => {
     if (isModalOpen || isEditModalOpen || isDeleteModalOpen || isPriceHistoryModalOpen || isNegotiationNotesModalOpen) {
@@ -371,14 +367,14 @@ export default function VendorsFactories() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <SearchInput
-            value={searchQuery}
+              value={searchQuery}
             onChange={(value) => {
               setSearchQuery(value);
-              setCurrentPage(1);
-            }}
+                setCurrentPage(1);
+              }}
             placeholder="Search vendors by name, email, phone, contact, city, or country..."
             className="flex-1"
-          />
+            />
           <div className="w-full md:w-48">
             <CustomDropdown
               value={statusFilter}
@@ -652,7 +648,6 @@ export default function VendorsFactories() {
           vendor={selectedVendor}
           onClose={closePriceHistoryModal}
           isShowing={isPriceHistoryModalShowing}
-          storageKey={PRICE_HISTORY_KEY}
         />
       )}
 
@@ -662,7 +657,6 @@ export default function VendorsFactories() {
           vendor={selectedVendor}
           onClose={closeNegotiationNotesModal}
           isShowing={isNegotiationNotesModalShowing}
-          storageKey={NEGOTIATION_NOTES_KEY}
         />
       )}
     </div>
@@ -1264,12 +1258,10 @@ function PriceHistoryModal({
   vendor,
   onClose,
   isShowing,
-  storageKey,
 }: {
   vendor: Vendor;
   onClose: () => void;
   isShowing: boolean;
-  storageKey: string;
 }) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -1290,73 +1282,95 @@ function PriceHistoryModal({
     };
   }, [isShowing, onClose]);
 
-  const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<PriceHistory | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const queryClient = useQueryClient();
 
-  // Load price history from localStorage
-  useEffect(() => {
-    if (isShowing) {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        try {
-          const allHistory: PriceHistory[] = JSON.parse(stored);
-          const vendorHistory = allHistory.filter((ph) => ph.vendorId === vendor.id);
-          setPriceHistory(vendorHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        } catch (error) {
-          console.error('Error loading price history:', error);
-        }
-      }
-    }
-  }, [isShowing, vendor.id, storageKey]);
+  // Fetch price history from API
+  const { data: priceHistoryData } = useQuery({
+    queryKey: ['supplier-price-history', vendor.id],
+    queryFn: async () => {
+      const response = await api.get(`/supplier-price-history?supplierId=${vendor.id}`);
+      return response.data || [];
+    },
+    enabled: isShowing && !!vendor.id,
+  });
 
-  // Save price history to localStorage
-  const savePriceHistory = (newHistory: PriceHistory[]) => {
-    const stored = localStorage.getItem(storageKey);
-    let allHistory: PriceHistory[] = [];
-    if (stored) {
-      try {
-        allHistory = JSON.parse(stored);
-        allHistory = allHistory.filter((ph) => ph.vendorId !== vendor.id);
-      } catch (error) {
-        console.error('Error parsing stored price history:', error);
-      }
-    }
-    allHistory = [...allHistory, ...newHistory];
-    localStorage.setItem(storageKey, JSON.stringify(allHistory));
-  };
+  const priceHistory: PriceHistory[] = useMemo(() => {
+    if (!priceHistoryData) return [];
+    return priceHistoryData.map((ph: any) => ({
+      id: ph.id,
+      vendorId: ph.supplierId,
+      productId: ph.productId,
+      productName: ph.productName,
+      price: ph.price,
+      currency: ph.currency || 'USD',
+      quantity: ph.quantity,
+      date: ph.date,
+      notes: ph.notes,
+      createdBy: ph.createdBy,
+    }));
+  }, [priceHistoryData]);
+
+  // Mutations for price history
+  const createPriceHistoryMutation = useMutation({
+    mutationFn: async (priceData: Omit<PriceHistory, 'id' | 'vendorId'>) => {
+      const response = await api.post('/supplier-price-history', {
+        ...priceData,
+        supplierId: vendor.id,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-price-history', vendor.id] });
+      setIsAddModalOpen(false);
+      toast.success('Price history entry added successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to add price history entry');
+    },
+  });
+
+  const updatePriceHistoryMutation = useMutation({
+    mutationFn: async ({ id, priceData }: { id: string | number; priceData: Partial<PriceHistory> }) => {
+      const response = await api.patch(`/supplier-price-history/${id}`, priceData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-price-history', vendor.id] });
+      setEditingPrice(null);
+      toast.success('Price history entry updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update price history entry');
+    },
+  });
+
+  const deletePriceHistoryMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await api.delete(`/supplier-price-history/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-price-history', vendor.id] });
+      toast.success('Price history entry deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete price history entry');
+    },
+  });
 
   const handleAddPrice = (priceData: Omit<PriceHistory, 'id' | 'vendorId'>) => {
-    const newPrice: PriceHistory = {
-      ...priceData,
-      id: Date.now().toString(),
-      vendorId: vendor.id,
-      createdBy: 'Current User', // In a real app, get from auth context
-    };
-    const updated = [newPrice, ...priceHistory];
-    setPriceHistory(updated);
-    savePriceHistory(updated);
-    setIsAddModalOpen(false);
-    toast.success('Price history entry added successfully!');
+    createPriceHistoryMutation.mutate(priceData);
   };
 
   const handleUpdatePrice = (id: string | number, priceData: Partial<PriceHistory>) => {
-    const updated = priceHistory.map((ph) =>
-      ph.id === id ? { ...ph, ...priceData } : ph
-    );
-    setPriceHistory(updated);
-    savePriceHistory(updated);
-    setEditingPrice(null);
-    toast.success('Price history entry updated successfully!');
+    updatePriceHistoryMutation.mutate({ id, priceData });
   };
 
   const handleDeletePrice = (id: string | number) => {
     if (window.confirm('Are you sure you want to delete this price history entry?')) {
-      const updated = priceHistory.filter((ph) => ph.id !== id);
-      setPriceHistory(updated);
-      savePriceHistory(updated);
-      toast.success('Price history entry deleted successfully!');
+      deletePriceHistoryMutation.mutate(id);
     }
   };
 
@@ -1719,83 +1733,99 @@ function NegotiationNotesModal({
   vendor,
   onClose,
   isShowing,
-  storageKey,
 }: {
   vendor: Vendor;
   onClose: () => void;
   isShowing: boolean;
-  storageKey: string;
 }) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const [notes, setNotes] = useState<NegotiationNote[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<NegotiationNote | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [tagFilter, setTagFilter] = useState<string>('all');
+  const queryClient = useQueryClient();
 
-  // Load notes from localStorage
-  useEffect(() => {
-    if (isShowing) {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        try {
-          const allNotes: NegotiationNote[] = JSON.parse(stored);
-          const vendorNotes = allNotes.filter((n) => n.vendorId === vendor.id);
-          setNotes(vendorNotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        } catch (error) {
-          console.error('Error loading negotiation notes:', error);
-        }
-      }
-    }
-  }, [isShowing, vendor.id, storageKey]);
+  // Fetch negotiation notes from API
+  const { data: notesData } = useQuery({
+    queryKey: ['supplier-negotiation-notes', vendor.id],
+    queryFn: async () => {
+      const response = await api.get(`/supplier-negotiation-notes?supplierId=${vendor.id}`);
+      return response.data || [];
+    },
+    enabled: isShowing && !!vendor.id,
+  });
 
-  // Save notes to localStorage
-  const saveNotes = (newNotes: NegotiationNote[]) => {
-    const stored = localStorage.getItem(storageKey);
-    let allNotes: NegotiationNote[] = [];
-    if (stored) {
-      try {
-        allNotes = JSON.parse(stored);
-        allNotes = allNotes.filter((n) => n.vendorId !== vendor.id);
-      } catch (error) {
-        console.error('Error parsing stored notes:', error);
-      }
-    }
-    allNotes = [...allNotes, ...newNotes];
-    localStorage.setItem(storageKey, JSON.stringify(allNotes));
-  };
+  const notes: NegotiationNote[] = useMemo(() => {
+    if (!notesData) return [];
+    return notesData.map((n: any) => ({
+      id: n.id,
+      vendorId: n.supplierId,
+      title: n.title,
+      content: n.content,
+      date: n.date,
+      createdBy: n.createdBy,
+      tags: n.tags || [],
+    }));
+  }, [notesData]);
+
+  // Mutations for negotiation notes
+  const createNoteMutation = useMutation({
+    mutationFn: async (noteData: Omit<NegotiationNote, 'id' | 'vendorId'>) => {
+      const response = await api.post('/supplier-negotiation-notes', {
+        ...noteData,
+        supplierId: vendor.id,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-negotiation-notes', vendor.id] });
+      setIsAddModalOpen(false);
+      toast.success('Negotiation note added successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to add negotiation note');
+    },
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ id, noteData }: { id: string | number; noteData: Partial<NegotiationNote> }) => {
+      const response = await api.patch(`/supplier-negotiation-notes/${id}`, noteData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-negotiation-notes', vendor.id] });
+      setEditingNote(null);
+      toast.success('Negotiation note updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update negotiation note');
+    },
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (id: string | number) => {
+      await api.delete(`/supplier-negotiation-notes/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-negotiation-notes', vendor.id] });
+      toast.success('Negotiation note deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete negotiation note');
+    },
+  });
 
   const handleAddNote = (noteData: Omit<NegotiationNote, 'id' | 'vendorId'>) => {
-    const newNote: NegotiationNote = {
-      ...noteData,
-      id: Date.now().toString(),
-      vendorId: vendor.id,
-      createdBy: 'Current User', // In a real app, get from auth context
-      tags: noteData.tags || [],
-    };
-    const updated = [newNote, ...notes];
-    setNotes(updated);
-    saveNotes(updated);
-    setIsAddModalOpen(false);
-    toast.success('Negotiation note added successfully!');
+    createNoteMutation.mutate(noteData);
   };
 
   const handleUpdateNote = (id: string | number, noteData: Partial<NegotiationNote>) => {
-    const updated = notes.map((n) =>
-      n.id === id ? { ...n, ...noteData } : n
-    );
-    setNotes(updated);
-    saveNotes(updated);
-    setEditingNote(null);
-    toast.success('Negotiation note updated successfully!');
+    updateNoteMutation.mutate({ id, noteData });
   };
 
   const handleDeleteNote = (id: string | number) => {
     if (window.confirm('Are you sure you want to delete this negotiation note?')) {
-      const updated = notes.filter((n) => n.id !== id);
-      setNotes(updated);
-      saveNotes(updated);
-      toast.success('Negotiation note deleted successfully!');
+      deleteNoteMutation.mutate(id);
     }
   };
 

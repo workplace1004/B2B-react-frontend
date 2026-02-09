@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
@@ -98,9 +98,6 @@ export default function LandedCost() {
   const [selectedLandedCost, setSelectedLandedCost] = useState<LandedCost | null>(null);
   const itemsPerPage = 10;
 
-  // Local storage key for landed costs
-  const LANDED_COSTS_KEY = 'landed_costs';
-
   // Handle body scroll lock when modal is open
   useEffect(() => {
     if (isCalculatorModalOpen || isViewModalOpen) {
@@ -138,32 +135,46 @@ export default function LandedCost() {
     },
   });
 
-  // Load saved landed costs
-  const [savedLandedCosts, setSavedLandedCosts] = useState<LandedCost[]>([]);
-
-  useEffect(() => {
-    const loadLandedCosts = () => {
+  // Fetch saved landed costs from API
+  const { data: savedLandedCostsData } = useQuery({
+    queryKey: ['landed-costs'],
+    queryFn: async () => {
       try {
-        const stored = localStorage.getItem(LANDED_COSTS_KEY);
-        if (stored) {
-          setSavedLandedCosts(JSON.parse(stored) as LandedCost[]);
-        }
+        const response = await api.get('/landed-costs');
+        return response.data || [];
       } catch (error) {
-        console.error('Error loading landed costs:', error);
+        console.error('Error fetching landed costs:', error);
+        return [];
       }
-    };
+    },
+  });
 
-    loadLandedCosts();
-    
-    // Listen for storage changes
-    window.addEventListener('storage', loadLandedCosts);
-    window.addEventListener('landedCostUpdated', loadLandedCosts);
-    
-    return () => {
-      window.removeEventListener('storage', loadLandedCosts);
-      window.removeEventListener('landedCostUpdated', loadLandedCosts);
-    };
-  }, []);
+  const savedLandedCosts: LandedCost[] = useMemo(() => {
+    if (!savedLandedCostsData) return [];
+    return savedLandedCostsData.map((lc: any) => ({
+      id: lc.id,
+      orderId: lc.orderId,
+      orderNumber: lc.order?.orderNumber || '',
+      productCost: parseFloat(lc.productCost?.toString() || '0'),
+      shippingCost: parseFloat(lc.shippingCost?.toString() || '0'),
+      freightCost: parseFloat(lc.freightCost?.toString() || '0'),
+      insuranceCost: parseFloat(lc.insuranceCost?.toString() || '0'),
+      customsDuty: parseFloat(lc.customsDuty?.toString() || '0'),
+      customsDutyRate: lc.customsDutyRate ? parseFloat(lc.customsDutyRate.toString()) : undefined,
+      tariffs: parseFloat(lc.tariffs?.toString() || '0'),
+      portFees: parseFloat(lc.portFees?.toString() || '0'),
+      handlingFees: parseFloat(lc.handlingFees?.toString() || '0'),
+      otherCosts: parseFloat(lc.otherCosts?.toString() || '0'),
+      otherCostsDescription: lc.otherCostsDescription,
+      subtotal: parseFloat(lc.subtotal?.toString() || '0'),
+      totalLandedCost: parseFloat(lc.totalLandedCost?.toString() || '0'),
+      currency: lc.currency || 'USD',
+      calculatedDate: lc.calculatedDate,
+      notes: lc.notes,
+      createdAt: lc.createdAt,
+      updatedAt: lc.updatedAt,
+    }));
+  }, [savedLandedCostsData]);
 
   // Filter and search orders
   const orders = useMemo(() => {
@@ -466,7 +477,6 @@ export default function LandedCost() {
           existingLandedCost={selectedLandedCost || undefined}
           onClose={closeCalculatorModal}
           isShowing={isCalculatorModalShowing}
-          storageKey={LANDED_COSTS_KEY}
         />
       )}
 
@@ -489,14 +499,44 @@ function LandedCostCalculatorModal({
   existingLandedCost,
   onClose,
   isShowing,
-  storageKey,
 }: {
   order: Order;
   existingLandedCost?: LandedCost;
   onClose: () => void;
   isShowing: boolean;
-  storageKey: string;
 }) {
+  const queryClient = useQueryClient();
+
+  // Mutations for landed costs
+  const createLandedCostMutation = useMutation({
+    mutationFn: async (landedCostData: Omit<LandedCost, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'>) => {
+      const response = await api.post('/landed-costs', landedCostData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['landed-costs'] });
+      toast.success('Landed cost calculated and saved successfully!');
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to save landed cost');
+    },
+  });
+
+  const updateLandedCostMutation = useMutation({
+    mutationFn: async ({ id, landedCostData }: { id: string | number; landedCostData: Partial<LandedCost> }) => {
+      const response = await api.patch(`/landed-costs/${id}`, landedCostData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['landed-costs'] });
+      toast.success('Landed cost updated successfully!');
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update landed cost');
+    },
+  });
   const [formData, setFormData] = useState({
     // Product Costs
     productCost: existingLandedCost?.productCost.toString() || order.totalAmount.toString() || '0',
@@ -586,11 +626,9 @@ function LandedCostCalculatorModal({
       return;
     }
 
-    // Save landed cost
-    const landedCost: LandedCost = {
-      id: existingLandedCost?.id || Date.now().toString(),
+    // Prepare landed cost data
+    const landedCostData = {
       orderId: order.id,
-      orderNumber: order.orderNumber,
       productCost: calculations.productCost,
       shippingCost: calculations.shippingCost,
       freightCost: calculations.freightCost,
@@ -609,29 +647,12 @@ function LandedCostCalculatorModal({
       notes: formData.notes || undefined,
     };
 
-    // Load existing costs
-    const stored = localStorage.getItem(storageKey);
-    let allCosts: LandedCost[] = [];
-    if (stored) {
-      try {
-        allCosts = JSON.parse(stored);
-        // Remove existing cost for this order if updating
-        allCosts = allCosts.filter((lc) => lc.orderId !== order.id);
-      } catch (error) {
-        console.error('Error parsing stored landed costs:', error);
-      }
+    // Save or update landed cost
+    if (existingLandedCost?.id) {
+      updateLandedCostMutation.mutate({ id: existingLandedCost.id, landedCostData });
+    } else {
+      createLandedCostMutation.mutate(landedCostData);
     }
-
-    // Add new/updated cost
-    allCosts.push(landedCost);
-    localStorage.setItem(storageKey, JSON.stringify(allCosts));
-
-    toast.success('Landed cost calculated and saved successfully!');
-    
-    // Trigger a custom event to reload landed costs
-    window.dispatchEvent(new CustomEvent('landedCostUpdated'));
-    
-    onClose();
   };
 
   return (

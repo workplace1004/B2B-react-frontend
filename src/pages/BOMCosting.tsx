@@ -296,11 +296,11 @@ function BillOfMaterialsSection() {
       {/* Search and Actions */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <SearchInput
-          value={searchQuery}
+            value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search BOMs..."
           className="flex-1 max-w-md"
-        />
+          />
         <button
           onClick={() => {
             setIsModalOpen(true);
@@ -979,11 +979,11 @@ function CostSheetsSection() {
       {/* Search and Actions */}
       <div className="flex items-center justify-between gap-4">
         <SearchInput
-          value={searchQuery}
+            value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search cost sheets..."
           className="flex-1 max-w-md"
-        />
+          />
         <button
           onClick={openModal}
           className="flex text-[14px] items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"

@@ -240,9 +240,9 @@ export default function SkuEanBarcodes() {
           <SearchInput
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search by SKU, EAN, or product name..."
+              placeholder="Search by SKU, EAN, or product name..."
             className="flex-1"
-          />
+            />
           <div className="flex items-center gap-2">
             <CustomDropdown
               value={filterType}
