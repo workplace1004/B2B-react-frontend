@@ -12,4 +12,7 @@ export { default as SearchAndFilterBar } from './SearchAndFilterBar';
 export { default as ButtonWithWaves } from './ButtonWithWaves';
 export { default as Button } from './Button';
 export { default as Input } from './Input';
+export { default as TimePicker } from './TimePicker';
+export { default as TimeRangePicker } from './TimeRangePicker';
+export { default as OperatingHoursPicker, type OperatingHours } from './OperatingHoursPicker';
 

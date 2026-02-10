@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Calendar, Plus, ChevronLeft, ChevronRight, X, Trash2, Package, Rocket, Tag } from 'lucide-react';
 import api from '../lib/api';
@@ -26,6 +26,7 @@ export default function CampaignPlanner() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<CampaignEvent | null>(null);
+  const queryClient = useQueryClient();
 
   // Fetch collections for drops
   const { data: collectionsData, isLoading: collectionsLoading } = useQuery({
@@ -65,55 +66,134 @@ export default function CampaignPlanner() {
       });
   }, [collections]);
 
-  // TODO: Fetch launches and promos from backend when available
-  // For now, using localStorage for launches and promos
-  const [localEvents, setLocalEvents] = useState<CampaignEvent[]>(() => {
-    const stored = localStorage.getItem('campaign-events');
-    return stored ? JSON.parse(stored) : [];
+  // Fetch campaign events (launches and promos) from API
+  const { data: campaignEventsData, isLoading: campaignEventsLoading } = useQuery({
+    queryKey: ['campaign-events'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/campaign-events?skip=0&take=1000');
+        return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      } catch (error) {
+        return [];
+      }
+    },
   });
+
+  const campaignEvents = campaignEventsData || [];
+
+  // Transform campaign events to match CampaignEvent interface
+  const transformedCampaignEvents = useMemo(() => {
+    return campaignEvents
+      .filter((e: any) => e.type !== 'DROP') // Drops come from collections
+      .map((event: any) => ({
+        id: `event-${event.id}`,
+        name: event.name,
+        date: new Date(event.date).toISOString().split('T')[0],
+        type: event.type as EventType,
+        description: event.description,
+        status: event.status,
+        collectionId: event.collectionId,
+      }));
+  }, [campaignEvents]);
 
   // Combine all events
   const allEvents = useMemo(() => {
-    return [...dropEvents, ...localEvents];
-  }, [dropEvents, localEvents]);
+    return [...dropEvents, ...transformedCampaignEvents];
+  }, [dropEvents, transformedCampaignEvents]);
 
-  // Save local events to localStorage
-  const saveLocalEvents = (events: CampaignEvent[]) => {
-    setLocalEvents(events);
-    localStorage.setItem('campaign-events', JSON.stringify(events));
-  };
+  // Create mutation
+  const createEventMutation = useMutation({
+    mutationFn: async (event: CampaignEvent) => {
+      const response = await api.post('/campaign-events', {
+        name: event.name,
+        date: event.date,
+        type: event.type,
+        description: event.description,
+        status: event.status,
+        collectionId: event.collectionId,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Event created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['campaign-events'] });
+      setIsModalOpen(false);
+      setSelectedEvent(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create event');
+    },
+  });
 
-  // Delete mutation for local events
+  // Update mutation
+  const updateEventMutation = useMutation({
+    mutationFn: async ({ id, event }: { id: number; event: CampaignEvent }) => {
+      const response = await api.patch(`/campaign-events/${id}`, {
+        name: event.name,
+        date: event.date,
+        type: event.type,
+        description: event.description,
+        status: event.status,
+        collectionId: event.collectionId,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Event updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['campaign-events'] });
+      setIsModalOpen(false);
+      setSelectedEvent(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update event');
+    },
+  });
+
+  // Delete mutation
+  const deleteEventMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.delete(`/campaign-events/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Event deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['campaign-events'] });
+      setIsDeleteModalOpen(false);
+      setEventToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete event');
+    },
+  });
+
+  // Delete event handler
   const deleteEvent = (eventId: string) => {
     if (eventId.startsWith('drop-')) {
       toast.error('Drops cannot be deleted from here. Please delete the collection instead.');
       return;
     }
-    const updated = localEvents.filter((e) => e.id !== eventId);
-    saveLocalEvents(updated);
-    toast.success('Event deleted successfully!');
-    setIsDeleteModalOpen(false);
-    setEventToDelete(null);
+    const numericId = parseInt(eventId.replace('event-', ''));
+    if (isNaN(numericId)) {
+      toast.error('Invalid event ID');
+      return;
+    }
+    deleteEventMutation.mutate(numericId);
   };
 
-  // Create/Update mutation for local events
+  // Save event handler
   const saveEvent = (event: CampaignEvent) => {
-    if (event.id && localEvents.some((e) => e.id === event.id)) {
+    if (event.id && event.id.startsWith('event-')) {
       // Update existing
-      const updated = localEvents.map((e) => (e.id === event.id ? event : e));
-      saveLocalEvents(updated);
-      toast.success('Event updated successfully!');
+      const numericId = parseInt(event.id.replace('event-', ''));
+      if (isNaN(numericId)) {
+        toast.error('Invalid event ID');
+        return;
+      }
+      updateEventMutation.mutate({ id: numericId, event });
     } else {
       // Create new
-      const newEvent = {
-        ...event,
-        id: `${event.type.toLowerCase()}-${Date.now()}`,
-      };
-      saveLocalEvents([...localEvents, newEvent]);
-      toast.success('Event created successfully!');
+      createEventMutation.mutate(event);
     }
-    setIsModalOpen(false);
-    setSelectedEvent(null);
   };
 
   const formatDate = (date: Date) => {
@@ -239,7 +319,7 @@ export default function CampaignPlanner() {
     setIsModalOpen(true);
   };
 
-  if (collectionsLoading) {
+  if (collectionsLoading || campaignEventsLoading) {
     return <SkeletonPage />;
   }
 

@@ -234,9 +234,9 @@ export default function PickPackShip() {
 
   const orders: Order[] = useMemo(() => {
     const data = Array.isArray(ordersData) ? ordersData : (ordersData?.data || []);
-    return data.filter((order: any) => 
-      order.status === 'CONFIRMED' || 
-      order.status === 'PROCESSING' || 
+    return data.filter((order: any) =>
+      order.status === 'CONFIRMED' ||
+      order.status === 'PROCESSING' ||
       order.status === 'PARTIALLY_FULFILLED'
     );
   }, [ordersData]);
@@ -535,11 +535,11 @@ export default function PickPackShip() {
   }, [activeTab, filteredPickLists, filteredPackSlips, filteredShippingLabels]);
 
   // Pagination - use API pagination
-  const totalItems = activeTab === 'pick-lists' 
+  const totalItems = activeTab === 'pick-lists'
     ? (pickListsData?.total || 0)
     : activeTab === 'pack-slips'
-    ? (packSlipsData?.total || 0)
-    : (shippingLabelsData?.total || 0);
+      ? (packSlipsData?.total || 0)
+      : (shippingLabelsData?.total || 0);
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedData = currentData; // Already paginated by API
 
@@ -646,132 +646,147 @@ export default function PickPackShip() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-9 gap-4 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Pick Lists</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.pickLists.total}
-              </p>
+      <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mb-6`}>
+        {/* Pick Lists Tab Cards */}
+        {activeTab === 'pick-lists' && (
+          <>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Pick Lists</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+                    {summaryMetrics.pickLists.total}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">In Progress</p>
-              <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                {summaryMetrics.pickLists.inProgress}
-              </p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">In Progress</p>
+                  <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
+                    {summaryMetrics.pickLists.inProgress}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Completed</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">
-                {summaryMetrics.pickLists.completed}
-              </p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Completed</p>
+                  <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">
+                    {summaryMetrics.pickLists.completed}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Pack Slips</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.packSlips.total}
-              </p>
+        {/* Pack Slips Tab Cards */}
+        {activeTab === 'pack-slips' && (
+          <>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Pack Slips</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+                    {summaryMetrics.packSlips.total}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Packing</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {summaryMetrics.packSlips.packing}
-              </p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Packing</p>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                    {summaryMetrics.packSlips.packing}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <Box className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <Box className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Packed</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">
-                {summaryMetrics.packSlips.packed}
-              </p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Packed</p>
+                  <p className="text-xl font-bold text-green-600 dark:text-green-400 mt-1">
+                    {summaryMetrics.packSlips.packed}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Shipping Labels</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-                {summaryMetrics.shippingLabels.total}
-              </p>
+        {/* Shipping Labels Tab Cards */}
+        {activeTab === 'shipping-labels' && (
+          <>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Shipping Labels</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+                    {summaryMetrics.shippingLabels.total}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                  <Tag className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <Tag className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Generated</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {summaryMetrics.shippingLabels.generated}
-              </p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Generated</p>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                    {summaryMetrics.shippingLabels.generated}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <Barcode className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <Barcode className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Shipped</p>
-              <p className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-                {summaryMetrics.shippingLabels.shipped}
-              </p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Shipped</p>
+                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+                    {summaryMetrics.shippingLabels.shipped}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                  <Truck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <Truck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Tabs */}
@@ -783,11 +798,10 @@ export default function PickPackShip() {
                 setActiveTab('pick-lists');
                 setCurrentPage(1);
               }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'pick-lists'
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pick-lists'
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2">
                 <ClipboardList className="w-4 h-4" />
@@ -799,11 +813,10 @@ export default function PickPackShip() {
                 setActiveTab('pack-slips');
                 setCurrentPage(1);
               }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'pack-slips'
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pack-slips'
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
@@ -815,11 +828,10 @@ export default function PickPackShip() {
                 setActiveTab('shipping-labels');
                 setCurrentPage(1);
               }}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'shipping-labels'
+              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'shipping-labels'
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2">
                 <Tag className="w-4 h-4" />
@@ -839,67 +851,69 @@ export default function PickPackShip() {
           </div>
 
           {/* Search, Filters, and Create Button */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6 items-start md:items-center">
-            <SearchInput
+          <div className="flex flex-col md:flex-row w-full justify-between gap-4 mb-6 items-start md:items-center">
+            <div className="flex flex-col md:flex-row w-full gap-4">
+              <SearchInput
                 value={searchQuery}
-              onChange={(value) => {
-                setSearchQuery(value);
+                onChange={(value) => {
+                  setSearchQuery(value);
                   setCurrentPage(1);
                 }}
-              placeholder={`Search ${activeTab === 'pick-lists' ? 'pick lists' : activeTab === 'pack-slips' ? 'pack slips' : 'shipping labels'}...`}
-              className="flex-1"
+                placeholder={`Search ${activeTab === 'pick-lists' ? 'pick lists' : activeTab === 'pack-slips' ? 'pack slips' : 'shipping labels'}...`}
+                className="flex-1"
               />
-            {(activeTab === 'pick-lists' || activeTab === 'pack-slips') && (
+              {(activeTab === 'pick-lists' || activeTab === 'pack-slips') && (
+                <div className="w-full md:w-auto md:min-w-[180px]">
+                  <CustomDropdown
+                    value={warehouseFilter}
+                    onChange={(value) => {
+                      setWarehouseFilter(value);
+                      setCurrentPage(1);
+                    }}
+                    options={[
+                      { value: 'all', label: 'All Warehouses' },
+                      ...warehouses.map((w) => ({ value: w.id.toString(), label: w.name })),
+                    ]}
+                  />
+                </div>
+              )}
               <div className="w-full md:w-auto md:min-w-[180px]">
                 <CustomDropdown
-                  value={warehouseFilter}
+                  value={statusFilter}
                   onChange={(value) => {
-                    setWarehouseFilter(value);
+                    setStatusFilter(value);
                     setCurrentPage(1);
                   }}
                   options={[
-                    { value: 'all', label: 'All Warehouses' },
-                    ...warehouses.map((w) => ({ value: w.id.toString(), label: w.name })),
-                  ]}
-                />
-              </div>
-            )}
-            <div className="w-full md:w-auto md:min-w-[180px]">
-              <CustomDropdown
-                value={statusFilter}
-                onChange={(value) => {
-                  setStatusFilter(value);
-                  setCurrentPage(1);
-                }}
-                options={[
-                  { value: 'all', label: 'All Status' },
-                  ...(activeTab === 'pick-lists'
-                    ? [
+                    { value: 'all', label: 'All Status' },
+                    ...(activeTab === 'pick-lists'
+                      ? [
                         { value: 'DRAFT', label: 'Draft' },
                         { value: 'ASSIGNED', label: 'Assigned' },
                         { value: 'IN_PROGRESS', label: 'In Progress' },
                         { value: 'COMPLETED', label: 'Completed' },
                       ]
-                    : activeTab === 'pack-slips'
-                    ? [
-                        { value: 'DRAFT', label: 'Draft' },
-                        { value: 'PACKING', label: 'Packing' },
-                        { value: 'PACKED', label: 'Packed' },
-                        { value: 'SHIPPED', label: 'Shipped' },
-                      ]
-                    : [
-                        { value: 'DRAFT', label: 'Draft' },
-                        { value: 'GENERATED', label: 'Generated' },
-                        { value: 'PRINTED', label: 'Printed' },
-                        { value: 'SHIPPED', label: 'Shipped' },
-                      ]),
-                ]}
-              />
+                      : activeTab === 'pack-slips'
+                        ? [
+                          { value: 'DRAFT', label: 'Draft' },
+                          { value: 'PACKING', label: 'Packing' },
+                          { value: 'PACKED', label: 'Packed' },
+                          { value: 'SHIPPED', label: 'Shipped' },
+                        ]
+                        : [
+                          { value: 'DRAFT', label: 'Draft' },
+                          { value: 'GENERATED', label: 'Generated' },
+                          { value: 'PRINTED', label: 'Printed' },
+                          { value: 'SHIPPED', label: 'Shipped' },
+                        ]),
+                  ]}
+                />
+              </div>
             </div>
             {activeTab === 'pick-lists' && (
               <button
                 onClick={() => setIsCreatePickListModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap w-full md:w-auto justify-center"
+                className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap w-full md:w-auto justify-center"
               >
                 <Plus className="w-4 h-4" />
                 Create Pick List
@@ -908,7 +922,7 @@ export default function PickPackShip() {
             {activeTab === 'pack-slips' && (
               <button
                 onClick={() => setIsCreatePackSlipModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap w-full md:w-auto justify-center"
+                className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap w-full md:w-auto justify-center"
               >
                 <Plus className="w-4 h-4" />
                 Create Pack Slip
@@ -917,7 +931,7 @@ export default function PickPackShip() {
             {activeTab === 'shipping-labels' && (
               <button
                 onClick={() => setIsCreateShippingLabelModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap w-full md:w-auto justify-center"
+                className="flex items-center text-[14px] gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap w-full md:w-auto justify-center"
               >
                 <Plus className="w-4 h-4" />
                 Create Shipping Label
@@ -1021,11 +1035,11 @@ export default function PickPackShip() {
                     {paginatedData.map((item: any) => {
                       const warehouse = warehouses.find((w) => w.id === item.warehouseId);
                       const itemsCount = item.items?.length || 0;
-                      const completedItems = activeTab === 'pick-lists' 
+                      const completedItems = activeTab === 'pick-lists'
                         ? item.items?.filter((i: any) => i.status === 'PICKED').length || 0
                         : activeTab === 'pack-slips'
-                        ? item.items?.filter((i: any) => i.packedQuantity && i.packedQuantity > 0).length || 0
-                        : 0;
+                          ? item.items?.filter((i: any) => i.packedQuantity && i.packedQuantity > 0).length || 0
+                          : 0;
                       const progress = itemsCount > 0 ? Math.round((completedItems / itemsCount) * 100) : 0;
 
                       return (
@@ -1350,7 +1364,7 @@ function CreatePickListModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedOrderId || !selectedWarehouseId) {
       toast.error('Please select an order and warehouse');
       return;
@@ -1397,11 +1411,11 @@ function CreatePickListModal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div 
+      <div
         ref={modalRef}
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -1713,7 +1727,7 @@ function CreatePackSlipModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedOrderId || !selectedWarehouseId) {
       toast.error('Please select an order and warehouse');
       return;
@@ -1725,9 +1739,9 @@ function CreatePackSlipModal({
     }
 
     const selectedWarehouse = warehouses.find((w) => w.id === Number(selectedWarehouseId));
-    
+
     let packSlipItems: PackSlipItem[] = [];
-    
+
     if (selectedPickList) {
       // Use items from pick list
       packSlipItems = Object.entries(selectedItems).map(([itemId, quantity]) => {
@@ -1774,11 +1788,11 @@ function CreatePackSlipModal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div 
+      <div
         ref={modalRef}
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -1806,9 +1820,9 @@ function CreatePackSlipModal({
                 orders.length === 0
                   ? []
                   : orders.map((order) => ({
-                      value: order.id.toString(),
-                      label: `${order.orderNumber} - ${order.customer?.name || 'Unknown'} (${order.currency} ${order.totalAmount.toFixed(2)})`,
-                    }))
+                    value: order.id.toString(),
+                    label: `${order.orderNumber} - ${order.customer?.name || 'Unknown'} (${order.currency} ${order.totalAmount.toFixed(2)})`,
+                  }))
               }
               placeholder={orders.length === 0 ? 'No orders available' : 'Select an order...'}
             />
@@ -1871,9 +1885,9 @@ function CreatePackSlipModal({
                 warehouses.length === 0
                   ? []
                   : warehouses.map((warehouse) => ({
-                      value: warehouse.id.toString(),
-                      label: warehouse.name,
-                    }))
+                    value: warehouse.id.toString(),
+                    label: warehouse.name,
+                  }))
               }
               placeholder={warehouses.length === 0 ? 'No warehouses available' : 'Select a warehouse...'}
             />
@@ -1908,7 +1922,7 @@ function CreatePackSlipModal({
                                 const allItems: Record<number, number> = {};
                                 availableItems.forEach((item) => {
                                   const itemId = ('id' in item ? item.id : item.orderLineId || item.id) as number;
-                                  const maxQty = selectedPickList 
+                                  const maxQty = selectedPickList
                                     ? (item as PickListItem).pickedQuantity || (item as PickListItem).quantity
                                     : (item as OrderLine).quantity - (item as OrderLine).fulfilledQty;
                                   allItems[itemId] = maxQty;
@@ -1936,15 +1950,15 @@ function CreatePackSlipModal({
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                       {availableItems.map((item) => {
                         const itemId = ('id' in item ? item.id : item.orderLineId || item.id) as number;
-                        const maxQty = selectedPickList 
+                        const maxQty = selectedPickList
                           ? (item as PickListItem).pickedQuantity || (item as PickListItem).quantity
                           : (item as OrderLine).quantity - (item as OrderLine).fulfilledQty;
                         const isSelected = !!selectedItems[itemId];
                         const packQty = selectedItems[itemId] || 0;
-                        const productName = selectedPickList 
+                        const productName = selectedPickList
                           ? (item as PickListItem).productName
                           : (item as OrderLine).product?.name;
-                        const sku = selectedPickList 
+                        const sku = selectedPickList
                           ? (item as PickListItem).sku
                           : (item as OrderLine).product?.sku;
 
@@ -2001,7 +2015,7 @@ function CreatePackSlipModal({
           {availableItems.length === 0 && (selectedOrder || selectedPickList) && (
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
               <p className="text-sm text-yellow-800 dark:text-yellow-400">
-                {selectedPickList 
+                {selectedPickList
                   ? 'This pick list has no items available for packing.'
                   : 'This order has no items available for packing (all items are already fulfilled).'}
               </p>
@@ -2019,7 +2033,7 @@ function CreatePackSlipModal({
                 min="1"
                 value={packageCount}
                 onChange={(e) => setPackageCount(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
             <div>
@@ -2033,7 +2047,7 @@ function CreatePackSlipModal({
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="Enter weight (optional)"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -2048,7 +2062,7 @@ function CreatePackSlipModal({
               value={packedBy}
               onChange={(e) => setPackedBy(e.target.value)}
               placeholder="Enter packer name (optional)"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
@@ -2060,12 +2074,12 @@ function CreatePackSlipModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes or instructions (optional)"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-[14px] ::placeholder-[12px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center text-[14px] justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
@@ -2212,10 +2226,10 @@ function CreateShippingLabelModal({
       weight: weight ? parseFloat(weight) : undefined,
       dimensions: length || width || height
         ? {
-            length: length ? parseFloat(length) : undefined,
-            width: width ? parseFloat(width) : undefined,
-            height: height ? parseFloat(height) : undefined,
-          }
+          length: length ? parseFloat(length) : undefined,
+          width: width ? parseFloat(width) : undefined,
+          height: height ? parseFloat(height) : undefined,
+        }
         : undefined,
       status: 'DRAFT',
     });
@@ -2254,9 +2268,9 @@ function CreateShippingLabelModal({
                 orders.length === 0
                   ? []
                   : orders.map((order) => ({
-                      value: order.id.toString(),
-                      label: `${order.orderNumber} - ${order.customer?.name || 'Unknown'} (${order.currency} ${order.totalAmount.toFixed(2)})`,
-                    }))
+                    value: order.id.toString(),
+                    label: `${order.orderNumber} - ${order.customer?.name || 'Unknown'} (${order.currency} ${order.totalAmount.toFixed(2)})`,
+                  }))
               }
               placeholder={orders.length === 0 ? 'No orders available' : 'Select an order...'}
             />

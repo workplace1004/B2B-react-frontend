@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Percent, Star, TrendingDown, Package, Search, X, DollarSign, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import api from '../lib/api';
@@ -65,6 +65,7 @@ export default function AssortmentMerchandising() {
 // Featured Collections Section Component
 function FeaturedCollectionsSection() {
   const [searchQuery, setSearchQuery] = useState('');
+  const queryClient = useQueryClient();
 
   // Fetch collections
   const { data: collectionsData, isLoading } = useQuery({
@@ -92,23 +93,52 @@ function FeaturedCollectionsSection() {
 
   const collections = collectionsData || [];
 
-  // Get featured collections from localStorage (until backend is ready)
-  const [featuredCollections, setFeaturedCollections] = useState<number[]>(() => {
-    const stored = localStorage.getItem('featured-collections');
-    return stored ? JSON.parse(stored) : [];
+  // Fetch featured collections from API
+  const { data: featuredCollectionsData } = useQuery({
+    queryKey: ['featured-collections'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/featured-collections?skip=0&take=1000');
+        return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const featuredCollections = featuredCollectionsData || [];
+  const featuredCollectionIds = featuredCollections.map((fc: any) => fc.collectionId);
+
+  // Toggle featured mutation
+  const toggleFeaturedMutation = useMutation({
+    mutationFn: async ({ collectionId, isFeatured }: { collectionId: number; isFeatured: boolean }) => {
+      if (isFeatured) {
+        // Remove from featured
+        const featuredCollection = featuredCollections.find((fc: any) => fc.collectionId === collectionId);
+        if (featuredCollection) {
+          await api.delete(`/featured-collections/${featuredCollection.id}`);
+        }
+      } else {
+        // Add to featured
+        await api.post('/featured-collections', { collectionId });
+      }
+    },
+    onSuccess: (_, variables) => {
+      toast.success(
+        variables.isFeatured
+          ? 'Collection removed from featured'
+          : 'Collection added to featured'
+      );
+      queryClient.invalidateQueries({ queryKey: ['featured-collections'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update featured status');
+    },
   });
 
   const toggleFeatured = (collectionId: number) => {
-    const updated = featuredCollections.includes(collectionId)
-      ? featuredCollections.filter((id) => id !== collectionId)
-      : [...featuredCollections, collectionId];
-    setFeaturedCollections(updated);
-    localStorage.setItem('featured-collections', JSON.stringify(updated));
-    toast.success(
-      featuredCollections.includes(collectionId)
-        ? 'Collection removed from featured'
-        : 'Collection added to featured'
-    );
+    const isFeatured = featuredCollectionIds.includes(collectionId);
+    toggleFeaturedMutation.mutate({ collectionId, isFeatured });
   };
 
   if (isLoading) {
@@ -146,7 +176,7 @@ function FeaturedCollectionsSection() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {collections.map((collection: any) => {
-            const isFeatured = featuredCollections.includes(collection.id);
+            const isFeatured = featuredCollectionIds.includes(collection.id);
             return (
               <div
                 key={collection.id}
@@ -218,12 +248,12 @@ function FeaturedCollectionsSection() {
       )}
 
       {/* Featured Collections Summary */}
-      {featuredCollections.length > 0 && (
+      {featuredCollectionIds.length > 0 && (
         <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5 text-primary-600 dark:text-primary-400 fill-current" />
             <p className="text-sm font-medium text-primary-900 dark:text-primary-200">
-              {featuredCollections.length} collection{featuredCollections.length !== 1 ? 's' : ''} currently featured
+              {featuredCollectionIds.length} collection{featuredCollectionIds.length !== 1 ? 's' : ''} currently featured
             </p>
           </div>
         </div>
@@ -238,6 +268,7 @@ function MarkdownPlanningSection() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const queryClient = useQueryClient();
 
   // Fetch products with inventory
   const { data: productsData, isLoading: productsLoading } = useQuery({
@@ -282,11 +313,20 @@ function MarkdownPlanningSection() {
   const inventory = inventoryData || [];
   const orders = ordersData || [];
 
-  // Get markdown plans from localStorage (until backend is ready)
-  const [markdownPlans, setMarkdownPlans] = useState<any[]>(() => {
-    const stored = localStorage.getItem('markdown-plans');
-    return stored ? JSON.parse(stored) : [];
+  // Fetch markdown plans from API
+  const { data: markdownPlansData } = useQuery({
+    queryKey: ['markdown-plans'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/markdown-plans?skip=0&take=10000');
+        return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      } catch (error) {
+        return [];
+      }
+    },
   });
+
+  const markdownPlans = markdownPlansData || [];
 
   // Calculate dead stock candidates
   const deadStockCandidates = useMemo(() => {
@@ -318,7 +358,7 @@ function MarkdownPlanningSection() {
       }, 0);
 
       // Check if product has existing markdown plan
-      const existingPlan = markdownPlans.find((plan) => plan.productId === product.id);
+      const existingPlan = markdownPlans.find((plan: any) => plan.productId === product.id);
 
       // Calculate dead stock score (higher inventory, lower sales = higher score)
       const daysOfStock = salesQuantity > 0 ? (totalAvailable / (salesQuantity / 30)) : totalAvailable > 0 ? 999 : 0;
@@ -359,22 +399,85 @@ function MarkdownPlanningSection() {
       });
   }, [products, inventory, orders, markdownPlans, filterStatus, searchQuery]);
 
+  // Create markdown plan mutation
+  const createMarkdownPlanMutation = useMutation({
+    mutationFn: async (plan: any) => {
+      const response = await api.post('/markdown-plans', {
+        productId: plan.productId,
+        discountPercent: plan.discountPercent,
+        newPrice: plan.newPrice,
+        startDate: plan.startDate,
+        endDate: plan.endDate || null,
+        reason: plan.reason,
+        notes: plan.notes,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Markdown plan created!');
+      queryClient.invalidateQueries({ queryKey: ['markdown-plans'] });
+      setIsModalOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create markdown plan');
+    },
+  });
+
+  // Update markdown plan mutation
+  const updateMarkdownPlanMutation = useMutation({
+    mutationFn: async ({ id, plan }: { id: number; plan: any }) => {
+      const response = await api.patch(`/markdown-plans/${id}`, {
+        discountPercent: plan.discountPercent,
+        newPrice: plan.newPrice,
+        startDate: plan.startDate,
+        endDate: plan.endDate || null,
+        reason: plan.reason,
+        notes: plan.notes,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Markdown plan updated!');
+      queryClient.invalidateQueries({ queryKey: ['markdown-plans'] });
+      setIsModalOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update markdown plan');
+    },
+  });
+
+  // Delete markdown plan mutation
+  const deleteMarkdownPlanMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.delete(`/markdown-plans/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Markdown plan deleted!');
+      queryClient.invalidateQueries({ queryKey: ['markdown-plans'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete markdown plan');
+    },
+  });
+
   const saveMarkdownPlan = (plan: any) => {
-    const updated = markdownPlans.some((p) => p.productId === plan.productId)
-      ? markdownPlans.map((p) => (p.productId === plan.productId ? plan : p))
-      : [...markdownPlans, plan];
-    setMarkdownPlans(updated);
-    localStorage.setItem('markdown-plans', JSON.stringify(updated));
-    toast.success(plan.id ? 'Markdown plan updated!' : 'Markdown plan created!');
-    setIsModalOpen(false);
-    setSelectedProduct(null);
+    if (plan.id && typeof plan.id === 'number') {
+      // Update existing
+      updateMarkdownPlanMutation.mutate({ id: plan.id, plan });
+    } else {
+      // Create new
+      createMarkdownPlanMutation.mutate(plan);
+    }
   };
 
   const deleteMarkdownPlan = (productId: number) => {
-    const updated = markdownPlans.filter((p) => p.productId !== productId);
-    setMarkdownPlans(updated);
-    localStorage.setItem('markdown-plans', JSON.stringify(updated));
-    toast.success('Markdown plan deleted!');
+    const existingPlan = markdownPlans.find((p: any) => p.productId === productId);
+    if (existingPlan && existingPlan.id) {
+      deleteMarkdownPlanMutation.mutate(existingPlan.id);
+    }
   };
 
   const isLoading = productsLoading || inventoryLoading;
@@ -557,10 +660,10 @@ function MarkdownPlanningSection() {
                       {product.existingPlan ? (
                         <div>
                           <span className="text-sm font-medium text-primary-600 dark:text-primary-400">
-                            {product.existingPlan.discountPercent}% off
+                            {Number(product.existingPlan.discountPercent).toFixed(1)}% off
                           </span>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            ${product.existingPlan.newPrice?.toFixed(2)}
+                            ${Number(product.existingPlan.newPrice).toFixed(2)}
                           </div>
                         </div>
                       ) : (
@@ -625,12 +728,12 @@ function MarkdownPlanModal({
   onSave: (plan: any) => void;
 }) {
   const [formData, setFormData] = useState({
-    id: plan?.id || `plan-${Date.now()}`,
+    id: plan?.id || null,
     productId: product.id,
-    discountPercent: plan?.discountPercent || 0,
-    newPrice: plan?.newPrice || product.currentPrice,
-    startDate: plan?.startDate || new Date().toISOString().split('T')[0],
-    endDate: plan?.endDate || '',
+    discountPercent: plan ? Number(plan.discountPercent) : 0,
+    newPrice: plan ? Number(plan.newPrice) : product.currentPrice,
+    startDate: plan?.startDate ? new Date(plan.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    endDate: plan?.endDate ? new Date(plan.endDate).toISOString().split('T')[0] : '',
     reason: plan?.reason || 'Dead stock clearance',
     notes: plan?.notes || '',
   });
