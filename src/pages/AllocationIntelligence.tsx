@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
   Target,
@@ -11,6 +11,7 @@ import {
   Zap,
   ShoppingCart,
   Store,
+  RefreshCw,
 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -82,6 +83,8 @@ function AllocationRecommendationsSection() {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [applyingItems, setApplyingItems] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   // Fetch pending orders
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
@@ -139,6 +142,47 @@ function AllocationRecommendationsSection() {
   const customers = customersData || [];
   const inventory = inventoryData || [];
   const warehouses = warehousesData || [];
+
+  // Apply allocation recommendation mutation
+  const applyAllocationMutation = useMutation({
+    mutationFn: async (item: any) => {
+      // In a real implementation, this would update the order allocation
+      // For now, we'll simulate the API call
+      const response = await api.patch(`/orders/${item.order.id}`, {
+        allocationWarehouseId: item.bestWarehouse?.warehouse.id,
+        allocationQuantity: item.bestWarehouse?.recommendedQty,
+      });
+      return response.data;
+    },
+    onSuccess: (_data, item) => {
+      queryClient.invalidateQueries({ queryKey: ['orders', 'allocation-recommendations'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory', 'allocation-recommendations'] });
+      setApplyingItems(prev => {
+        const next = new Set(prev);
+        next.delete(`${item.order.id}-${item.product.id}`);
+        return next;
+      });
+      toast.success(`Allocation recommendation for ${item.product.name} applied!`);
+    },
+    onError: (error: any, item) => {
+      setApplyingItems(prev => {
+        const next = new Set(prev);
+        next.delete(`${item.order.id}-${item.product.id}`);
+        return next;
+      });
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to apply allocation recommendation';
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleApplyAllocation = (item: any) => {
+    const itemKey = `${item.order.id}-${item.product.id}`;
+    if (applyingItems.has(itemKey)) {
+      return;
+    }
+    setApplyingItems(prev => new Set(prev).add(itemKey));
+    applyAllocationMutation.mutate(item);
+  };
 
   // Calculate allocation recommendations
   const allocationRecommendations = useMemo(() => {
@@ -534,12 +578,16 @@ function AllocationRecommendationsSection() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => {
-                          toast.success(`Allocation recommendation for ${item.product.name} applied!`);
-                        }}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                        onClick={() => handleApplyAllocation(item)}
+                        disabled={applyingItems.has(`${item.order.id}-${item.product.id}`) || applyAllocationMutation.isPending}
+                        className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                        title="Apply Allocation"
                       >
-                        Apply
+                        {applyingItems.has(`${item.order.id}-${item.product.id}`) || applyAllocationMutation.isPending ? (
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-5 h-5" />
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -888,6 +936,8 @@ function FulfillmentOptimizationSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [signalFilter, setSignalFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [applyingSignals, setApplyingSignals] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   // Fetch orders
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
@@ -931,6 +981,60 @@ function FulfillmentOptimizationSection() {
   const orders = ordersData || [];
   const inventory = inventoryData || [];
   const warehouses = warehousesData || [];
+
+  // Apply signal mutation
+  const applySignalMutation = useMutation({
+    mutationFn: async (signal: any) => {
+      // In a real implementation, this would apply the BORIS/BOPIS signal
+      // For now, we'll simulate the API call
+      if (signal.type === 'BORIS') {
+        // Apply BORIS - Reserve for customer pickup
+        const response = await api.patch(`/orders/${signal.order.id}`, {
+          fulfillmentType: 'BORIS',
+          reservedWarehouseId: signal.warehouse.id,
+          reservedQuantity: signal.requestedQty,
+        });
+        return response.data;
+      } else if (signal.type === 'BOPIS') {
+        // Apply BOPIS - Buy online, pick up in store
+        const response = await api.patch(`/orders/${signal.order.id}`, {
+          fulfillmentType: 'BOPIS',
+          reservedWarehouseId: signal.warehouse.id,
+          reservedQuantity: signal.requestedQty,
+        });
+        return response.data;
+      }
+      return { success: true };
+    },
+    onSuccess: (_data, signal) => {
+      queryClient.invalidateQueries({ queryKey: ['orders', 'fulfillment-signals'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory', 'fulfillment-signals'] });
+      setApplyingSignals(prev => {
+        const next = new Set(prev);
+        next.delete(`${signal.order.id}-${signal.orderLine.id}`);
+        return next;
+      });
+      toast.success(`${signal.type} signal applied for ${signal.product.name}!`);
+    },
+    onError: (error: any, signal) => {
+      setApplyingSignals(prev => {
+        const next = new Set(prev);
+        next.delete(`${signal.order.id}-${signal.orderLine.id}`);
+        return next;
+      });
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to apply signal';
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleApplySignal = (signal: any) => {
+    const signalKey = `${signal.order.id}-${signal.orderLine.id}`;
+    if (applyingSignals.has(signalKey)) {
+      return;
+    }
+    setApplyingSignals(prev => new Set(prev).add(signalKey));
+    applySignalMutation.mutate(signal);
+  };
 
   // Generate fulfillment optimization signals
   const fulfillmentSignals = useMemo(() => {
@@ -1246,12 +1350,16 @@ function FulfillmentOptimizationSection() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => {
-                          toast.success(`${signal.type} signal applied for ${signal.product.name}!`);
-                        }}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                        onClick={() => handleApplySignal(signal)}
+                        disabled={applyingSignals.has(`${signal.order.id}-${signal.orderLine.id}`) || applySignalMutation.isPending}
+                        className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                        title="Apply Signal"
                       >
-                        Apply
+                        {applyingSignals.has(`${signal.order.id}-${signal.orderLine.id}`) || applySignalMutation.isPending ? (
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-5 h-5" />
+                        )}
                       </button>
                     </td>
                   </tr>

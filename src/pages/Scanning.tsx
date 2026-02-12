@@ -208,26 +208,78 @@ export default function Scanning() {
     }
 
     setIsScanning(true);
-    const scanId = Date.now().toString();
 
     try {
-      // Simulate scanning delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
       // Lookup product by SKU, EAN, or code
       let product: Product | null = null;
       let warehouse: Warehouse | null = null;
 
       try {
-        // Try to find product by SKU or EAN
-        const productsResponse = await api.get('/products');
-        const products = Array.isArray(productsResponse.data) 
-          ? productsResponse.data 
-          : (productsResponse.data?.data || []);
-        
-        product = products.find(
-          (p: Product) => p.sku === code || p.ean === code
-        ) || null;
+        // First, try to find product by SKU using the dedicated endpoint (exact match)
+        try {
+          const skuResponse = await api.get(`/products/sku/${encodeURIComponent(code)}`);
+          if (skuResponse.data) {
+            product = skuResponse.data;
+          }
+        } catch (skuError: any) {
+          // If SKU endpoint fails, continue to other search methods
+          if (skuError.response?.status !== 404) {
+            console.error('Error looking up product by SKU:', skuError);
+          }
+        }
+
+        // If not found by exact SKU match, try searching all products
+        if (!product) {
+          const productsResponse = await api.get('/products?skip=0&take=10000');
+          const products = Array.isArray(productsResponse.data) 
+            ? productsResponse.data 
+            : (productsResponse.data?.data || []);
+          
+          if (!products || products.length === 0) {
+            console.warn('No products found in database');
+          } else {
+            // Try multiple search strategies
+            // 1. Exact match on SKU or EAN (case-insensitive)
+            product = products.find(
+              (p: Product) => 
+                p.sku?.toLowerCase() === code.toLowerCase() || 
+                p.ean?.toLowerCase() === code.toLowerCase()
+            ) || null;
+
+            // 2. If not found, try partial match - code might contain EAN followed by variant info
+            // Example: "2005986901189-CRIMSON-S" might have EAN "2005986901189"
+            if (!product && code.includes('-')) {
+              const parts = code.split('-');
+              // Try the first part as EAN (usually numeric)
+              const possibleEAN = parts[0];
+              if (possibleEAN && /^\d+$/.test(possibleEAN)) {
+                product = products.find(
+                  (p: Product) => p.ean === possibleEAN || p.ean?.startsWith(possibleEAN)
+                ) || null;
+              }
+              
+              // Also try the full code as SKU (case-insensitive partial match)
+              if (!product) {
+                product = products.find(
+                  (p: Product) => p.sku?.toLowerCase().includes(code.toLowerCase()) ||
+                                 code.toLowerCase().includes(p.sku?.toLowerCase() || '')
+                ) || null;
+              }
+            }
+
+            // 3. Try case-insensitive partial match on SKU or EAN
+            if (!product) {
+              const codeLower = code.toLowerCase();
+              product = products.find(
+                (p: Product) => 
+                  p.sku?.toLowerCase().includes(codeLower) ||
+                  p.ean?.toLowerCase().includes(codeLower) ||
+                  codeLower.includes(p.sku?.toLowerCase() || '') ||
+                  codeLower.includes(p.ean?.toLowerCase() || '')
+              ) || null;
+            }
+          }
+        }
 
         // Get warehouse if selected
         if (selectedWarehouse !== 'all') {
@@ -237,48 +289,64 @@ export default function Scanning() {
         console.error('Error looking up product:', error);
       }
 
-      // Create scan result
-      const result: ScanResult = {
-        id: scanId,
+      // Determine status and message based on action type
+      let status: 'SUCCESS' | 'ERROR' | 'WARNING' = product ? 'SUCCESS' : 'WARNING';
+      let message = '';
+
+      if (product) {
+        const actionMessages: Record<string, string> = {
+          LOOKUP: `Successfully scanned ${product.name} for lookup`,
+          INVENTORY_UPDATE: `Successfully scanned ${product.name} for inventory update`,
+          TRANSFER: `Successfully scanned ${product.name} for transfer`,
+          RECEIVING: `Successfully scanned ${product.name} for receiving`,
+          SHIPPING: `Successfully scanned ${product.name} for shipping`,
+        };
+        message = actionMessages[actionType] || `Successfully scanned ${product.name}`;
+      } else {
+        message = `Code "${code}" not found in product database. Please check the SKU or EAN code.`;
+      }
+
+      // Save scan result to API
+      createScanHistoryMutation.mutate({
         code,
         codeType,
         productId: product?.id,
-        productName: product?.name,
-        sku: product?.sku,
         warehouseId: warehouse?.id,
-        warehouseName: warehouse?.name,
-         action: actionType as ScanResult['action'],
-        status: product ? 'SUCCESS' : 'WARNING',
-        message: product 
-          ? `Product found: ${product.name}` 
-          : `Code "${code}" not found in product database`,
-        scannedAt: new Date().toISOString(),
+        action: actionType,
+        status,
+        message,
         metadata: {
           mode: activeMode,
           action: actionType,
+          productName: product?.name,
+          sku: product?.sku,
         },
-      };
-
-      // Save to API (already done by createScanHistoryMutation)
-
-      // Show toast
-      if (result.status === 'SUCCESS') {
-        toast.success(result.message || 'Scan successful!');
-      } else if (result.status === 'WARNING') {
-        toast.error(result.message || 'Product not found');
-      }
-
-      // Clear input
-      setScanInput('');
-      if (scanInputRef.current) {
-        scanInputRef.current.focus();
-      }
+      }, {
+        onSuccess: () => {
+          // Show toast after successful save
+          if (status === 'SUCCESS') {
+            toast.success(message || 'Scan successful!');
+          } else if (status === 'WARNING') {
+            toast.error(message || 'Product not found');
+          }
+          
+          // Clear input
+          setScanInput('');
+          if (scanInputRef.current) {
+            scanInputRef.current.focus();
+          }
+        },
+        onError: (error) => {
+          console.error('Error saving scan history:', error);
+          toast.error('Error saving scan result');
+        },
+      });
     } catch (error) {
       // Save error to API
       createScanHistoryMutation.mutate({
         code,
         codeType,
-        action: 'LOOKUP',
+        action: actionType,
         status: 'ERROR',
         message: 'Error processing scan',
         metadata: {
@@ -286,9 +354,11 @@ export default function Scanning() {
           action: actionType,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
+      }, {
+        onError: () => {
+          toast.error('Error processing scan');
+        },
       });
-
-      toast.error('Error processing scan');
     } finally {
       setIsScanning(false);
     }
@@ -519,7 +589,7 @@ export default function Scanning() {
                   type="text"
                   value={scanInput}
                   onChange={(e) => setScanInput(e.target.value)}
-                  placeholder={`Enter or scan ${activeMode === 'BARCODE' ? 'barcode' : activeMode === 'QR' ? 'QR code' : 'RFID tag'}`}
+                  placeholder={`Enter or scan ${activeMode === 'BARCODE' ? 'barcode (EAN/SKU)' : activeMode === 'QR' ? 'QR code (SKU)' : 'RFID tag (SKU)'}`}
                   className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white text-lg"
                   disabled={isScanning}
                   autoFocus
@@ -532,6 +602,13 @@ export default function Scanning() {
                   {isScanning ? 'Scanning...' : 'Scan'}
                 </button>
               </div>
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                {activeMode === 'BARCODE' 
+                  ? 'Enter the product SKU (e.g., SKU-00060) or EAN/Barcode number to scan'
+                  : activeMode === 'QR' 
+                  ? 'Enter the product SKU (e.g., SKU-00060) or scan a QR code containing the SKU'
+                  : 'Enter the product SKU (e.g., SKU-00060) or scan an RFID tag containing the SKU'}
+              </p>
             </div>
 
             {/* Action and Warehouse Selection */}

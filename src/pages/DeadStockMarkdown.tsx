@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
@@ -21,6 +21,7 @@ import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import { CustomDropdown } from '../components/ui';
+import Pagination, { ITEMS_PER_PAGE } from '../components/ui/Pagination';
 
 type TabType = 'aging' | 'slow-movers' | 'markdown-scenarios' | 'recovery-tracking';
 
@@ -87,6 +88,7 @@ function AgingInventorySection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [ageFilter, setAgeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('age-desc');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch inventory with products
   const { data: inventoryData, isLoading: inventoryLoading } = useQuery({
@@ -195,6 +197,17 @@ function AgingInventorySection() {
         return 0;
       });
   }, [inventory, orders, ageFilter, searchQuery, sortBy]);
+
+  // Pagination
+  const totalItems = agingInventory.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedAgingInventory = agingInventory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [ageFilter, searchQuery, sortBy]);
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
@@ -382,7 +395,7 @@ function AgingInventorySection() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {agingInventory.map((item: any) => (
+                {paginatedAgingInventory.map((item: any) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -442,6 +455,16 @@ function AgingInventorySection() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -452,6 +475,7 @@ function AgingInventorySection() {
 function SlowMoversSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch products with inventory
   const { data: productsData, isLoading: productsLoading } = useQuery({
@@ -612,6 +636,17 @@ function SlowMoversSection() {
         return daysB - daysA;
       });
   }, [products, inventory, orders, filterStatus, searchQuery]);
+
+  // Pagination
+  const totalItems = slowMovers.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedSlowMovers = slowMovers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery]);
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
@@ -807,7 +842,7 @@ function SlowMoversSection() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {slowMovers.map((product: any) => (
+                {paginatedSlowMovers.map((product: any) => (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">{product.name}</div>
@@ -869,6 +904,16 @@ function SlowMoversSection() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -880,6 +925,7 @@ function MarkdownScenariosSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch products with inventory
   const { data: productsData, isLoading: productsLoading } = useQuery({
@@ -1053,6 +1099,17 @@ function MarkdownScenariosSection() {
       });
   }, [products, inventory, orders, markdownPlans, searchQuery]);
 
+  // Pagination
+  const totalItems = markdownCandidates.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedMarkdownCandidates = markdownCandidates.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   // Mutation for creating/updating markdown plans
   const saveMarkdownPlanMutation = useMutation({
     mutationFn: async (plan: any) => {
@@ -1084,9 +1141,9 @@ function MarkdownScenariosSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -1133,7 +1190,7 @@ function MarkdownScenariosSection() {
       </div>
 
       {/* Search */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex-1 relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -1165,7 +1222,7 @@ function MarkdownScenariosSection() {
         </div>
       ) : (
         <div className="space-y-4">
-          {markdownCandidates.map((product: any) => (
+          {paginatedMarkdownCandidates.map((product: any) => (
             <div
               key={product.id}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
@@ -1238,6 +1295,16 @@ function MarkdownScenariosSection() {
               </div>
             </div>
           ))}
+          {totalPages > 1 && (
+            <div className="p-4 pt-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -1269,6 +1336,7 @@ function MarkdownPlanModal({
   onClose: () => void;
   onSave: (plan: any) => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     id: plan?.id || `plan-${Date.now()}`,
     productId: product.id,
@@ -1279,14 +1347,27 @@ function MarkdownPlanModal({
     reason: plan?.reason || 'Dead stock clearance',
   });
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      onClose();
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        ref={modalRef}
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {plan ? 'Edit Markdown Plan' : 'Create Markdown Plan'}
@@ -1326,7 +1407,7 @@ function MarkdownPlanModal({
                 const newPrice = product.currentPrice * (1 - discount / 100);
                 setFormData({ ...formData, discountPercent: discount, newPrice });
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 text-[14px] ::placeholder-[12px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
@@ -1345,7 +1426,7 @@ function MarkdownPlanModal({
                 const discount = ((product.currentPrice - newPrice) / product.currentPrice) * 100;
                 setFormData({ ...formData, newPrice, discountPercent: discount });
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 text-[14px] ::placeholder-[12px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
@@ -1359,7 +1440,7 @@ function MarkdownPlanModal({
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 text-[14px] ::placeholder-[12px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -1371,7 +1452,7 @@ function MarkdownPlanModal({
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 text-[14px] ::placeholder-[12px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -1393,7 +1474,7 @@ function MarkdownPlanModal({
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex text-[14px] items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
@@ -1418,6 +1499,7 @@ function MarkdownPlanModal({
 function RecoveryTrackingSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [timeRange, setTimeRange] = useState<string>('30d');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch markdown plans from API
   const { data: markdownPlansData } = useQuery({
@@ -1576,6 +1658,17 @@ function RecoveryTrackingSection() {
         return effectivenessOrder[a.effectiveness as keyof typeof effectivenessOrder] - effectivenessOrder[b.effectiveness as keyof typeof effectivenessOrder];
       });
   }, [markdownPlans, orders, products, timeRange, searchQuery]);
+
+  // Pagination
+  const totalItems = recoveryData.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRecoveryData = recoveryData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [timeRange, searchQuery]);
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
@@ -1764,7 +1857,7 @@ function RecoveryTrackingSection() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {recoveryData.map((item: any) => (
+                {paginatedRecoveryData.map((item: any) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -1835,6 +1928,16 @@ function RecoveryTrackingSection() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

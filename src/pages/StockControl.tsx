@@ -246,8 +246,16 @@ export default function StockControl() {
     queryFn: async () => {
       try {
         const response = await api.get('/stock-control-configurations/TRANSFERS');
-        return response.data?.data || [];
+        // Handle both direct array response and wrapped object response
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        return [];
       } catch (error) {
+        console.error('Error fetching transfers:', error);
         return [];
       }
     },
@@ -258,8 +266,16 @@ export default function StockControl() {
     queryFn: async () => {
       try {
         const response = await api.get('/stock-control-configurations/APPROVALS');
-        return response.data?.data || {};
+        // Handle both direct object response and wrapped object response
+        if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+          if (response.data.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+            return response.data.data;
+          }
+          return response.data;
+        }
+        return {};
       } catch (error) {
+        console.error('Error fetching approvals:', error);
         return {};
       }
     },
@@ -270,8 +286,16 @@ export default function StockControl() {
     queryFn: async () => {
       try {
         const response = await api.get('/stock-control-configurations/CROSS_DOCK');
-        return response.data?.data || [];
+        // Handle both direct array response and wrapped object response
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        return [];
       } catch (error) {
+        console.error('Error fetching cross-docks:', error);
         return [];
       }
     },
@@ -282,15 +306,27 @@ export default function StockControl() {
   const [crossDocks, setCrossDocks] = useState<CrossDock[]>([]);
 
   useEffect(() => {
-    if (transfersData) setTransfers(transfersData);
+    if (transfersData && Array.isArray(transfersData)) {
+      setTransfers(transfersData);
+    } else if (transfersData === undefined || transfersData === null) {
+      setTransfers([]);
+    }
   }, [transfersData]);
 
   useEffect(() => {
-    if (approvalsData) setApprovals(approvalsData);
+    if (approvalsData && typeof approvalsData === 'object' && !Array.isArray(approvalsData)) {
+      setApprovals(approvalsData);
+    } else if (approvalsData === undefined || approvalsData === null) {
+      setApprovals({});
+    }
   }, [approvalsData]);
 
   useEffect(() => {
-    if (crossDocksData) setCrossDocks(crossDocksData);
+    if (crossDocksData && Array.isArray(crossDocksData)) {
+      setCrossDocks(crossDocksData);
+    } else if (crossDocksData === undefined || crossDocksData === null) {
+      setCrossDocks([]);
+    }
   }, [crossDocksData]);
 
   // Mutations for saving
@@ -956,9 +992,9 @@ function TransfersTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
         <SearchInput
           value={searchQuery}
           onChange={(value) => {
@@ -1977,9 +2013,9 @@ function CrossDockTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
         <SearchInput
           value={searchQuery}
           onChange={(value) => {

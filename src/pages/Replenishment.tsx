@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
   RefreshCw,
@@ -13,6 +13,9 @@ import {
   Store,
   Users,
   Calendar,
+  Eye,
+  X,
+  CheckCircle,
 } from 'lucide-react';
 import api from '../lib/api';
 import { SkeletonPage } from '../components/Skeleton';
@@ -23,6 +26,7 @@ import {
   SearchAndFilterBar,
   EmptyState,
 } from '../components/ui';
+import Pagination, { ITEMS_PER_PAGE } from '../components/ui/Pagination';
 
 type TabType = 'reorder-suggestions' | 'risk-scoring' | 'channel-replenishment';
 type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'overstock';
@@ -66,6 +70,8 @@ function ReorderSuggestionsSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('reorder-desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [applyingItems, setApplyingItems] = useState<Set<number>>(new Set());
 
   // Fetch inventory data
   const { data: inventoryData, isLoading: isLoadingInventory } = useQuery({
@@ -95,6 +101,59 @@ function ReorderSuggestionsSection() {
 
   const inventory = inventoryData || [];
   const warehouses = warehousesData || [];
+  const queryClient = useQueryClient();
+
+  // Apply reorder suggestion mutation
+  const applyReorderMutation = useMutation({
+    mutationFn: async (item: any) => {
+      // Create a purchase order or reorder request
+      // For now, we'll create a simple reorder record
+      // In a real implementation, this would create a PO
+      const response = await api.post('/purchase-orders', {
+        supplierId: 1, // Default supplier - in real app, this would be selected
+        status: 'DRAFT',
+        expectedDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        currency: 'USD',
+        lines: [{
+          productId: item.productId,
+          quantity: item.suggestedReorderQty > 0 ? item.suggestedReorderQty : item.safetyStock,
+          unitCost: 0, // Would be fetched from supplier pricing
+          totalCost: 0,
+        }],
+        notes: `Auto-generated reorder for ${item.productName} at ${item.warehouseName}`,
+      });
+      return response.data;
+    },
+    onSuccess: (_data, item) => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory', 'reorder-suggestions'] });
+      setApplyingItems(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+      toast.success(`Reorder suggestion for ${item.productName} applied!`);
+    },
+    onError: (error: any, item) => {
+      setApplyingItems(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to apply reorder suggestion';
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleApplyReorder = (item: any) => {
+    if (item.suggestedReorderQty <= 0 && !item.needsReorder) {
+      toast.error('No reorder needed for this item');
+      return;
+    }
+    
+    setApplyingItems(prev => new Set(prev).add(item.id));
+    applyReorderMutation.mutate(item);
+  };
 
   // Calculate reorder suggestions
   const reorderSuggestions = useMemo(() => {
@@ -165,6 +224,17 @@ function ReorderSuggestionsSection() {
         return 0;
       });
   }, [inventory, warehouses, searchQuery, warehouseFilter, sortBy]);
+
+  // Pagination
+  const totalItems = reorderSuggestions.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedReorderSuggestions = reorderSuggestions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [warehouseFilter, searchQuery, sortBy]);
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
@@ -300,7 +370,7 @@ function ReorderSuggestionsSection() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {reorderSuggestions.map((item: any) => (
+                {paginatedReorderSuggestions.map((item: any) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -368,12 +438,16 @@ function ReorderSuggestionsSection() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => {
-                          toast.success(`Reorder suggestion for ${item.productName} applied!`);
-                        }}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                        onClick={() => handleApplyReorder(item)}
+                        disabled={applyingItems.has(item.id) || (item.suggestedReorderQty <= 0 && !item.needsReorder)}
+                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50 disabled:cursor-not-allowed p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                        title="Apply Reorder Suggestion"
                       >
-                        Apply
+                        {applyingItems.has(item.id) ? (
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-5 h-5" />
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -381,6 +455,16 @@ function ReorderSuggestionsSection() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -392,6 +476,10 @@ function StockRiskScoringSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [riskTypeFilter, setRiskTypeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('risk-desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isViewModalShowing, setIsViewModalShowing] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   // Fetch inventory data
   const { data: inventoryData, isLoading: isLoadingInventory } = useQuery({
@@ -557,6 +645,17 @@ function StockRiskScoringSection() {
       });
   }, [inventory, orders, searchQuery, riskTypeFilter, sortBy]);
 
+  // Pagination
+  const totalItems = riskScoredItems.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRiskScoredItems = riskScoredItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [riskTypeFilter, searchQuery, sortBy]);
+
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
     const stockout = riskScoredItems.filter((item: any) => item.stockoutRisk);
@@ -574,6 +673,21 @@ function StockRiskScoringSection() {
       avgRiskScore: Math.round(avgRiskScore),
     };
   }, [riskScoredItems]);
+
+  // Handle modal open/close
+  const openViewModal = (item: any) => {
+    setSelectedItem(item);
+    setIsViewModalOpen(true);
+    setTimeout(() => setIsViewModalShowing(true), 10);
+  };
+
+  const closeViewModal = () => {
+    setIsViewModalShowing(false);
+    setTimeout(() => {
+      setIsViewModalOpen(false);
+      setSelectedItem(null);
+    }, 300);
+  };
 
   if (isLoadingInventory) {
     return <SkeletonPage />;
@@ -712,7 +826,7 @@ function StockRiskScoringSection() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {riskScoredItems.map((item: any) => (
+                {paginatedRiskScoredItems.map((item: any) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -815,12 +929,11 @@ function StockRiskScoringSection() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => {
-                          toast.success(`Risk analysis for ${item.productName} reviewed!`);
-                        }}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                        onClick={() => openViewModal(item)}
+                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                        title="View Details"
                       >
-                        View Details
+                        <Eye className="w-5 h-5" />
                       </button>
                   </td>
                   </tr>
@@ -828,8 +941,287 @@ function StockRiskScoringSection() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+        </div>
+          )}
         </div>
       )}
+
+      {/* Risk Details View Modal */}
+      {isViewModalOpen && selectedItem && (
+        <RiskDetailsViewModal
+          item={selectedItem}
+          onClose={closeViewModal}
+          isShowing={isViewModalShowing}
+        />
+      )}
+    </div>
+  );
+}
+
+// Risk Details View Modal Component
+function RiskDetailsViewModal({
+  item,
+  onClose,
+  isShowing,
+}: {
+  item: any;
+  onClose: () => void;
+  isShowing: boolean;
+}) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      onClose();
+    }
+  };
+
+  const getRiskColor = (score: number) => {
+    if (score >= 70) return 'text-red-600 dark:text-red-400';
+    if (score >= 50) return 'text-orange-600 dark:text-orange-400';
+    if (score >= 30) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-green-600 dark:text-green-400';
+  };
+
+  const getRiskBadgeColor = (riskLevel: RiskLevel) => {
+    switch (riskLevel) {
+      case 'critical':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'overstock':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      default:
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+    }
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300 ${
+        isShowing ? 'opacity-100' : 'opacity-0'
+      }`}
+      onClick={handleBackdropClick}
+    >
+      <div
+        ref={modalRef}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transition-transform duration-300 ${
+          isShowing ? 'scale-100' : 'scale-95'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Risk Analysis Details</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Product Information */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Information</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Product Name</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.productName}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">SKU</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.sku}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Warehouse</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.warehouseName}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Overall Risk Level</label>
+                <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getRiskBadgeColor(item.riskLevel)}`}>
+                  {item.riskLevel.toUpperCase()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stock Information */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Stock Information</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Current Quantity</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.currentQty} units</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Available Quantity</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.availableQty} units</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Reserved Quantity</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.reservedQty} units</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Reorder Point</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.reorderPoint} units</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Safety Stock</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.safetyStock} units</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Max Quantity</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.maxQty} units</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Risk Scores */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Risk Scores</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Stockout Risk Score</label>
+                  <span className={`text-sm font-semibold ${getRiskColor(item.stockoutRiskScore)}`}>
+                    {item.stockoutRiskScore}/100
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full ${
+                      item.stockoutRiskScore >= 70
+                        ? 'bg-red-600'
+                        : item.stockoutRiskScore >= 50
+                        ? 'bg-orange-600'
+                        : item.stockoutRiskScore >= 30
+                        ? 'bg-yellow-600'
+                        : 'bg-green-600'
+                    }`}
+                    style={{ width: `${item.stockoutRiskScore}%` }}
+                  />
+                </div>
+                {item.stockoutRisk && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">⚠ High stockout risk detected</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Overstock Risk Score</label>
+                  <span className={`text-sm font-semibold ${getRiskColor(item.overstockRiskScore)}`}>
+                    {item.overstockRiskScore}/100
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full ${
+                      item.overstockRiskScore >= 70
+                        ? 'bg-blue-600'
+                        : item.overstockRiskScore >= 50
+                        ? 'bg-yellow-600'
+                        : 'bg-green-600'
+                    }`}
+                    style={{ width: `${item.overstockRiskScore}%` }}
+                  />
+                </div>
+                {item.overstockRisk && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">📦 Overstock risk detected</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Overall Risk Score</label>
+                  <span className={`text-sm font-semibold ${getRiskColor(item.overallRiskScore)}`}>
+                    {item.overallRiskScore}/100
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full ${
+                      item.overallRiskScore >= 70
+                        ? 'bg-red-600'
+                        : item.overallRiskScore >= 50
+                        ? 'bg-orange-600'
+                        : item.overallRiskScore >= 30
+                        ? 'bg-yellow-600'
+                        : 'bg-green-600'
+                    }`}
+                    style={{ width: `${item.overallRiskScore}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Demand & Stock Analysis */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Demand & Stock Analysis</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">30-Day Demand</label>
+                <p className="text-sm text-gray-900 dark:text-white">{item.demand30d} units</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Average Daily Demand</label>
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {item.avgDailyDemand > 0 ? item.avgDailyDemand.toFixed(2) : '0.00'} units/day
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Days of Stock</label>
+                <p className={`text-sm font-medium ${
+                  item.daysOfStock !== null
+                    ? item.daysOfStock < 7
+                      ? 'text-red-600 dark:text-red-400'
+                      : item.daysOfStock < 14
+                      ? 'text-orange-600 dark:text-orange-400'
+                      : item.daysOfStock < 30
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : item.daysOfStock > 90
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-green-600 dark:text-green-400'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}>
+                  {item.daysOfStock !== null ? `${item.daysOfStock} days` : 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Stock Status</label>
+                <div className="flex items-center gap-2">
+                  {item.stockoutRisk && (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                      Stockout Risk
+                    </span>
+                  )}
+                  {item.overstockRisk && (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                      Overstock Risk
+                    </span>
+                  )}
+                  {!item.stockoutRisk && !item.overstockRisk && (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                      Normal
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -839,6 +1231,8 @@ function ChannelReplenishmentSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [warehouseFilter, setWarehouseFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [applyingItems, setApplyingItems] = useState<Set<number>>(new Set());
 
   // Fetch inventory data
   const { data: inventoryData, isLoading: isLoadingInventory } = useQuery({
@@ -882,6 +1276,57 @@ function ChannelReplenishmentSection() {
   const inventory = inventoryData || [];
   const orders = ordersData || [];
   const warehouses = warehousesData || [];
+  const queryClient = useQueryClient();
+
+  // Apply channel replenishment mutation
+  const applyChannelReplenishmentMutation = useMutation({
+    mutationFn: async (item: any) => {
+      // Create a purchase order for channel replenishment
+      const response = await api.post('/purchase-orders', {
+        supplierId: 1, // Default supplier - in real app, this would be selected
+        status: 'DRAFT',
+        expectedDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        currency: 'USD',
+        lines: [{
+          productId: item.productId,
+          quantity: item.totalReorder > 0 ? item.totalReorder : item.safetyStock,
+          unitCost: 0,
+          totalCost: 0,
+        }],
+        notes: `Channel replenishment for ${item.productName} at ${item.warehouseName}`,
+      });
+      return response.data;
+    },
+    onSuccess: (_data, item) => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory', 'channel-replenishment'] });
+      setApplyingItems(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+      toast.success(`Channel replenishment for ${item.productName} applied!`);
+    },
+    onError: (error: any, item) => {
+      setApplyingItems(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to apply channel replenishment';
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleApplyChannelReplenishment = (item: any) => {
+    if (item.totalReorder <= 0) {
+      toast.error('No replenishment needed for this item');
+      return;
+    }
+    
+    setApplyingItems(prev => new Set(prev).add(item.id));
+    applyChannelReplenishmentMutation.mutate(item);
+  };
 
   // Calculate channel-specific replenishment
   const channelReplenishment = useMemo(() => {
@@ -987,6 +1432,17 @@ function ChannelReplenishmentSection() {
       })
       .sort((a: any, b: any) => b.totalReorder - a.totalReorder);
   }, [inventory, orders, warehouses, searchQuery, channelFilter, warehouseFilter]);
+
+  // Pagination
+  const totalItems = channelReplenishment.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedChannelReplenishment = channelReplenishment.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [channelFilter, warehouseFilter, searchQuery]);
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
@@ -1116,7 +1572,7 @@ function ChannelReplenishmentSection() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {channelReplenishment.map((item: any) => (
+                {paginatedChannelReplenishment.map((item: any) => (
                   <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -1203,12 +1659,16 @@ function ChannelReplenishmentSection() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => {
-                          toast.success(`Channel replenishment for ${item.productName} applied!`);
-                        }}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                        onClick={() => handleApplyChannelReplenishment(item)}
+                        disabled={applyingItems.has(item.id) || item.totalReorder <= 0}
+                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50 disabled:cursor-not-allowed p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                        title="Apply Channel Replenishment"
                       >
-                        Apply
+                        {applyingItems.has(item.id) ? (
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-5 h-5" />
+                        )}
                       </button>
                   </td>
                 </tr>
@@ -1216,6 +1676,16 @@ function ChannelReplenishmentSection() {
             </tbody>
           </table>
           </div>
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
           </div>
         )}
     </div>

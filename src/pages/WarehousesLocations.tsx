@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
@@ -187,8 +187,16 @@ export default function WarehousesLocations() {
     queryFn: async () => {
       try {
         const response = await api.get('/warehouse-configurations/BINS');
-        return response.data?.data || [];
+        // Handle both direct array response and wrapped object response
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        return [];
       } catch (error) {
+        console.error('Error fetching bins:', error);
         return [];
       }
     },
@@ -199,8 +207,16 @@ export default function WarehousesLocations() {
     queryFn: async () => {
       try {
         const response = await api.get('/warehouse-configurations/PUT_AWAY_RULES');
-        return response.data?.data || [];
+        // Handle both direct array response and wrapped object response
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        return [];
       } catch (error) {
+        console.error('Error fetching put-away rules:', error);
         return [];
       }
     },
@@ -210,7 +226,7 @@ export default function WarehousesLocations() {
   const [putAwayRulesData, setPutAwayRulesData] = useState<Record<number, PutAwayRule[]>>({});
 
   useEffect(() => {
-    if (binsDataResponse) {
+    if (binsDataResponse && Array.isArray(binsDataResponse)) {
       const binsByWarehouse: Record<number, Bin[]> = {};
       binsDataResponse.forEach((bin: Bin) => {
         if (!binsByWarehouse[bin.warehouseId]) {
@@ -219,11 +235,14 @@ export default function WarehousesLocations() {
         binsByWarehouse[bin.warehouseId].push(bin);
       });
       setBinsData(binsByWarehouse);
+    } else if (binsDataResponse === undefined || binsDataResponse === null) {
+      // Reset to empty object if data is not available
+      setBinsData({});
     }
   }, [binsDataResponse]);
 
   useEffect(() => {
-    if (putAwayRulesDataResponse) {
+    if (putAwayRulesDataResponse && Array.isArray(putAwayRulesDataResponse)) {
       const rulesByWarehouse: Record<number, PutAwayRule[]> = {};
       putAwayRulesDataResponse.forEach((rule: PutAwayRule) => {
         if (!rulesByWarehouse[rule.warehouseId]) {
@@ -232,6 +251,9 @@ export default function WarehousesLocations() {
         rulesByWarehouse[rule.warehouseId].push(rule);
       });
       setPutAwayRulesData(rulesByWarehouse);
+    } else if (putAwayRulesDataResponse === undefined || putAwayRulesDataResponse === null) {
+      // Reset to empty object if data is not available
+      setPutAwayRulesData({});
     }
   }, [putAwayRulesDataResponse]);
 
@@ -291,7 +313,17 @@ export default function WarehousesLocations() {
       closeDeleteModal();
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete warehouse';
+      let errorMessage = 'Failed to delete warehouse';
+      if (error.response?.data?.message) {
+        const message = error.response.data.message;
+        if (Array.isArray(message)) {
+          errorMessage = message.map((m: any) => typeof m === 'string' ? m : Object.values(m).join(', ')).join(', ');
+        } else {
+          errorMessage = message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       toast.error(errorMessage);
     },
   });
@@ -531,9 +563,8 @@ export default function WarehousesLocations() {
                     const rules = putAwayRulesData[warehouse.id] || [];
                     
                     return (
-                      <>
+                      <React.Fragment key={warehouse.id}>
                         <tr
-                          key={warehouse.id}
                           className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -760,7 +791,7 @@ export default function WarehousesLocations() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
@@ -1321,8 +1352,16 @@ function BinsModal({
     queryFn: async () => {
       try {
         const response = await api.get('/warehouse-configurations/BINS');
-        return response.data?.data || [];
+        // Handle both direct array response and wrapped object response
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        return [];
       } catch (error) {
+        console.error('Error fetching bins:', error);
         return [];
       }
     },
@@ -1330,11 +1369,14 @@ function BinsModal({
 
   // Load bins for this warehouse
   useEffect(() => {
-    if (isShowing && allBinsData) {
+    if (isShowing && allBinsData && Array.isArray(allBinsData)) {
       const warehouseBins = allBinsData
         .filter((b: Bin) => b.warehouseId === warehouse.id)
         .sort((a: Bin, b: Bin) => a.binCode.localeCompare(b.binCode));
       setBins(warehouseBins);
+    } else if (isShowing && (!allBinsData || !Array.isArray(allBinsData))) {
+      // Reset bins if data is not available or not an array
+      setBins([]);
     }
   }, [isShowing, warehouse.id, allBinsData]);
 
@@ -1353,7 +1395,8 @@ function BinsModal({
 
   // Save bins to API
   const saveBins = (newBins: Bin[]) => {
-    const allBins: Bin[] = (allBinsData || []).filter((b: Bin) => b.warehouseId !== warehouse.id);
+    const allBinsArray = Array.isArray(allBinsData) ? allBinsData : [];
+    const allBins: Bin[] = allBinsArray.filter((b: Bin) => b.warehouseId !== warehouse.id);
     const updatedAllBins = [...allBins, ...newBins];
     saveBinsMutation.mutate(updatedAllBins);
   };
@@ -1914,8 +1957,16 @@ function PutAwayRulesModal({
     queryFn: async () => {
       try {
         const response = await api.get('/warehouse-configurations/PUT_AWAY_RULES');
-        return response.data?.data || [];
+        // Handle both direct array response and wrapped object response
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return response.data.data;
+        }
+        return [];
       } catch (error) {
+        console.error('Error fetching put-away rules:', error);
         return [];
       }
     },
@@ -1923,11 +1974,14 @@ function PutAwayRulesModal({
 
   // Load rules for this warehouse
   useEffect(() => {
-    if (isShowing && allRulesData) {
+    if (isShowing && allRulesData && Array.isArray(allRulesData)) {
       const warehouseRules = allRulesData
         .filter((r: PutAwayRule) => r.warehouseId === warehouse.id)
         .sort((a: PutAwayRule, b: PutAwayRule) => b.priority - a.priority);
       setRules(warehouseRules);
+    } else if (isShowing && (!allRulesData || !Array.isArray(allRulesData))) {
+      // Reset rules if data is not available or not an array
+      setRules([]);
     }
   }, [isShowing, warehouse.id, allRulesData]);
 
@@ -1946,7 +2000,8 @@ function PutAwayRulesModal({
 
   // Save rules to API
   const saveRules = (newRules: PutAwayRule[]) => {
-    const allRules: PutAwayRule[] = (allRulesData || []).filter((r: PutAwayRule) => r.warehouseId !== warehouse.id);
+    const allRulesArray = Array.isArray(allRulesData) ? allRulesData : [];
+    const allRules: PutAwayRule[] = allRulesArray.filter((r: PutAwayRule) => r.warehouseId !== warehouse.id);
     const updatedAllRules = [...allRules, ...newRules];
     saveRulesMutation.mutate(updatedAllRules);
   };

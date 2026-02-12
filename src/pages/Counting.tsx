@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   Hash,
@@ -299,7 +299,38 @@ export default function Counting() {
       toast.success('Cycle count started!');
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to start cycle count');
+      const errorMessage = error?.response?.data?.message || 'Failed to start cycle count';
+      toast.error(errorMessage);
+    },
+  });
+
+  // Mutation for updating cycle count item
+  const updateCycleCountItemMutation = useMutation({
+    mutationFn: async ({ cycleCountId, itemId, data }: { cycleCountId: string | number; itemId: string | number; data: { countedQuantity?: number; status?: string; notes?: string } }) => {
+      const response = await api.patch(`/counting/cycle-counts/${cycleCountId}/items/${itemId}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cycle-counts'] });
+      toast.success('Item updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update item');
+    },
+  });
+
+  // Mutation for updating physical inventory item
+  const updatePhysicalInventoryItemMutation = useMutation({
+    mutationFn: async ({ physicalInventoryId, itemId, data }: { physicalInventoryId: string | number; itemId: string | number; data: { countedQuantity?: number; status?: string; notes?: string } }) => {
+      const response = await api.patch(`/counting/physical-inventory/${physicalInventoryId}/items/${itemId}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['physical-inventory'] });
+      toast.success('Item updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to update item');
     },
   });
 
@@ -505,6 +536,131 @@ export default function Counting() {
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
     }
+  };
+
+  // Status Badge Dropdown Component
+  const StatusBadgeDropdown = ({
+    currentStatus,
+    onStatusChange,
+    getStatusColor,
+  }: {
+    currentStatus: string;
+    onStatusChange: (status: string) => void;
+    getStatusColor: (status: string) => string;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const [menuMaxHeight, setMenuMaxHeight] = useState<number | null>(null);
+
+    // Define valid status transitions based on workflow
+    const getAvailableStatuses = (status: string): string[] => {
+      switch (status) {
+        case 'DRAFT':
+          // From DRAFT, can go to: SCHEDULED, IN_PROGRESS, CANCELLED
+          return ['SCHEDULED', 'IN_PROGRESS', 'CANCELLED'];
+        case 'SCHEDULED':
+          // From SCHEDULED, can go to: IN_PROGRESS, CANCELLED
+          return ['IN_PROGRESS', 'CANCELLED'];
+        case 'IN_PROGRESS':
+          // From IN_PROGRESS, can go to: COMPLETED, CANCELLED
+          return ['COMPLETED', 'CANCELLED'];
+        case 'COMPLETED':
+          // From COMPLETED, can only go to: CANCELLED (if needed)
+          return ['CANCELLED'];
+        case 'CANCELLED':
+          // From CANCELLED, cannot change status (disabled)
+          return [];
+        default:
+          return [];
+      }
+    };
+
+    const availableStatuses = getAvailableStatuses(currentStatus);
+    const isDisabled = currentStatus === 'CANCELLED';
+
+    useEffect(() => {
+      if (isOpen && buttonRef.current) {
+        const buttonRect = buttonRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - buttonRect.bottom;
+        const maxMenuHeight = 180;
+        const availableSpaceBelow = Math.max(spaceBelow - 10, 100);
+        setMenuMaxHeight(Math.min(maxMenuHeight, availableSpaceBelow));
+      } else {
+        setMenuMaxHeight(null);
+      }
+    }, [isOpen]);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Node;
+        if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        setTimeout(() => {
+          document.addEventListener('mousedown', handleClickOutside);
+        }, 0);
+      }
+
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, [isOpen]);
+
+    return (
+      <div ref={dropdownRef} className="relative inline-block">
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => !isDisabled && setIsOpen(!isOpen)}
+          disabled={isDisabled}
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-opacity ${
+            isDisabled 
+              ? 'cursor-not-allowed opacity-75' 
+              : 'cursor-pointer hover:opacity-80'
+          } ${getStatusColor(currentStatus)}`}
+        >
+          {currentStatus.replace('_', ' ')}
+        </button>
+
+        {isOpen && menuMaxHeight !== null && availableStatuses.length > 0 && (
+          <div
+            ref={menuRef}
+            className="absolute bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden z-50 mt-1"
+            style={{
+              top: '100%',
+              left: 0,
+              maxHeight: `${menuMaxHeight}px`,
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {availableStatuses.map((status, index) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => {
+                  onStatusChange(status);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
+                  index === 0 ? 'rounded-t-lg' : ''
+                } ${
+                  index === availableStatuses.length - 1 ? 'rounded-b-lg' : ''
+                } text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600`}
+              >
+                {status.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (isLoadingWarehouses) {
@@ -835,11 +991,23 @@ export default function Counting() {
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}
-                            >
-                              {item.status.replace('_', ' ')}
-                            </span>
+                            <StatusBadgeDropdown
+                              currentStatus={item.status}
+                              onStatusChange={(selectedStatus) => {
+                                if (activeTab === 'cycle-counts') {
+                                  handleUpdateCycleCount(item.id!, {
+                                    status: selectedStatus as CycleCount['status'],
+                                    completedDate: selectedStatus === 'COMPLETED' ? new Date().toISOString() : undefined,
+                                  });
+                                } else {
+                                  handleUpdatePhysicalInventory(item.id!, {
+                                    status: selectedStatus as PhysicalInventory['status'],
+                                    completedDate: selectedStatus === 'COMPLETED' ? new Date().toISOString() : undefined,
+                                  });
+                                }
+                              }}
+                              getStatusColor={getStatusColor}
+                            />
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                             <div className="flex items-center justify-end gap-2">
@@ -858,37 +1026,39 @@ export default function Counting() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              {item.status === 'DRAFT' && (
-                                <button
-                                  onClick={() => {
-                                    if (activeTab === 'cycle-counts') {
-                                      setSelectedCycleCount(item);
-                                      setIsCycleCountEditModalOpen(true);
-                                    } else {
-                                      setSelectedPhysicalInventory(item);
-                                      setIsPhysicalInventoryEditModalOpen(true);
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                                  title="Edit"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                              )}
-                              {item.status === 'SCHEDULED' && (
-                                <button
-                                  onClick={() => {
-                                    if (activeTab === 'cycle-counts') {
-                                      handleStartCycleCount(item.id!);
-                                    } else {
-                                      handleStartPhysicalInventory(item.id!);
-                                    }
-                                  }}
-                                  className="text-green-600 hover:text-green-900 dark:text-green-400 p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                                  title="Start Count"
-                                >
-                                  <Play className="w-4 h-4" />
-                                </button>
+                              {(item.status === 'DRAFT' || item.status === 'SCHEDULED') && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      if (activeTab === 'cycle-counts') {
+                                        handleStartCycleCount(item.id!);
+                                      } else {
+                                        handleStartPhysicalInventory(item.id!);
+                                      }
+                                    }}
+                                    className="text-green-600 hover:text-green-900 dark:text-green-400 p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                                    title="Start Count"
+                                  >
+                                    <Play className="w-4 h-4" />
+                                  </button>
+                                  {item.status === 'DRAFT' && (
+                                    <button
+                                      onClick={() => {
+                                        if (activeTab === 'cycle-counts') {
+                                          setSelectedCycleCount(item);
+                                          setIsCycleCountEditModalOpen(true);
+                                        } else {
+                                          setSelectedPhysicalInventory(item);
+                                          setIsPhysicalInventoryEditModalOpen(true);
+                                        }
+                                      }}
+                                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                      title="Edit"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </>
                               )}
                               {(item.status === 'DRAFT' || item.status === 'SCHEDULED' || item.status === 'CANCELLED') && (
                                 <button
@@ -989,6 +1159,14 @@ export default function Counting() {
         <ViewCycleCountModal
           cycleCount={selectedCycleCount}
           warehouses={warehouses}
+          onUpdateItem={(itemId, data) => {
+            updateCycleCountItemMutation.mutate({
+              cycleCountId: selectedCycleCount.id!,
+              itemId,
+              data,
+            });
+          }}
+          isUpdating={updateCycleCountItemMutation.isPending}
           onClose={() => {
             setIsCycleCountViewModalOpen(false);
             setSelectedCycleCount(null);
@@ -1034,6 +1212,14 @@ export default function Counting() {
         <ViewPhysicalInventoryModal
           physicalInventory={selectedPhysicalInventory}
           warehouses={warehouses}
+          onUpdateItem={(itemId, data) => {
+            updatePhysicalInventoryItemMutation.mutate({
+              physicalInventoryId: selectedPhysicalInventory.id!,
+              itemId,
+              data,
+            });
+          }}
+          isUpdating={updatePhysicalInventoryItemMutation.isPending}
           onClose={() => {
             setIsPhysicalInventoryViewModalOpen(false);
             setSelectedPhysicalInventory(null);
@@ -1223,11 +1409,17 @@ function ViewCycleCountModal({
   cycleCount,
   warehouses,
   onClose,
+  onUpdateItem,
+  isUpdating,
 }: {
   cycleCount: CycleCount;
   warehouses: Warehouse[];
   onClose: () => void;
+  onUpdateItem?: (itemId: string | number, data: { countedQuantity?: number; status?: string; notes?: string }) => void;
+  isUpdating?: boolean;
 }) {
+  const [editingItemId, setEditingItemId] = useState<string | number | null>(null);
+  const [itemData, setItemData] = useState<{ countedQuantity?: number; notes?: string }>({});
   const warehouse = warehouses.find((w) => w.id === cycleCount.warehouseId);
   const itemsCount = cycleCount.items?.length || 0;
   const completedItems = cycleCount.items?.filter((i) => i.status === 'COUNTED' || i.status === 'VERIFIED').length || 0;
@@ -1366,31 +1558,100 @@ function ViewCycleCountModal({
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Counted Qty</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Variance</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                      {cycleCount.status === 'IN_PROGRESS' && onUpdateItem && (
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {cycleCount.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.productName || 'Unknown'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{item.sku || 'N/A'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.systemQuantity}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.countedQuantity ?? '—'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
-                          {item.variance !== undefined ? (item.variance > 0 ? '+' : '') + item.variance : '—'}
-                        </td>
-                        <td className="px-4 py-2 text-sm">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            item.status === 'COUNTED' || item.status === 'VERIFIED'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : item.status === 'DISCREPANCY'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                          }`}>
-                            {item.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {cycleCount.items.map((item, index) => {
+                      const isEditing = editingItemId === item.id;
+                      const currentCountedQty = isEditing ? (itemData.countedQuantity !== undefined ? itemData.countedQuantity : item.countedQuantity) : item.countedQuantity;
+                      const variance = currentCountedQty !== undefined && currentCountedQty !== null ? currentCountedQty - item.systemQuantity : item.variance;
+                      
+                      return (
+                        <tr key={item.id || index}>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.productName || 'Unknown'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{item.sku || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.systemQuantity}</td>
+                          <td className="px-4 py-2 text-sm">
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={currentCountedQty ?? ''}
+                                onChange={(e) => setItemData({ ...itemData, countedQuantity: e.target.value ? Number(e.target.value) : undefined })}
+                                className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                min="0"
+                                autoFocus
+                              />
+                            ) : (
+                              <span className="text-gray-900 dark:text-white">{item.countedQuantity ?? '—'}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
+                            {variance !== undefined && variance !== null ? (variance > 0 ? '+' : '') + variance : '—'}
+                          </td>
+                          <td className="px-4 py-2 text-sm">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              item.status === 'COUNTED' || item.status === 'VERIFIED'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                : item.status === 'DISCREPANCY'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                            }`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-sm">
+                            {cycleCount.status === 'IN_PROGRESS' && onUpdateItem && (
+                              isEditing ? (
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => {
+                                      if (onUpdateItem && item.id) {
+                                        onUpdateItem(item.id, {
+                                          countedQuantity: itemData.countedQuantity,
+                                          notes: itemData.notes,
+                                        });
+                                        setEditingItemId(null);
+                                        setItemData({});
+                                      }
+                                    }}
+                                    disabled={isUpdating}
+                                    className="text-green-600 hover:text-green-900 dark:text-green-400 p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors disabled:opacity-50"
+                                    title="Save"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingItemId(null);
+                                      setItemData({});
+                                    }}
+                                    disabled={isUpdating}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50"
+                                    title="Cancel"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingItemId(item.id || index);
+                                    setItemData({ countedQuantity: item.countedQuantity, notes: item.notes });
+                                  }}
+                                  className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                                  title="Edit Count"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1559,11 +1820,17 @@ function ViewPhysicalInventoryModal({
   physicalInventory,
   warehouses,
   onClose,
+  onUpdateItem,
+  isUpdating,
 }: {
   physicalInventory: PhysicalInventory;
   warehouses: Warehouse[];
   onClose: () => void;
+  onUpdateItem?: (itemId: string | number, data: { countedQuantity?: number; status?: string; notes?: string }) => void;
+  isUpdating?: boolean;
 }) {
+  const [editingItemId, setEditingItemId] = useState<string | number | null>(null);
+  const [itemData, setItemData] = useState<{ countedQuantity?: number; notes?: string }>({});
   const warehouse = warehouses.find((w) => w.id === physicalInventory.warehouseId);
   const itemsCount = physicalInventory.items?.length || 0;
   const completedItems = physicalInventory.items?.filter((i) => i.status === 'COUNTED' || i.status === 'VERIFIED').length || 0;
@@ -1681,31 +1948,100 @@ function ViewPhysicalInventoryModal({
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Counted Qty</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Variance</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                      {physicalInventory.status === 'IN_PROGRESS' && onUpdateItem && (
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {physicalInventory.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.productName || 'Unknown'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{item.sku || 'N/A'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.systemQuantity}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.countedQuantity ?? '—'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
-                          {item.variance !== undefined ? (item.variance > 0 ? '+' : '') + item.variance : '—'}
-                        </td>
-                        <td className="px-4 py-2 text-sm">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            item.status === 'COUNTED' || item.status === 'VERIFIED'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : item.status === 'DISCREPANCY'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                          }`}>
-                            {item.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {physicalInventory.items.map((item, index) => {
+                      const isEditing = editingItemId === item.id;
+                      const currentCountedQty = isEditing ? (itemData.countedQuantity !== undefined ? itemData.countedQuantity : item.countedQuantity) : item.countedQuantity;
+                      const variance = currentCountedQty !== undefined && currentCountedQty !== null ? currentCountedQty - item.systemQuantity : item.variance;
+                      
+                      return (
+                        <tr key={item.id || index}>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.productName || 'Unknown'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{item.sku || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.systemQuantity}</td>
+                          <td className="px-4 py-2 text-sm">
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={currentCountedQty ?? ''}
+                                onChange={(e) => setItemData({ ...itemData, countedQuantity: e.target.value ? Number(e.target.value) : undefined })}
+                                className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+                                min="0"
+                                autoFocus
+                              />
+                            ) : (
+                              <span className="text-gray-900 dark:text-white">{item.countedQuantity ?? '—'}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
+                            {variance !== undefined && variance !== null ? (variance > 0 ? '+' : '') + variance : '—'}
+                          </td>
+                          <td className="px-4 py-2 text-sm">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              item.status === 'COUNTED' || item.status === 'VERIFIED'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                : item.status === 'DISCREPANCY'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                            }`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-sm">
+                            {physicalInventory.status === 'IN_PROGRESS' && onUpdateItem && (
+                              isEditing ? (
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => {
+                                      if (onUpdateItem && item.id) {
+                                        onUpdateItem(item.id, {
+                                          countedQuantity: itemData.countedQuantity,
+                                          notes: itemData.notes,
+                                        });
+                                        setEditingItemId(null);
+                                        setItemData({});
+                                      }
+                                    }}
+                                    disabled={isUpdating}
+                                    className="text-green-600 hover:text-green-900 dark:text-green-400 p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors disabled:opacity-50"
+                                    title="Save"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingItemId(null);
+                                      setItemData({});
+                                    }}
+                                    disabled={isUpdating}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50"
+                                    title="Cancel"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingItemId(item.id || index);
+                                    setItemData({ countedQuantity: item.countedQuantity, notes: item.notes });
+                                  }}
+                                  className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                                  title="Edit Count"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

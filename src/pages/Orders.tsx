@@ -148,6 +148,10 @@ export default function Orders() {
   const [channelFilter, setChannelFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  // View modal state
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // Fetch orders with filters
   const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
@@ -277,6 +281,8 @@ export default function Orders() {
   // Modal states for Allocation Rules
   const [isAllocationRuleModalOpen, setIsAllocationRuleModalOpen] = useState(false);
   const [selectedAllocationRule, setSelectedAllocationRule] = useState<AllocationRule | null>(null);
+  const [isAllocationRuleViewModalOpen, setIsAllocationRuleViewModalOpen] = useState(false);
+  const [selectedAllocationRuleForView, setSelectedAllocationRuleForView] = useState<AllocationRule | null>(null);
   const [isAllocationRuleDeleteModalOpen, setIsAllocationRuleDeleteModalOpen] = useState(false);
   const [allocationRuleToDelete, setAllocationRuleToDelete] = useState<AllocationRule | null>(null);
 
@@ -881,19 +887,17 @@ export default function Orders() {
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                               <div className="flex items-center justify-end gap-2">
-                              <button
+                                <button
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setIsViewModalOpen(true);
+                                  }}
                                   className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
                                   title="View Details"
                                 >
                                   <Eye className="w-4 h-4" />
-                              </button>
-                    <button
-                                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
-                                  title="Edit"
-                    >
-                                  <Edit className="w-4 h-4" />
-                    </button>
-                  </div>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1003,6 +1007,16 @@ export default function Orders() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                             <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedAllocationRuleForView(rule);
+                                  setIsAllocationRuleViewModalOpen(true);
+                                }}
+                                className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => {
                                   setSelectedAllocationRule(rule);
@@ -1406,6 +1420,17 @@ export default function Orders() {
       </div>
       </div>
       {/* Modals */}
+      {/* Allocation Rule View Modal */}
+      {isAllocationRuleViewModalOpen && selectedAllocationRuleForView && (
+        <ViewAllocationRuleModal
+          rule={selectedAllocationRuleForView}
+          onClose={() => {
+            setIsAllocationRuleViewModalOpen(false);
+            setSelectedAllocationRuleForView(null);
+          }}
+        />
+      )}
+
       {/* Allocation Rule Create/Edit Modal */}
       {isAllocationRuleModalOpen && (
         <AllocationRuleModal
@@ -1553,7 +1578,343 @@ export default function Orders() {
           isLoading={deletePartialShipmentMutation.isPending}
         />
       )}
+
+      {/* View Order Modal */}
+      {isViewModalOpen && selectedOrder && (
+        <ViewOrderModal
+          order={selectedOrder}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+
+      {/* View Allocation Rule Modal */}
+      {isAllocationRuleViewModalOpen && selectedAllocationRuleForView && (
+        <ViewAllocationRuleModal
+          rule={selectedAllocationRuleForView}
+          onClose={() => {
+            setIsAllocationRuleViewModalOpen(false);
+            setSelectedAllocationRuleForView(null);
+          }}
+        />
+      )}
     </>
+  );
+}
+
+// View Allocation Rule Modal Component
+function ViewAllocationRuleModal({
+  rule,
+  onClose,
+}: {
+  rule: AllocationRule;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Allocation Rule Details</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Name</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{rule.name}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Priority</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{rule.priority}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Channel</label>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                {rule.channel || 'ALL'}
+              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Allocation Method</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{rule.allocationMethod}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  rule.isActive
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                }`}
+              >
+                {rule.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            {rule.customerId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Customer ID</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{rule.customerId}</p>
+              </div>
+            )}
+            {rule.customerType && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Customer Type</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{rule.customerType}</p>
+              </div>
+            )}
+            {rule.warehouseId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Warehouse ID</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{rule.warehouseId}</p>
+              </div>
+            )}
+          </div>
+
+          {rule.conditions && Object.keys(rule.conditions).length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Conditions</label>
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-2">
+                {rule.conditions.minOrderValue && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Min Order Value:</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{rule.conditions.minOrderValue}</span>
+                  </div>
+                )}
+                {rule.conditions.maxOrderValue && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Max Order Value:</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{rule.conditions.maxOrderValue}</span>
+                  </div>
+                )}
+                {rule.conditions.productCategory && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Product Category:</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{rule.conditions.productCategory}</span>
+                  </div>
+                )}
+                {rule.conditions.orderType && rule.conditions.orderType.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Order Types:</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{rule.conditions.orderType.join(', ')}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {rule.createdAt && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Created At</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {new Date(rule.createdAt).toLocaleString()}
+              </p>
+            </div>
+          )}
+
+          {rule.updatedAt && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Updated At</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {new Date(rule.updatedAt).toLocaleString()}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// View Order Modal Component
+function ViewOrderModal({
+  order,
+  onClose,
+}: {
+  order: Order;
+  onClose: () => void;
+}) {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'CONFIRMED':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'PROCESSING':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'PARTIALLY_FULFILLED':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'FULFILLED':
+      case 'SHIPPED':
+      case 'DELIVERED':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'CANCELLED':
+      case 'RETURNED':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'B2B':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'DTC':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'WHOLESALE':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Order Details</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Order Number</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{order.orderNumber}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                {order.status.replace('_', ' ')}
+              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Customer</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{order.customer?.name || 'Unknown'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Type</label>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(order.type)}`}>
+                {order.type}
+              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Order Date</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {new Date(order.orderDate).toLocaleDateString()}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Amount</label>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {order.currency} {Number(order.totalAmount).toFixed(2)}
+              </p>
+            </div>
+            {order.requiredDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Required Date</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(order.requiredDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+            {order.shippedDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Shipped Date</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(order.shippedDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+            {order.deliveredDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Delivered Date</label>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {new Date(order.deliveredDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {order.notes && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</label>
+              <p className="text-sm text-gray-900 dark:text-white">{order.notes}</p>
+            </div>
+          )}
+
+          {order.orderLines && order.orderLines.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Order Lines</label>
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Product</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">SKU</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Fulfilled</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Unit Price</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {order.orderLines.map((line) => (
+                      <tr key={line.id}>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{line.product?.name || 'Unknown'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{line.product?.sku || 'N/A'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{line.quantity}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{line.fulfilledQty || 0}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{order.currency} {Number(line.unitPrice).toFixed(2)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{order.currency} {Number(line.totalPrice).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

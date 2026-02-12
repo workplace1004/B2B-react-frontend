@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../lib/api';
 import {
@@ -19,9 +19,6 @@ import {
   Factory,
   Layers,
   Hash,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronDown,
 } from 'lucide-react';
 import { SkeletonPage } from '../components/Skeleton';
 import { ButtonWithWaves } from '../components/ui';
@@ -30,7 +27,9 @@ import {
   CustomDropdown,
   SearchInput,
   DatePicker,
+  DeleteModal,
 } from '../components/ui';
+import Pagination, { ITEMS_PER_PAGE } from '../components/ui/Pagination';
 
 // Types
 interface ProductionOrder {
@@ -165,10 +164,11 @@ export default function ProductionOrders() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalShowing, setIsModalShowing] = useState(false);
-  const [isEditModalOpen, _setIsEditModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditModalShowing, setIsEditModalShowing] = useState(false);
-  // Keep isEditModalShowing for future edit modal implementation
-  void isEditModalShowing;
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [_isDeleteModalShowing, setIsDeleteModalShowing] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<ProductionOrder | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isViewModalShowing, setIsViewModalShowing] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
@@ -178,13 +178,12 @@ export default function ProductionOrders() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isBatchModalShowing, setIsBatchModalShowing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ProductionOrder | null>(null);
-  const itemsPerPage = 10;
 
 
   // Handle body scroll lock when modal is open
   useEffect(() => {
     const modalsOpen = isModalOpen || isEditModalOpen || isViewModalOpen ||
-      isApprovalModalOpen || isWIPTrackingModalOpen || isBatchModalOpen;
+      isApprovalModalOpen || isWIPTrackingModalOpen || isBatchModalOpen || isDeleteModalOpen;
     if (modalsOpen) {
       document.body.classList.add('modal-open');
       requestAnimationFrame(() => {
@@ -195,6 +194,7 @@ export default function ProductionOrders() {
           if (isApprovalModalOpen) setIsApprovalModalShowing(true);
           if (isWIPTrackingModalOpen) setIsWIPTrackingModalShowing(true);
           if (isBatchModalOpen) setIsBatchModalShowing(true);
+          if (isDeleteModalOpen) setIsDeleteModalShowing(true);
         });
       });
     } else {
@@ -205,18 +205,19 @@ export default function ProductionOrders() {
       setIsApprovalModalShowing(false);
       setIsWIPTrackingModalShowing(false);
       setIsBatchModalShowing(false);
+      setIsDeleteModalShowing(false);
     }
   }, [isModalOpen, isEditModalOpen, isViewModalOpen,
-    isApprovalModalOpen, isWIPTrackingModalOpen, isBatchModalOpen]);
+    isApprovalModalOpen, isWIPTrackingModalOpen, isBatchModalOpen, isDeleteModalOpen]);
 
   // Fetch purchase orders from API
   const { data: purchaseOrdersData, isLoading } = useQuery({
-    queryKey: ['purchase-orders', currentPage, itemsPerPage, statusFilter],
+    queryKey: ['purchase-orders', currentPage, ITEMS_PER_PAGE, statusFilter],
     queryFn: async () => {
       try {
         const params: any = {
-          skip: (currentPage - 1) * itemsPerPage,
-          take: itemsPerPage,
+          skip: (currentPage - 1) * ITEMS_PER_PAGE,
+          take: ITEMS_PER_PAGE,
         };
         if (statusFilter !== 'all') {
           params.status = statusFilter;
@@ -284,13 +285,16 @@ export default function ProductionOrders() {
     })) as ProductionOrder[];
   }, [purchaseOrdersData]);
 
-  // Filter and search orders
+  // Get total count from API response
+  const totalOrders = purchaseOrdersData?.total || 0;
+
+  // Filter and search orders (client-side filtering for search only)
   const filteredOrders = useMemo(() => {
     if (!productionOrders) return [];
 
     let filtered = productionOrders;
 
-    // Filter by search query
+    // Filter by search query (client-side)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((order) =>
@@ -306,13 +310,9 @@ export default function ProductionOrders() {
     return filtered;
   }, [productionOrders, searchQuery]);
 
-  // Pagination
-  const totalOrders = filteredOrders.length;
-  const totalPages = Math.ceil(totalOrders / itemsPerPage);
-  const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredOrders, currentPage, itemsPerPage]);
+  // Pagination - use API total for pagination, but display filtered results
+  const totalPages = Math.ceil(totalOrders / ITEMS_PER_PAGE);
+  const paginatedOrders = filteredOrders; // API already paginates, so use filtered results directly
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
@@ -422,6 +422,67 @@ export default function ProductionOrders() {
       setSelectedOrder(null);
     }, 300);
   };
+
+  const openEditModal = (order: ProductionOrder) => {
+    setSelectedOrder(order);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalShowing(false);
+    setTimeout(() => {
+      setIsEditModalOpen(false);
+      setSelectedOrder(null);
+    }, 300);
+  };
+
+  const openDeleteModal = (order: ProductionOrder) => {
+    setOrderToDelete(order);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalShowing(false);
+    setTimeout(() => {
+      setIsDeleteModalOpen(false);
+      setOrderToDelete(null);
+    }, 300);
+  };
+
+  const queryClient = useQueryClient();
+
+  // Update production order mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<ProductionOrder> }) => {
+      const response = await api.patch(`/purchase-orders/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      toast.success('Production order updated successfully!');
+      closeEditModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update production order';
+      toast.error(errorMessage);
+    },
+  });
+
+  // Delete production order mutation
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/purchase-orders/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      toast.success('Production order deleted successfully!');
+      closeDeleteModal();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete production order';
+      toast.error(errorMessage);
+    },
+  });
 
   if (isLoading) {
     return <SkeletonPage />;
@@ -591,7 +652,7 @@ export default function ProductionOrders() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -648,7 +709,7 @@ export default function ProductionOrders() {
                         {new Date(order.orderDate).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-start gap-2">
                           <button
                             onClick={() => openViewModal(order)}
                             className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
@@ -657,25 +718,18 @@ export default function ProductionOrders() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => openApprovalModal(order)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                            title="Approvals"
+                            onClick={() => openEditModal(order)}
+                            className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                            title="Edit Order"
                           >
-                            <CheckCircle2 className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => openWIPTrackingModal(order)}
-                            className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
-                            title="WIP Tracking"
+                            onClick={() => openDeleteModal(order)}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Delete Order"
                           >
-                            <TrendingUp className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => openBatchModal(order)}
-                            className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-                            title="Batch/Lot"
-                          >
-                            <Hash className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -686,48 +740,14 @@ export default function ProductionOrders() {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * itemsPerPage, totalOrders)}
-                  </span>{' '}
-                  of <span className="font-medium">{totalOrders}</span> orders
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronsLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronDown className="w-4 h-4 rotate-90" />
-                  </button>
-                  <span className="text-sm text-gray-700 dark:text-gray-300 px-4">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronDown className="w-4 h-4 -rotate-90" />
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronsRight className="w-4 h-4" />
-                  </button>
-                </div>
+            {totalOrders > 0 && (
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalOrders}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             )}
           </>
@@ -791,6 +811,31 @@ export default function ProductionOrders() {
           isShowing={isBatchModalShowing}
         />
       )}
+
+      {/* Edit Order Modal */}
+      {isEditModalOpen && selectedOrder && (
+        <EditOrderModal
+          order={selectedOrder}
+          suppliers={suppliersData || []}
+          boms={bomsData || []}
+          onClose={closeEditModal}
+          isShowing={isEditModalShowing}
+          onUpdate={(data) => updateOrderMutation.mutate({ id: selectedOrder.id, data })}
+          isLoading={updateOrderMutation.isPending}
+        />
+      )}
+
+      {/* Delete Order Modal */}
+      {isDeleteModalOpen && orderToDelete && (
+        <DeleteModal
+          title="Delete Production Order"
+          message="Are you sure you want to delete production order"
+          itemName={orderToDelete.poNumber}
+          onClose={closeDeleteModal}
+          onConfirm={() => deleteOrderMutation.mutate(orderToDelete.id)}
+          isLoading={deleteOrderMutation.isPending}
+        />
+      )}
     </div>
   );
 }
@@ -807,10 +852,20 @@ function CreatePOModal({
   onClose: () => void;
   isShowing: boolean;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    supplierId: string;
+    bomId: string;
+    status: PurchaseOrderStatusType;
+    expectedDate: string;
+    receivedDate: string;
+    notes: string;
+    currency: string;
+  }>({
     supplierId: '',
     bomId: '',
+    status: PurchaseOrderStatus.DRAFT,
     expectedDate: '',
+    receivedDate: '',
     notes: '',
     currency: 'USD',
   });
@@ -821,13 +876,24 @@ function CreatePOModal({
 
   const createPOMutation = useMutation({
     mutationFn: async (poData: any) => {
-      // Note: In a real implementation, this would be a POST to /purchase-orders
-      // For now, we'll simulate the creation
-      return { id: Date.now(), ...poData };
+      const response = await api.post('/purchase-orders', poData);
+      return response.data;
     },
     onSuccess: () => {
+      // Invalidate all purchase-orders queries to refetch the list
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       toast.success('Production order created successfully!');
+      // Reset form
+      setFormData({
+        supplierId: '',
+        bomId: '',
+        status: PurchaseOrderStatus.DRAFT,
+        expectedDate: '',
+        receivedDate: '',
+        notes: '',
+        currency: 'USD',
+      });
+      setErrors({});
       onClose();
     },
     onError: (error: any) => {
@@ -844,23 +910,34 @@ function CreatePOModal({
       newErrors.supplierId = 'Supplier is required';
     }
 
-    if (!formData.bomId) {
-      newErrors.bomId = 'BOM is required';
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    const poData = {
+    // Build request data - only include defined fields
+    const poData: any = {
       supplierId: Number(formData.supplierId),
-      bomId: Number(formData.bomId),
-      expectedDate: formData.expectedDate || undefined,
-      notes: formData.notes || undefined,
-      currency: formData.currency,
-      status: PurchaseOrderStatus.DRAFT,
+      currency: formData.currency || 'USD',
+      status: formData.status as PurchaseOrderStatusType,
     };
+
+    // Add optional fields only if they have values
+    if (formData.bomId) {
+      poData.bOMId = Number(formData.bomId);
+    }
+
+    if (formData.expectedDate) {
+      poData.expectedDate = formData.expectedDate;
+    }
+
+    if (formData.receivedDate) {
+      poData.receivedDate = formData.receivedDate;
+    }
+
+    if (formData.notes && formData.notes.trim()) {
+      poData.notes = formData.notes.trim();
+    }
 
     createPOMutation.mutate(poData);
   };
@@ -910,7 +987,7 @@ function CreatePOModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                BOM <span className="text-red-500">*</span>
+                BOM / Product
               </label>
               <CustomDropdown
                 value={formData.bomId}
@@ -918,27 +995,33 @@ function CreatePOModal({
                   setFormData({ ...formData, bomId: value });
                   if (errors.bomId) setErrors({ ...errors, bomId: '' });
                 }}
-                options={boms.map((bom) => ({
-                  value: bom.id.toString(),
-                  label: `${bom.name}${bom.product ? ` - ${bom.product.name}` : ''}`,
-                }))}
-                placeholder="Select BOM"
-                error={!!errors.bomId}
+                options={[
+                  { value: '', label: 'Select BOM (optional)' },
+                  ...boms.map((bom) => ({
+                    value: bom.id.toString(),
+                    label: `${bom.name}${bom.product ? ` - ${bom.product.name}` : ''}`,
+                  })),
+                ]}
               />
               {errors.bomId && <p className="mt-1 text-sm text-red-500">{errors.bomId}</p>}
             </div>
 
-            <div className="relative w-full">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Expected Date
+                Status <span className="text-red-500">*</span>
               </label>
-              <div className='w-full'>
-                <DatePicker
-                  value={formData.expectedDate}
-                  onChange={(date) => setFormData({ ...formData, expectedDate: date || '' })}
-                  placeholder="Select expected date"
-                />
-              </div>
+              <CustomDropdown
+                value={formData.status}
+                onChange={(value) => setFormData({ ...formData, status: value as PurchaseOrderStatusType })}
+                options={[
+                  { value: PurchaseOrderStatus.DRAFT, label: 'Draft' },
+                  { value: PurchaseOrderStatus.SENT, label: 'Sent' },
+                  { value: PurchaseOrderStatus.CONFIRMED, label: 'Confirmed' },
+                  { value: PurchaseOrderStatus.PARTIALLY_RECEIVED, label: 'Partially Received' },
+                  { value: PurchaseOrderStatus.RECEIVED, label: 'Received' },
+                  { value: PurchaseOrderStatus.CANCELLED, label: 'Cancelled' },
+                ]}
+              />
             </div>
 
             <div>
@@ -952,23 +1035,45 @@ function CreatePOModal({
                   { value: 'USD', label: 'USD' },
                   { value: 'EUR', label: 'EUR' },
                   { value: 'GBP', label: 'GBP' },
-                  { value: 'CNY', label: 'CNY' },
+                  { value: 'CAD', label: 'CAD' },
                 ]}
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Notes
+                Expected Date
               </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={3}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Additional notes..."
+              <DatePicker
+                value={formData.expectedDate}
+                onChange={(date) => setFormData({ ...formData, expectedDate: date || '' })}
+                placeholder="Select expected date"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Received Date
+              </label>
+              <DatePicker
+                value={formData.receivedDate}
+                onChange={(date) => setFormData({ ...formData, receivedDate: date || '' })}
+                placeholder="Select received date"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Additional notes..."
+            />
           </div>
 
           {/* BOM Preview */}
@@ -1145,6 +1250,232 @@ function ViewOrderModal({
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit Order Modal Component
+function EditOrderModal({
+  order,
+  suppliers,
+  boms,
+  onClose,
+  isShowing,
+  onUpdate,
+  isLoading,
+}: {
+  order: ProductionOrder;
+  suppliers: any[];
+  boms: BOM[];
+  onClose: () => void;
+  isShowing: boolean;
+  onUpdate: (data: Partial<ProductionOrder>) => void;
+  isLoading: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    supplierId: order.supplierId.toString(),
+    bomId: order.bomId?.toString() || '',
+    status: order.status,
+    expectedDate: order.expectedDate ? new Date(order.expectedDate).toISOString().split('T')[0] : '',
+    receivedDate: order.receivedDate ? new Date(order.receivedDate).toISOString().split('T')[0] : '',
+    notes: order.notes || '',
+    currency: order.currency || 'USD',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.supplierId) {
+      newErrors.supplierId = 'Supplier is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    const updateData: any = {
+      supplierId: Number(formData.supplierId),
+      status: formData.status as PurchaseOrderStatusType,
+      currency: formData.currency,
+    };
+
+    // Add optional fields only if they have values
+    if (formData.bomId) {
+      updateData.bOMId = Number(formData.bomId);
+    } else {
+      // If bomId is empty, set to null to disconnect
+      updateData.bOMId = null;
+    }
+
+    if (formData.expectedDate) {
+      updateData.expectedDate = formData.expectedDate;
+    }
+
+    if (formData.receivedDate) {
+      updateData.receivedDate = formData.receivedDate;
+    }
+
+    if (formData.notes && formData.notes.trim()) {
+      updateData.notes = formData.notes.trim();
+    }
+
+    onUpdate(updateData);
+  };
+
+  const statusOptions = [
+    { value: PurchaseOrderStatus.DRAFT, label: 'Draft' },
+    { value: PurchaseOrderStatus.SENT, label: 'Sent' },
+    { value: PurchaseOrderStatus.CONFIRMED, label: 'Confirmed' },
+    { value: PurchaseOrderStatus.PARTIALLY_RECEIVED, label: 'Partially Received' },
+    { value: PurchaseOrderStatus.RECEIVED, label: 'Received' },
+    { value: PurchaseOrderStatus.CANCELLED, label: 'Cancelled' },
+  ];
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isShowing ? 'opacity-100' : 'opacity-0'
+        }`}
+      onClick={onClose}
+    >
+      <div
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isShowing ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+          }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Production Order</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{order.poNumber}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Supplier <span className="text-red-500">*</span>
+              </label>
+              <CustomDropdown
+                value={formData.supplierId}
+                onChange={(value) => {
+                  setFormData({ ...formData, supplierId: value });
+                  if (errors.supplierId) setErrors({ ...errors, supplierId: '' });
+                }}
+                options={suppliers.map((supplier) => ({
+                  value: supplier.id.toString(),
+                  label: supplier.name,
+                }))}
+              />
+              {errors.supplierId && <p className="mt-1 text-sm text-red-500">{errors.supplierId}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                BOM / Product
+              </label>
+              <CustomDropdown
+                value={formData.bomId}
+                onChange={(value) => setFormData({ ...formData, bomId: value })}
+                options={[
+                  { value: '', label: 'Select BOM (optional)' },
+                  ...boms.map((bom) => ({
+                    value: bom.id.toString(),
+                    label: `${bom.name}${bom.product ? ` - ${bom.product.name}` : ''}`,
+                  })),
+                ]}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Status <span className="text-red-500">*</span>
+              </label>
+              <CustomDropdown
+                value={formData.status}
+                onChange={(value) => setFormData({ ...formData, status: value as PurchaseOrderStatusType })}
+                options={statusOptions}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Currency
+              </label>
+              <CustomDropdown
+                value={formData.currency}
+                onChange={(value) => setFormData({ ...formData, currency: value })}
+                options={[
+                  { value: 'USD', label: 'USD' },
+                  { value: 'EUR', label: 'EUR' },
+                  { value: 'GBP', label: 'GBP' },
+                  { value: 'CAD', label: 'CAD' },
+                ]}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Expected Date
+              </label>
+              <DatePicker
+                value={formData.expectedDate}
+                onChange={(date) => setFormData({ ...formData, expectedDate: date || '' })}
+                placeholder="Select expected date"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Received Date
+              </label>
+              <DatePicker
+                value={formData.receivedDate}
+                onChange={(date) => setFormData({ ...formData, receivedDate: date || '' })}
+                placeholder="Select received date"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Additional notes..."
+            />
+          </div>
+
+          <div className="text-[14px] flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? 'Updating...' : 'Update Order'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -1397,6 +1728,7 @@ function AddEditApprovalModal({
   onClose: () => void;
   onSubmit: (data: Omit<Approval, 'id' | 'poId'> | Partial<Approval>) => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     approverName: approval?.approverName || '',
     status: approval?.status || 'PENDING',
@@ -1405,6 +1737,12 @@ function AddEditApprovalModal({
     level: approval?.level?.toString() || '1',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      onClose();
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1437,9 +1775,13 @@ function AddEditApprovalModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+    <div
+      className="inset-0 z-[60] absolute items-center justify-center bg-black/50 p-4"
+      onClick={handleBackdropClick}
+    >
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        ref={modalRef}
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
@@ -2243,7 +2585,7 @@ function BatchModal({
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Location
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Actions
                     </th>
                   </tr>
@@ -2279,7 +2621,7 @@ function BatchModal({
                         {batch.location || '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-start gap-2">
                           <button
                             onClick={() => setEditingBatch(batch)}
                             className="text-primary-600 hover:text-primary-900 dark:text-primary-400 p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
