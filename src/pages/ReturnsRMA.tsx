@@ -188,14 +188,14 @@ export default function ReturnsRMA() {
     return Array.isArray(productsData) ? productsData : [];
   }, [productsData]);
 
-  // Fetch RMAs from API
+  // Fetch RMAs from API (fetch all for client-side filtering and pagination)
   const { data: rmasData } = useQuery({
-    queryKey: ['returns', currentPage, ITEMS_PER_PAGE, statusFilter],
+    queryKey: ['returns', statusFilter],
     queryFn: async () => {
       try {
         const params: any = {
-          skip: (currentPage - 1) * ITEMS_PER_PAGE,
-          take: ITEMS_PER_PAGE,
+          skip: 0,
+          take: 10000, // Fetch a large number for client-side filtering
         };
         if (statusFilter !== 'all') {
           params.status = statusFilter;
@@ -238,14 +238,14 @@ export default function ReturnsRMA() {
     }));
   }, [rmasData]);
 
-  // Fetch reverse logistics from API
+  // Fetch reverse logistics from API (fetch all for client-side filtering and pagination)
   const { data: reverseLogisticsData } = useQuery({
-    queryKey: ['reverse-logistics', currentPage, ITEMS_PER_PAGE, statusFilter],
+    queryKey: ['reverse-logistics', statusFilter],
     queryFn: async () => {
       try {
         const params: any = {
-          skip: (currentPage - 1) * ITEMS_PER_PAGE,
-          take: ITEMS_PER_PAGE,
+          skip: 0,
+          take: 10000, // Fetch a large number for client-side filtering
         };
         if (statusFilter !== 'all') {
           params.status = statusFilter;
@@ -298,7 +298,7 @@ export default function ReturnsRMA() {
 
   // Mutations for RMAs
   const createRMAMutation = useMutation({
-    mutationFn: async (rmaData: Omit<RMA, 'id' | 'rmaNumber' | 'createdAt' | 'updatedAt'>) => {
+    mutationFn: async (rmaData: Omit<RMA, 'id' | 'createdAt' | 'updatedAt'>) => {
       const response = await api.post('/returns', rmaData);
       return response.data;
     },
@@ -709,12 +709,6 @@ export default function ReturnsRMA() {
                 </button>
               </div>
 
-              {/* Header with Create Button */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Return Merchandise Authorizations</h3>
-
-              </div>
-
               {/* RMAs Table */}
               {filteredRmas.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -851,7 +845,7 @@ export default function ReturnsRMA() {
               )}
 
               {/* Pagination */}
-              {Math.ceil(filteredRmas.length / ITEMS_PER_PAGE) > 1 && (
+              {filteredRmas.length > 0 && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                   <Pagination
                     currentPage={currentPage}
@@ -908,11 +902,6 @@ export default function ReturnsRMA() {
                   <Plus className="w-4 h-4" />
                   New Entry
                 </button>
-              </div>
-
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Reverse Logistics</h3>
               </div>
 
               {/* Reverse Logistics Table */}
@@ -1032,7 +1021,7 @@ export default function ReturnsRMA() {
               )}
 
               {/* Pagination */}
-              {Math.ceil(filteredReverseLogistics.length / ITEMS_PER_PAGE) > 1 && (
+              {filteredReverseLogistics.length > 0 && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                   <Pagination
                     currentPage={currentPage}
@@ -1061,7 +1050,12 @@ export default function ReturnsRMA() {
             if (selectedRMA?.id) {
               updateRMAMutation.mutate({ id: selectedRMA.id, rmaData: data });
             } else {
-              createRMAMutation.mutate(data as Omit<RMA, 'id' | 'rmaNumber' | 'createdAt' | 'updatedAt'>);
+              // Generate RMA number if not provided
+              const rmaNumber = data.rmaNumber || `RET-BORIS-${String(Date.now()).padStart(10, '0')}`;
+              createRMAMutation.mutate({
+                ...data,
+                rmaNumber,
+              } as Omit<RMA, 'id' | 'createdAt' | 'updatedAt'>);
             }
           }}
           isLoading={createRMAMutation.isPending || updateRMAMutation.isPending}
@@ -1111,7 +1105,45 @@ export default function ReturnsRMA() {
             if (selectedReverseLogistics?.id) {
               updateReverseLogisticsMutation.mutate({ id: selectedReverseLogistics.id, logisticsData: data });
             } else {
-              createReverseLogisticsMutation.mutate(data as Omit<ReverseLogistics, 'id' | 'createdAt' | 'updatedAt'>);
+              // Transform data to match backend DTO
+              const apiData: any = {
+                rmaId: Number(data.rmaId) || 0,
+              };
+
+              // Add optional fields only if they have values
+              if (data.trackingNumber) apiData.trackingNumber = data.trackingNumber;
+              if (data.carrier) apiData.carrier = data.carrier;
+              if (data.status) apiData.status = data.status;
+
+              // Transform originAddress object to individual fields
+              if (data.originAddress) {
+                if (data.originAddress.name) apiData.originName = data.originAddress.name;
+                if (data.originAddress.address) apiData.originAddress = data.originAddress.address;
+                if (data.originAddress.city) apiData.originCity = data.originAddress.city;
+                if (data.originAddress.state) apiData.originState = data.originAddress.state;
+                if (data.originAddress.postalCode) apiData.originPostalCode = data.originAddress.postalCode;
+                if (data.originAddress.country) apiData.originCountry = data.originAddress.country;
+              }
+
+              // Transform destinationAddress object to individual fields
+              if (data.destinationAddress) {
+                if (data.destinationAddress.name) apiData.destinationName = data.destinationAddress.name;
+                if (data.destinationAddress.address) apiData.destinationAddress = data.destinationAddress.address;
+                if (data.destinationAddress.city) apiData.destinationCity = data.destinationAddress.city;
+                if (data.destinationAddress.state) apiData.destinationState = data.destinationAddress.state;
+                if (data.destinationAddress.postalCode) apiData.destinationPostalCode = data.destinationAddress.postalCode;
+                if (data.destinationAddress.country) apiData.destinationCountry = data.destinationAddress.country;
+              }
+
+              // Add date fields if they have values
+              if (data.shippedDate) apiData.shippedDate = data.shippedDate;
+              if (data.receivedDate) apiData.receivedDate = data.receivedDate;
+              if (data.inspectedDate) apiData.inspectedDate = data.inspectedDate;
+              if (data.processedDate) apiData.processedDate = data.processedDate;
+              if (data.estimatedDeliveryDate) apiData.estimatedDeliveryDate = data.estimatedDeliveryDate;
+              if (data.notes) apiData.notes = data.notes;
+
+              createReverseLogisticsMutation.mutate(apiData);
             }
           }}
           isLoading={createReverseLogisticsMutation.isPending || updateReverseLogisticsMutation.isPending}
@@ -1385,7 +1417,7 @@ function RMAViewModal({ rma, onClose }: { rma: RMA; onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">RMA Details</h2>
+          <h2 className="text-[16px] font-semibold text-gray-900 dark:text-white">RMA Details</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -1426,10 +1458,10 @@ function RMAViewModal({ rma, onClose }: { rma: RMA; onClose: () => void }) {
             <div>
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${rma.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                  rma.status === 'APPROVED' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                    rma.status === 'REJECTED' || rma.status === 'CANCELLED' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                      rma.status === 'PROCESSING' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
-                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                rma.status === 'APPROVED' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                  rma.status === 'REJECTED' || rma.status === 'CANCELLED' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                    rma.status === 'PROCESSING' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                 }`}>
                 {rma.status}
               </span>
@@ -1478,7 +1510,7 @@ function RMAViewModal({ rma, onClose }: { rma: RMA; onClose: () => void }) {
             </div>
           )}
 
-          <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center text-[14px] justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={onClose}
               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
@@ -1543,7 +1575,7 @@ function ReverseLogisticsModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.rmaId) {
+    if (!formData.rmaId || Number(formData.rmaId) === 0) {
       toast.error('Please select an RMA');
       return;
     }
@@ -1557,10 +1589,10 @@ function ReverseLogisticsModal({
     >
       <div
         ref={modalRef}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white z-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             {reverseLogistics ? 'Edit Reverse Logistics' : 'Create Reverse Logistics'}
           </h2>
@@ -1573,7 +1605,7 @@ function ReverseLogisticsModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 RMA <span className="text-red-500">*</span>
@@ -1634,190 +1666,208 @@ function ReverseLogisticsModal({
             </div>
           </div>
 
-          {/* Origin Address */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Origin Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
-                <input
-                  type="text"
-                  value={formData.originAddress?.name || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      originAddress: { ...formData.originAddress!, name: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+            {/* Origin Address */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Origin Address</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
+                  <input
+                    type="text"
+                    value={formData.originAddress?.name || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        originAddress: { ...formData.originAddress!, name: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter origin name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
+                  <input
+                    type="text"
+                    value={formData.originAddress?.address || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        originAddress: { ...formData.originAddress!, address: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter origin address"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
-                <input
-                  type="text"
-                  value={formData.originAddress?.address || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      originAddress: { ...formData.originAddress!, address: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
-                <input
-                  type="text"
-                  value={formData.originAddress?.city || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      originAddress: { ...formData.originAddress!, city: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">State</label>
-                <input
-                  type="text"
-                  value={formData.originAddress?.state || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      originAddress: { ...formData.originAddress!, state: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Postal Code</label>
-                <input
-                  type="text"
-                  value={formData.originAddress?.postalCode || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      originAddress: { ...formData.originAddress!, postalCode: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Country</label>
-                <input
-                  type="text"
-                  value={formData.originAddress?.country || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      originAddress: { ...formData.originAddress!, country: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={formData.originAddress?.city || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        originAddress: { ...formData.originAddress!, city: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter origin city"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={formData.originAddress?.state || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        originAddress: { ...formData.originAddress!, state: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter origin state"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Postal Code</label>
+                  <input
+                    type="text"
+                    value={formData.originAddress?.postalCode || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        originAddress: { ...formData.originAddress!, postalCode: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter origin postal code"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Country</label>
+                  <input
+                    type="text"
+                    value={formData.originAddress?.country || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        originAddress: { ...formData.originAddress!, country: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter origin country"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Destination Address */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Destination Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
-                <input
-                  type="text"
-                  value={formData.destinationAddress?.name || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      destinationAddress: { ...formData.destinationAddress!, name: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
+            {/* Destination Address */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Destination Address</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
+                  <input
+                    type="text"
+                    value={formData.destinationAddress?.name || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        destinationAddress: { ...formData.destinationAddress!, name: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter destination name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
+                  <input
+                    type="text"
+                    value={formData.destinationAddress?.address || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        destinationAddress: { ...formData.destinationAddress!, address: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter destination address"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
-                <input
-                  type="text"
-                  value={formData.destinationAddress?.address || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      destinationAddress: { ...formData.destinationAddress!, address: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
-                <input
-                  type="text"
-                  value={formData.destinationAddress?.city || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      destinationAddress: { ...formData.destinationAddress!, city: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">State</label>
-                <input
-                  type="text"
-                  value={formData.destinationAddress?.state || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      destinationAddress: { ...formData.destinationAddress!, state: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Postal Code</label>
-                <input
-                  type="text"
-                  value={formData.destinationAddress?.postalCode || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      destinationAddress: { ...formData.destinationAddress!, postalCode: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Country</label>
-                <input
-                  type="text"
-                  value={formData.destinationAddress?.country || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      destinationAddress: { ...formData.destinationAddress!, country: e.target.value },
-                    })
-                  }
-                  className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={formData.destinationAddress?.city || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        destinationAddress: { ...formData.destinationAddress!, city: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter destination city"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={formData.destinationAddress?.state || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        destinationAddress: { ...formData.destinationAddress!, state: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter destination state"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Postal Code</label>
+                  <input
+                    type="text"
+                    value={formData.destinationAddress?.postalCode || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        destinationAddress: { ...formData.destinationAddress!, postalCode: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter destination postal code"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Country</label>
+                  <input
+                    type="text"
+                    value={formData.destinationAddress?.country || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        destinationAddress: { ...formData.destinationAddress!, country: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-2 text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter destination country"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shipped Date</label>
               <DatePicker
@@ -1940,11 +1990,11 @@ function ReverseLogisticsViewModal({
             <div>
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${reverseLogistics.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                  reverseLogistics.status === 'IN_TRANSIT' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
-                    reverseLogistics.status === 'RECEIVED' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400' :
-                      reverseLogistics.status === 'INSPECTED' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                        reverseLogistics.status === 'PROCESSED' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                          'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                reverseLogistics.status === 'IN_TRANSIT' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                  reverseLogistics.status === 'RECEIVED' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400' :
+                    reverseLogistics.status === 'INSPECTED' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                      reverseLogistics.status === 'PROCESSED' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                 }`}>
                 {reverseLogistics.status.replace('_', ' ')}
               </span>

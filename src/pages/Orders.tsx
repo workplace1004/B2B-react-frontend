@@ -691,7 +691,7 @@ export default function Orders() {
           label="Total Orders"
           value={summaryMetrics.total}
           icon={ShoppingCart}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
         />
@@ -699,7 +699,7 @@ export default function Orders() {
           label="DTC"
           value={summaryMetrics.dtc}
           icon={Package}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
           valueColor="text-blue-600 dark:text-blue-400"
@@ -708,7 +708,7 @@ export default function Orders() {
           label="POS"
           value={summaryMetrics.pos}
           icon={ShoppingCart}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-purple-100 dark:bg-purple-900/30"
           iconColor="text-purple-600 dark:text-purple-400"
           valueColor="text-purple-600 dark:text-purple-400"
@@ -717,7 +717,7 @@ export default function Orders() {
           label="B2B"
           value={summaryMetrics.b2b}
           icon={User}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-green-100 dark:bg-green-900/30"
           iconColor="text-green-600 dark:text-green-400"
           valueColor="text-green-600 dark:text-green-400"
@@ -726,7 +726,7 @@ export default function Orders() {
           label="Pending"
           value={summaryMetrics.pending}
           icon={Clock}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-yellow-100 dark:bg-yellow-900/30"
           iconColor="text-yellow-600 dark:text-yellow-400"
           valueColor="text-yellow-600 dark:text-yellow-400"
@@ -735,7 +735,7 @@ export default function Orders() {
           label="Pre-Orders"
           value={summaryMetrics.preOrderCount}
           icon={Calendar}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-orange-100 dark:bg-orange-900/30"
           iconColor="text-orange-600 dark:text-orange-400"
           valueColor="text-orange-600 dark:text-orange-400"
@@ -744,7 +744,7 @@ export default function Orders() {
           label="Backorders"
           value={summaryMetrics.backorderCount}
           icon={AlertTriangle}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-red-100 dark:bg-red-900/30"
           iconColor="text-red-600 dark:text-red-400"
           valueColor="text-red-600 dark:text-red-400"
@@ -753,7 +753,7 @@ export default function Orders() {
           label="Partial Shipments"
           value={summaryMetrics.partialShipmentCount}
           icon={Truck}
-          className="p-4"
+          className="!p-4"
           iconBgColor="bg-indigo-100 dark:bg-indigo-900/30"
           iconColor="text-indigo-600 dark:text-indigo-400"
           valueColor="text-indigo-600 dark:text-indigo-400"
@@ -769,11 +769,11 @@ export default function Orders() {
             setActiveTab(tabId as typeof activeTab);
             setCurrentPage(1);
           }}
-          className="border-b border-gray-200 dark:border-gray-700"
+          className="border-b px-5 border-gray-200 dark:border-gray-700"
         />
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-6 pt-0">
           {activeTab === 'inbox' && (
             <div className="space-y-6">
               {/* Search and Filters */}

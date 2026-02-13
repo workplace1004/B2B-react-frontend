@@ -244,8 +244,27 @@ export default function PickPackShip() {
   const [deletingPickListId, setDeletingPickListId] = useState<string | null>(null);
   const [deletingPackSlipId, setDeletingPackSlipId] = useState<string | null>(null);
   const [deletingShippingLabelId, setDeletingShippingLabelId] = useState<string | null>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+
+  // Close status dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.status-dropdown-container')) {
+        setStatusDropdownOpen(null);
+      }
+    };
+
+    if (statusDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [statusDropdownOpen]);
 
   // Fetch orders for creating pick lists
   const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
@@ -504,6 +523,9 @@ export default function PickPackShip() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pick-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['pick-lists-metrics'] });
+      queryClient.refetchQueries({ queryKey: ['pick-lists'] });
+      queryClient.refetchQueries({ queryKey: ['pick-lists-metrics'] });
       toast.success('Pick list updated successfully');
       setSelectedPickListId(null);
       setEditingPickListId(null);
@@ -520,6 +542,9 @@ export default function PickPackShip() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pack-slips'] });
+      queryClient.invalidateQueries({ queryKey: ['pack-slips-metrics'] });
+      queryClient.refetchQueries({ queryKey: ['pack-slips'] });
+      queryClient.refetchQueries({ queryKey: ['pack-slips-metrics'] });
       toast.success('Pack slip updated successfully');
       setSelectedPackSlipId(null);
       setEditingPackSlipId(null);
@@ -536,6 +561,9 @@ export default function PickPackShip() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-labels'] });
+      queryClient.invalidateQueries({ queryKey: ['shipping-labels-metrics'] });
+      queryClient.refetchQueries({ queryKey: ['shipping-labels'] });
+      queryClient.refetchQueries({ queryKey: ['shipping-labels-metrics'] });
       toast.success('Shipping label updated successfully');
       setSelectedShippingLabelId(null);
       setEditingShippingLabelId(null);
@@ -639,28 +667,34 @@ export default function PickPackShip() {
       ? `${labelData.dimensions.length || ''}x${labelData.dimensions.width || ''}x${labelData.dimensions.height || ''}`
       : undefined;
 
+    // Ensure carrier is a valid string (required field)
+    if (!labelData.carrier || typeof labelData.carrier !== 'string') {
+      toast.error('Carrier is required');
+      return;
+    }
+
     const apiData: any = {
       orderId: labelData.orderId,
-      carrier: labelData.carrier,
+      carrier: String(labelData.carrier),
     };
 
     if (labelData.packSlipId) {
       apiData.packSlipId = String(labelData.packSlipId);
     }
 
-    if (labelData.serviceType) {
+    if (labelData.serviceType && labelData.serviceType.trim() !== '') {
       apiData.serviceType = labelData.serviceType;
     }
 
-    if (labelData.trackingNumber) {
+    if (labelData.trackingNumber && labelData.trackingNumber.trim() !== '') {
       apiData.trackingNumber = labelData.trackingNumber;
     }
 
-    if (labelData.weight !== undefined) {
-      apiData.weight = labelData.weight;
+    if (labelData.weight !== undefined && labelData.weight !== null) {
+      apiData.weight = Number(labelData.weight);
     }
 
-    if (dimensionsStr) {
+    if (dimensionsStr && dimensionsStr.trim() !== '') {
       apiData.dimensions = dimensionsStr;
     }
 
@@ -669,7 +703,7 @@ export default function PickPackShip() {
       apiData.status = labelData.status === 'DRAFT' ? 'PENDING' : labelData.status;
     }
 
-    if ((labelData as any).notes) {
+    if ((labelData as any).notes && (labelData as any).notes.trim() !== '') {
       apiData.notes = (labelData as any).notes;
     }
 
@@ -789,23 +823,115 @@ export default function PickPackShip() {
     const allShippingLabels = allShippingLabelsData?.data || [];
 
     const pickListsTotal = allPickLists.length;
-    const pickListsInProgress = allPickLists.filter((l: any) => l.status === 'IN_PROGRESS' || l.status === 'ASSIGNED').length;
+    const pickListsDraft = allPickLists.filter((l: any) => l.status === 'DRAFT').length;
+    const pickListsAssigned = allPickLists.filter((l: any) => l.status === 'ASSIGNED').length;
+    const pickListsInProgress = allPickLists.filter((l: any) => l.status === 'IN_PROGRESS').length;
     const pickListsCompleted = allPickLists.filter((l: any) => l.status === 'COMPLETED').length;
+    const pickListsCancelled = allPickLists.filter((l: any) => l.status === 'CANCELLED').length;
 
     const packSlipsTotal = allPackSlips.length;
     const packSlipsPacking = allPackSlips.filter((s: any) => s.status === 'PACKING').length;
     const packSlipsPacked = allPackSlips.filter((s: any) => s.status === 'PACKED').length;
+    const packSlipsShipped = allPackSlips.filter((s: any) => s.status === 'SHIPPED').length;
+    const packSlipsCancelled = allPackSlips.filter((s: any) => s.status === 'CANCELLED').length;
 
     const shippingLabelsTotal = allShippingLabels.length;
     const shippingLabelsGenerated = allShippingLabels.filter((l: any) => l.status === 'PRINTED').length;
     const shippingLabelsShipped = allShippingLabels.filter((l: any) => l.status === 'SHIPPED').length;
+    const shippingLabelsCancelled = allShippingLabels.filter((l: any) => l.status === 'CANCELLED').length;
 
     return {
-      pickLists: { total: pickListsTotal, inProgress: pickListsInProgress, completed: pickListsCompleted },
-      packSlips: { total: packSlipsTotal, packing: packSlipsPacking, packed: packSlipsPacked },
-      shippingLabels: { total: shippingLabelsTotal, generated: shippingLabelsGenerated, shipped: shippingLabelsShipped },
+      pickLists: { total: pickListsTotal, draft: pickListsDraft, assigned: pickListsAssigned, inProgress: pickListsInProgress, completed: pickListsCompleted, cancelled: pickListsCancelled },
+      packSlips: { total: packSlipsTotal, packing: packSlipsPacking, packed: packSlipsPacked, shipped: packSlipsShipped, cancelled: packSlipsCancelled },
+      shippingLabels: { total: shippingLabelsTotal, generated: shippingLabelsGenerated, shipped: shippingLabelsShipped, cancelled: shippingLabelsCancelled },
     };
   }, [allPickListsData, allPackSlipsData, allShippingLabelsData]);
+
+  // Get next possible statuses for pick lists
+  const getNextPickListStatuses = (currentStatus: string): string[] => {
+    if (!currentStatus || String(currentStatus).trim() === '') {
+      return ['CANCELLED'];
+    }
+    
+    // Normalize status to uppercase with underscores
+    const normalizedStatus = String(currentStatus).toUpperCase().replace(/\s+/g, '_').trim();
+    
+    // If already cancelled, no next statuses
+    if (normalizedStatus === 'CANCELLED') {
+      return [];
+    }
+    
+    const statusFlow: Record<string, string[]> = {
+      'DRAFT': ['ASSIGNED'],
+      'ASSIGNED': ['IN_PROGRESS'],
+      'IN_PROGRESS': ['COMPLETED'],
+      'COMPLETED': [],
+    };
+    
+    const nextStatuses = statusFlow[normalizedStatus] || [];
+    
+    // Always include CANCELLED in the result (unless already cancelled, which we checked above)
+    const result: string[] = [];
+    
+    // Add next statuses from flow
+    result.push(...nextStatuses);
+    
+    // Always add CANCELLED if not already in the array
+    if (!result.includes('CANCELLED')) {
+      result.push('CANCELLED');
+    }
+    
+    return result;
+  };
+
+  // Get next possible statuses for pack slips
+  const getNextPackSlipStatuses = (currentStatus: string): string[] => {
+    if (!currentStatus) return ['CANCELLED'];
+    
+    // Normalize status to uppercase with underscores
+    const normalizedStatus = String(currentStatus).toUpperCase().replace(/\s+/g, '_');
+    
+    const statusFlow: Record<string, string[]> = {
+      'DRAFT': ['PACKING'],
+      'PACKING': ['PACKED'],
+      'PACKED': ['SHIPPED'],
+      'SHIPPED': [],
+      'CANCELLED': [],
+    };
+    const nextStatuses = statusFlow[normalizedStatus] || [];
+    
+    // Always include CANCELLED unless already cancelled
+    if (normalizedStatus === 'CANCELLED') {
+      return [];
+    }
+    
+    // Return next statuses plus CANCELLED
+    return [...nextStatuses, 'CANCELLED'];
+  };
+
+  // Get next possible statuses for shipping labels
+  const getNextShippingLabelStatuses = (currentStatus: string): string[] => {
+    if (!currentStatus) return ['CANCELLED'];
+    
+    // Normalize status to uppercase with underscores
+    const normalizedStatus = String(currentStatus).toUpperCase().replace(/\s+/g, '_');
+    
+    const statusFlow: Record<string, string[]> = {
+      'PENDING': ['PRINTED'],
+      'PRINTED': ['SHIPPED'],
+      'SHIPPED': [],
+      'CANCELLED': [],
+    };
+    const nextStatuses = statusFlow[normalizedStatus] || [];
+    
+    // Always include CANCELLED unless already cancelled
+    if (normalizedStatus === 'CANCELLED') {
+      return [];
+    }
+    
+    // Return next statuses plus CANCELLED
+    return [...nextStatuses, 'CANCELLED'];
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -849,7 +975,7 @@ export default function PickPackShip() {
       </div>
 
       {/* Summary Cards */}
-      <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mb-6`}>
+      <div className={`grid grid-cols-1 md:grid-cols-6 gap-4 mb-6`}>
         {/* Pick Lists Tab Cards */}
         {activeTab === 'pick-lists' && (
           <>
@@ -859,6 +985,34 @@ export default function PickPackShip() {
                   <p className="text-xs text-gray-600 dark:text-gray-400">Pick Lists</p>
                   <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
                     {summaryMetrics.pickLists.total}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Draft</p>
+                  <p className="text-xl font-bold text-gray-600 dark:text-gray-400 mt-1">
+                    {summaryMetrics.pickLists.draft}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-900/30 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Assigned</p>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                    {summaryMetrics.pickLists.assigned}
                   </p>
                 </div>
                 <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -891,6 +1045,20 @@ export default function PickPackShip() {
                 </div>
                 <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Cancelled</p>
+                  <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">
+                    {summaryMetrics.pickLists.cancelled}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                  <X className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
               </div>
             </div>
@@ -941,6 +1109,34 @@ export default function PickPackShip() {
                 </div>
               </div>
             </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Shipped</p>
+                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+                    {summaryMetrics.packSlips.shipped}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                  <Truck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Cancelled</p>
+                  <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">
+                    {summaryMetrics.packSlips.cancelled}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                  <X className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+            </div>
           </>
         )}
 
@@ -964,7 +1160,7 @@ export default function PickPackShip() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Generated</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Printed</p>
                   <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
                     {summaryMetrics.shippingLabels.generated}
                   </p>
@@ -988,6 +1184,20 @@ export default function PickPackShip() {
                 </div>
               </div>
             </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Cancelled</p>
+                  <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-1">
+                    {summaryMetrics.shippingLabels.cancelled}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                  <X className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -1002,8 +1212,8 @@ export default function PickPackShip() {
                 setCurrentPage(1);
               }}
               className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pick-lists'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -1017,8 +1227,8 @@ export default function PickPackShip() {
                 setCurrentPage(1);
               }}
               className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pack-slips'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -1032,8 +1242,8 @@ export default function PickPackShip() {
                 setCurrentPage(1);
               }}
               className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'shipping-labels'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -1105,9 +1315,9 @@ export default function PickPackShip() {
                         ]
                         : [
                           { value: 'DRAFT', label: 'Draft' },
-                          { value: 'GENERATED', label: 'Generated' },
                           { value: 'PRINTED', label: 'Printed' },
                           { value: 'SHIPPED', label: 'Shipped' },
+                          { value: 'CANCELLED', label: 'Cancelled' },
                         ]),
                   ]}
                 />
@@ -1275,11 +1485,66 @@ export default function PickPackShip() {
                                 {item.assignedTo || '—'}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}
-                                >
+                                <div className="relative status-dropdown-container">
+                                  {item.status && String(item.status).toUpperCase().replace(/\s+/g, '_') === 'CANCELLED' ? (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
                                   {item.status.replace('_', ' ')}
                                 </span>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const itemId = item.id?.toString() || '';
+                                          setStatusDropdownOpen(statusDropdownOpen === itemId ? null : itemId);
+                                        }}
+                                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(item.status)}`}
+                                      >
+                                        <span>{item.status.replace('_', ' ')}</span>
+                                        <ChevronDown className={`w-3 h-3 transition-transform ${statusDropdownOpen === item.id?.toString() ? 'rotate-180' : ''}`} />
+                                      </button>
+                                      {statusDropdownOpen === item.id?.toString() && (
+                                        <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden flex flex-col">
+                                          {(() => {
+                                            const nextStatuses = getNextPickListStatuses(item.status || '');
+                                            return nextStatuses.length > 0 ? (
+                                              nextStatuses.map((nextStatus, index) => (
+                                              <button
+                                                key={nextStatus}
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  const pickListId = item.id?.toString() || '';
+                                                  if (pickListId) {
+                                                    updatePickListMutation.mutate({
+                                                      id: pickListId,
+                                                      data: { status: nextStatus },
+                                                    });
+                                                  }
+                                                  setStatusDropdownOpen(null);
+                                                }}
+                                                disabled={updatePickListMutation.isPending}
+                                                className={`w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-400 transition-colors whitespace-nowrap ${
+                                                  index === 0 ? 'rounded-t-lg' : ''
+                                                } ${
+                                                  index === nextStatuses.length - 1 ? 'rounded-b-lg' : 'border-b border-gray-100 dark:border-gray-700'
+                                                } ${updatePickListMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                              >
+                                                {nextStatus.replace('_', ' ')}
+                                              </button>
+                                            ))
+                                            ) : (
+                                              <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
+                                                No next status available
+                                              </div>
+                                            );
+                                          })()}
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                                 <div className="flex items-center justify-end gap-2">
@@ -1334,11 +1599,66 @@ export default function PickPackShip() {
                                 {item.packedBy || '—'}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}
-                                >
+                                <div className="relative status-dropdown-container">
+                                  {item.status && String(item.status).toUpperCase().replace(/\s+/g, '_') === 'CANCELLED' ? (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
                                   {item.status.replace('_', ' ')}
                                 </span>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const itemId = item.id?.toString() || '';
+                                          setStatusDropdownOpen(statusDropdownOpen === itemId ? null : itemId);
+                                        }}
+                                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(item.status)}`}
+                                      >
+                                        <span>{item.status.replace('_', ' ')}</span>
+                                        <ChevronDown className={`w-3 h-3 transition-transform ${statusDropdownOpen === item.id?.toString() ? 'rotate-180' : ''}`} />
+                                      </button>
+                                      {statusDropdownOpen === item.id?.toString() && (
+                                        <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden flex flex-col">
+                                          {(() => {
+                                            const nextStatuses = getNextPackSlipStatuses(item.status || '');
+                                            return nextStatuses.length > 0 ? (
+                                              nextStatuses.map((nextStatus, index) => (
+                                                <button
+                                                  key={nextStatus}
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const packSlipId = item.id?.toString() || '';
+                                                    if (packSlipId) {
+                                                      updatePackSlipMutation.mutate({
+                                                        id: packSlipId,
+                                                        data: { status: nextStatus },
+                                                      });
+                                                    }
+                                                    setStatusDropdownOpen(null);
+                                                  }}
+                                                  disabled={updatePackSlipMutation.isPending}
+                                                  className={`w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-400 transition-colors whitespace-nowrap ${
+                                                    index === 0 ? 'rounded-t-lg' : ''
+                                                  } ${
+                                                    index === nextStatuses.length - 1 ? 'rounded-b-lg' : 'border-b border-gray-100 dark:border-gray-700'
+                                                  } ${updatePackSlipMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                >
+                                                  {nextStatus.replace('_', ' ')}
+                                                </button>
+                                              ))
+                                            ) : (
+                                              <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
+                                                No next status available
+                                              </div>
+                                            );
+                                          })()}
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                                 <div className="flex items-center justify-end gap-2">
@@ -1392,11 +1712,66 @@ export default function PickPackShip() {
                                 {item.trackingNumber || '—'}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}
-                                >
+                                <div className="relative status-dropdown-container">
+                                  {item.status && String(item.status).toUpperCase().replace(/\s+/g, '_') === 'CANCELLED' ? (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
                                   {item.status.replace('_', ' ')}
                                 </span>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const itemId = item.id?.toString() || '';
+                                          setStatusDropdownOpen(statusDropdownOpen === itemId ? null : itemId);
+                                        }}
+                                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(item.status)}`}
+                                      >
+                                        <span>{item.status.replace('_', ' ')}</span>
+                                        <ChevronDown className={`w-3 h-3 transition-transform ${statusDropdownOpen === item.id?.toString() ? 'rotate-180' : ''}`} />
+                                      </button>
+                                      {statusDropdownOpen === item.id?.toString() && (
+                                        <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden flex flex-col">
+                                          {(() => {
+                                            const nextStatuses = getNextShippingLabelStatuses(item.status || '');
+                                            return nextStatuses.length > 0 ? (
+                                              nextStatuses.map((nextStatus, index) => (
+                                                <button
+                                                  key={nextStatus}
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const labelId = item.id?.toString() || '';
+                                                    if (labelId) {
+                                                      updateShippingLabelMutation.mutate({
+                                                        id: labelId,
+                                                        data: { status: nextStatus },
+                                                      });
+                                                    }
+                                                    setStatusDropdownOpen(null);
+                                                  }}
+                                                  disabled={updateShippingLabelMutation.isPending}
+                                                  className={`w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700 dark:hover:text-primary-400 transition-colors whitespace-nowrap ${
+                                                    index === 0 ? 'rounded-t-lg' : ''
+                                                  } ${
+                                                    index === nextStatuses.length - 1 ? 'rounded-b-lg' : 'border-b border-gray-100 dark:border-gray-700'
+                                                  } ${updateShippingLabelMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                >
+                                                  {nextStatus.replace('_', ' ')}
+                                                </button>
+                                              ))
+                                            ) : (
+                                              <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
+                                                No next status available
+                                              </div>
+                                            );
+                                          })()}
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                                 <div className="flex items-center justify-end gap-2">
@@ -1567,6 +1942,7 @@ export default function PickPackShip() {
       {editingShippingLabelId && (
         <EditShippingLabelModal
           shippingLabelId={editingShippingLabelId}
+          orders={orders}
           onClose={() => setEditingShippingLabelId(null)}
           onUpdate={(data) => {
             updateShippingLabelMutation.mutate({ id: editingShippingLabelId, data });
@@ -1686,7 +2062,7 @@ function CreatePickListModal({
         sku: orderLine?.product?.sku,
         quantity,
         pickedQuantity: 0,
-        status: 'PENDING',
+        status: 'PENDING' as any,
       };
     });
 
@@ -1698,7 +2074,7 @@ function CreatePickListModal({
       assignedTo: assignedTo || undefined,
       items: pickListItems,
       notes: notes || undefined,
-      status: 'DRAFT',
+      status: 'PENDING' as any,
     });
   };
 
@@ -1980,6 +2356,7 @@ function CreatePackSlipModal({
     }
   };
 
+
   const selectedOrder = useMemo(() => {
     return orders.find((o) => o.id === Number(selectedOrderId));
   }, [orders, selectedOrderId]);
@@ -2057,10 +2434,10 @@ function CreatePackSlipModal({
             return null;
           }
           
-          return {
+        return {
             orderLineId: orderLine.id,
             productId: orderLine.productId,
-            quantity,
+          quantity,
             packedQty: 0,
           };
         })
@@ -2080,7 +2457,7 @@ function CreatePackSlipModal({
       weight: weight ? parseFloat(weight) : undefined,
       items: packSlipItems,
       notes: notes || undefined,
-      status: 'DRAFT',
+      status: 'PENDING' as any,
     });
   };
 
@@ -2436,9 +2813,6 @@ function CreateShippingLabelModal({
     }
   };
 
-  const selectedOrder = useMemo(() => {
-    return orders.find((o) => o.id === Number(selectedOrderId));
-  }, [orders, selectedOrderId]);
 
   const selectedPackSlip = useMemo(() => {
     return packSlips.find((ps) => ps.id === Number(selectedPackSlipId));
@@ -2473,12 +2847,13 @@ function CreateShippingLabelModal({
       weight: weight ? parseFloat(weight) : undefined,
       dimensions: length || width || height
         ? {
-            length: length ? parseFloat(length) : undefined,
-            width: width ? parseFloat(width) : undefined,
-            height: height ? parseFloat(height) : undefined,
-          }
+          length: length ? parseFloat(length) : undefined,
+          width: width ? parseFloat(width) : undefined,
+          height: height ? parseFloat(height) : undefined,
+        }
         : undefined,
-      status: 'DRAFT',
+      status: 'PENDING' as any,
+      notes: notes || undefined,
     } as any);
   };
 
@@ -2657,8 +3032,8 @@ function CreateShippingLabelModal({
               placeholder="Add any notes or instructions (optional)"
               rows={3}
               className="w-full px-3 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
+                />
+              </div>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -3581,8 +3956,8 @@ function EditPickListModal({
                             </td>
                             <td className="px-4 py-3">
                               {isSelected ? (
-                                <input
-                                  type="text"
+                <input
+                  type="text"
                                   value={binLocation || ''}
                                   onChange={(e) => {
                                     if (itemIndex >= 0) {
@@ -3603,7 +3978,7 @@ function EditPickListModal({
                       })}
                     </tbody>
                   </table>
-                </div>
+              </div>
               </div>
               {items.length > 0 && (
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -3623,7 +3998,7 @@ function EditPickListModal({
 
           {/* Edit Form */}
           <form onSubmit={handleSubmit} className="space-y-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-            <div>
+              <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Order *
               </label>
@@ -3653,7 +4028,7 @@ function EditPickListModal({
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     <span className="font-medium">Status:</span> {selectedOrder.status}
                   </p>
-                </div>
+              </div>
               )}
             </div>
             <div className='grid grid-cols-3 gap-4'>
@@ -3700,8 +4075,8 @@ function EditPickListModal({
                   className="w-full px-3 py-2 border text-[14px] ::placeholder-[12px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
-            </div>
-            <div>
+              </div>
+              <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Notes
               </label>
@@ -4039,7 +4414,7 @@ function EditPackSlipModal({
                       <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 sticky top-0">
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-12">
-                            <input
+                <input
                               type="checkbox"
                               checked={availableItems.length > 0 && availableItems.every((item) => {
                                 const itemId = 'id' in item ? item.id : item.orderLineId || item.id;
@@ -4154,8 +4529,8 @@ function EditPackSlipModal({
                         })}
                       </tbody>
                     </table>
-                  </div>
-                </div>
+              </div>
+            </div>
               ) : (
                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                   <p className="text-sm text-yellow-800 dark:text-yellow-400">
@@ -4163,7 +4538,7 @@ function EditPackSlipModal({
                       ? 'This pick list has no items.' 
                       : 'This order has no items.'}
                   </p>
-                </div>
+          </div>
               )}
               {Object.keys(selectedItems).length > 0 && (
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -4280,19 +4655,19 @@ function EditPackSlipModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Packed By
               </label>
-              <input
-                type="text"
+                <input
+                  type="text"
                 value={packedBy}
                 onChange={(e) => setPackedBy(e.target.value)}
                 placeholder="Enter personnel name or ID who packed the items"
                 className="w-full px-3 ::placeholder-[12px] text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
+                />
+              </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Weight (kg)
               </label>
-              <input
+                <input
                 type="number"
                 step="0.01"
                 min="0"
@@ -4300,9 +4675,9 @@ function EditPackSlipModal({
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="Enter weight in kg"
                 className="w-full px-3 ::placeholder-[12px] text-[14px] py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            <div>
+                />
+              </div>
+              <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Notes
               </label>
@@ -4339,10 +4714,12 @@ function EditPackSlipModal({
 // Edit Shipping Label Modal Component
 function EditShippingLabelModal({
   shippingLabelId,
+  orders,
   onClose,
   onUpdate,
 }: {
   shippingLabelId: string;
+  orders: Order[];
   onClose: () => void;
   onUpdate: (data: any) => void;
 }) {
@@ -4354,6 +4731,7 @@ function EditShippingLabelModal({
     },
   });
 
+  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [carrier, setCarrier] = useState<'FEDEX' | 'UPS' | 'DHL' | 'USPS' | 'OTHER'>('FEDEX');
   const [serviceType, setServiceType] = useState('');
@@ -4364,8 +4742,13 @@ function EditShippingLabelModal({
   const [height, setHeight] = useState<string>('');
   const [notes, setNotes] = useState('');
 
+  const selectedOrder = useMemo(() => {
+    return orders.find((o) => o.id === Number(selectedOrderId));
+  }, [orders, selectedOrderId]);
+
   useEffect(() => {
     if (labelData) {
+      setSelectedOrderId(labelData.orderId?.toString() || '');
       setStatus(labelData.status || 'PENDING');
       setCarrier(labelData.carrier || 'FEDEX');
       setServiceType(labelData.serviceType || '');
@@ -4395,19 +4778,42 @@ function EditShippingLabelModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!selectedOrderId) {
+      toast.error('Please select an order');
+      return;
+    }
+
     const dimensions = length || width || height
       ? `${length || 0}x${width || 0}x${height || 0}`
       : undefined;
 
-    onUpdate({
+    const updateData: any = {
+      orderId: Number(selectedOrderId),
       status,
       carrier,
-      serviceType: serviceType || undefined,
-      trackingNumber: trackingNumber || undefined,
-      weight: weight ? parseFloat(weight) : undefined,
-      dimensions,
-      notes: notes || undefined,
-    });
+    };
+
+    if (serviceType && serviceType.trim() !== '') {
+      updateData.serviceType = serviceType;
+    }
+
+    if (trackingNumber && trackingNumber.trim() !== '') {
+      updateData.trackingNumber = trackingNumber;
+    }
+
+    if (weight && weight.trim() !== '') {
+      updateData.weight = parseFloat(weight);
+    }
+
+    if (dimensions) {
+      updateData.dimensions = dimensions;
+    }
+
+    if (notes && notes.trim() !== '') {
+      updateData.notes = notes;
+    }
+
+    onUpdate(updateData);
   };
 
   if (isLoading || !labelData) {
@@ -4449,19 +4855,13 @@ function EditShippingLabelModal({
           {/* Order Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Order Number</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Customer</p>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {labelData.order?.orderNumber || '—'}
+                {selectedOrder?.customer?.name || labelData.order?.customer?.name || '—'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Customer</p>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {labelData.order?.customer?.name || '—'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Created At</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Created At</p>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {labelData.createdAt ? new Date(labelData.createdAt).toLocaleString() : '—'}
               </p>
@@ -4470,6 +4870,20 @@ function EditShippingLabelModal({
 
           {/* Edit Form */}
           <form onSubmit={handleSubmit} className="space-y-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Order *
+              </label>
+              <CustomDropdown
+                value={selectedOrderId}
+                onChange={setSelectedOrderId}
+                options={orders.map((order) => ({
+                  value: order.id.toString(),
+                  label: `${order.orderNumber} - ${order.customer?.name || 'Unknown Customer'} ($${typeof order.totalAmount === 'number' ? order.totalAmount.toFixed(2) : parseFloat(String(order.totalAmount || 0)).toFixed(2)})`,
+                }))}
+                placeholder={orders.length === 0 ? 'No orders available' : 'Select an order...'}
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status *
@@ -4507,26 +4921,26 @@ function EditShippingLabelModal({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Service Type
               </label>
-              <input
-                type="text"
+                <input
+                  type="text"
                 value={serviceType}
                 onChange={(e) => setServiceType(e.target.value)}
                 placeholder="Enter service type (e.g., Ground, Express)"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            <div>
+                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Tracking Number
               </label>
-              <input
-                type="text"
+                <input
+                  type="text"
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Enter tracking number"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
+                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -4539,11 +4953,11 @@ function EditShippingLabelModal({
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="Enter weight"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
-            </div>
-            <div>
+              </div>
+              <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Dimensions (L x W x H in cm)
               </label>
@@ -4555,7 +4969,7 @@ function EditShippingLabelModal({
                   value={length}
                   onChange={(e) => setLength(e.target.value)}
                   placeholder="Length"
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
                 <input
                   type="number"
@@ -4564,7 +4978,7 @@ function EditShippingLabelModal({
                   value={width}
                   onChange={(e) => setWidth(e.target.value)}
                   placeholder="Width"
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
                 <input
                   type="number"
@@ -4573,7 +4987,7 @@ function EditShippingLabelModal({
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
                   placeholder="Height"
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  className="px-3 py-2 border ::placeholder-[12px] text-[14px] border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
             </div>
@@ -4586,25 +5000,25 @@ function EditShippingLabelModal({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
                 placeholder="Enter any additional notes..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white resize-none"
+                className="w-full px-3 py-2 ::placeholder-[12px] text-[14px] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white resize-none"
               />
-            </div>
+          </div>
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-              >
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+            >
                 Update
-              </button>
-            </div>
-          </form>
+            </button>
+          </div>
+        </form>
         </div>
       </div>
     </div>

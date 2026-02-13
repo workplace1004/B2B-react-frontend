@@ -483,7 +483,9 @@ export default function B2BTerms() {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredTerms.map((term) => {
                   const StatusIcon = getStatusIcon(term.status);
-                  const utilizationRate = term.creditLimit > 0 ? (term.currentBalance / term.creditLimit) * 100 : 0;
+                  const creditLimit = term.creditLimit ?? 0;
+                  const currentBalance = term.currentBalance ?? 0;
+                  const utilizationRate = creditLimit > 0 ? (currentBalance / creditLimit) * 100 : 0;
                   return (
                     <tr key={term.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -496,12 +498,12 @@ export default function B2BTerms() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          ${term.creditLimit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ${(term.creditLimit ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          ${term.currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ${(term.currentBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
                           <div
@@ -516,11 +518,11 @@ export default function B2BTerms() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className={`text-sm font-medium ${
-                          term.availableCredit < 0 ? 'text-red-600 dark:text-red-400' :
-                          term.availableCredit < term.creditLimit * 0.1 ? 'text-yellow-600 dark:text-yellow-400' :
+                          (term.availableCredit ?? 0) < 0 ? 'text-red-600 dark:text-red-400' :
+                          (term.availableCredit ?? 0) < creditLimit * 0.1 ? 'text-yellow-600 dark:text-yellow-400' :
                           'text-green-600 dark:text-green-400'
                         }`}>
-                          ${term.availableCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ${(term.availableCredit ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -946,17 +948,17 @@ function EditTermsModal({
                   <div>
                     <p className="text-xs text-gray-600 dark:text-gray-400">Current Balance</p>
                     <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      ${terms.currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${(terms.currentBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-600 dark:text-gray-400">Available Credit</p>
                     <p className={`text-lg font-semibold ${
-                      terms.availableCredit < 0 ? 'text-red-600 dark:text-red-400' :
-                      terms.availableCredit < terms.creditLimit * 0.1 ? 'text-yellow-600 dark:text-yellow-400' :
+                      (terms.availableCredit ?? 0) < 0 ? 'text-red-600 dark:text-red-400' :
+                      (terms.availableCredit ?? 0) < (terms.creditLimit ?? 0) * 0.1 ? 'text-yellow-600 dark:text-yellow-400' :
                       'text-green-600 dark:text-green-400'
                     }`}>
-                      ${terms.availableCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${(terms.availableCredit ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -1131,7 +1133,9 @@ function ViewTermsModal({
   };
 
   const StatusIcon = getStatusIcon(terms.status);
-  const utilizationRate = terms.creditLimit > 0 ? (terms.currentBalance / terms.creditLimit) * 100 : 0;
+  const creditLimit = terms.creditLimit ?? 0;
+  const currentBalance = terms.currentBalance ?? 0;
+  const utilizationRate = creditLimit > 0 ? (currentBalance / creditLimit) * 100 : 0;
 
   return (
     <div 
@@ -1164,17 +1168,17 @@ function ViewTermsModal({
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400">Current Balance</p>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  ${terms.currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${(terms.currentBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400">Available Credit</p>
                 <p className={`text-lg font-semibold ${
-                  terms.availableCredit < 0 ? 'text-red-600 dark:text-red-400' :
-                  terms.availableCredit < terms.creditLimit * 0.1 ? 'text-yellow-600 dark:text-yellow-400' :
+                  (terms.availableCredit ?? 0) < 0 ? 'text-red-600 dark:text-red-400' :
+                  (terms.availableCredit ?? 0) < creditLimit * 0.1 ? 'text-yellow-600 dark:text-yellow-400' :
                   'text-green-600 dark:text-green-400'
                 }`}>
-                  ${terms.availableCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${(terms.availableCredit ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
             </div>

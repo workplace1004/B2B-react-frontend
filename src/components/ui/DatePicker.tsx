@@ -182,23 +182,46 @@ export default function DatePicker({
   // Calculate position - always position below input, use fixed positioning to avoid overflow clipping
   useEffect(() => {
     if (isOpen && inputRef.current && calendarRef.current) {
-      const inputRect = inputRef.current.getBoundingClientRect();
-      const calendarHeight = 320; // Approximate calendar height
+      const updatePosition = () => {
+        if (!inputRef.current || !calendarRef.current) return;
+        
+        const inputRect = inputRef.current.getBoundingClientRect();
+        const calendarHeight = 275; // Approximate calendar height
 
-      // Always position below the input field
-      let topPosition = inputRect.bottom + 4;
-      
-      // If calendar would go off-screen, adjust to fit within viewport
-      if (topPosition + calendarHeight > window.innerHeight) {
-        // Position it so it fits, but still try to keep it as close to below as possible
-        topPosition = Math.max(4, window.innerHeight - calendarHeight - 4);
-      }
+        // Always position below the input field (fixed positioning is relative to viewport)
+        let topPosition = inputRect.bottom + 4;
+        
+        // If calendar would go off-screen at the bottom, position above instead
+        if (topPosition + calendarHeight > window.innerHeight) {
+          // Position above the input field
+          topPosition = inputRect.top - calendarHeight - 4;
+          // If it would go off-screen at the top, position at the top of viewport
+          if (topPosition < 4) {
+            topPosition = 4;
+          }
+        }
 
-      calendarRef.current.style.top = `${topPosition}px`;
-      calendarRef.current.style.left = `${inputRect.left}px`;
-      calendarRef.current.style.width = `${Math.max(inputRect.width, 320)}px`;
-      calendarRef.current.style.maxWidth = '320px';
-      calendarRef.current.style.position = 'fixed';
+        calendarRef.current.style.top = `${topPosition}px`;
+        calendarRef.current.style.left = `${inputRect.left}px`;
+        calendarRef.current.style.width = `${Math.max(inputRect.width, 320)}px`;
+        calendarRef.current.style.maxWidth = '320px';
+        calendarRef.current.style.position = 'fixed';
+      };
+
+      // Update position immediately
+      updatePosition();
+
+      // Update position on scroll or resize (use requestAnimationFrame for smooth updates)
+      const handleScroll = () => requestAnimationFrame(updatePosition);
+      const handleResize = () => requestAnimationFrame(updatePosition);
+
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
     }
   }, [isOpen, currentMonth]);
 
