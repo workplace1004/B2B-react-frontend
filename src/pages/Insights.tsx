@@ -6,6 +6,7 @@ import { SkeletonPage } from '../components/Skeleton';
 import Breadcrumb from '../components/Breadcrumb';
 import Chart from 'react-apexcharts';
 
+// Version: 2024-01-15 - Top Products Performance limited to 10 items
 export default function Insights() {
   const [timeRange, setTimeRange] = useState<string>('30d');
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -114,8 +115,11 @@ export default function Insights() {
       .sort((a: any, b: any) => b.revenue - a.revenue);
   }, [orders, dateRange]);
 
-  // Limit to top 10 products only (no pagination)
-  const top10Products = topProducts.slice(0, 10);
+  // Limit to top 10 products only (no pagination) - FORCE LIMIT TO 10
+  const top10Products = useMemo(() => {
+    // Force limit to exactly 10 items - no more, no less
+    return Array.from(topProducts).slice(0, 10);
+  }, [topProducts]);
 
   // Calculate trends
   const trends = useMemo(() => {
@@ -443,7 +447,7 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* Top Products Table */}
+      {/* Top Products Table - LIMITED TO 10 ITEMS ONLY - v2 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Top Products Performance</h3>
@@ -470,7 +474,7 @@ export default function Insights() {
                   </td>
                 </tr>
               ) : (
-                top10Products.map((product: any, index: number) => {
+                top10Products.filter((_, idx) => idx < 10).map((product: any, index: number) => {
                   const globalIndex = index;
                   // Calculate trend (compare with previous period)
                   const previousPeriod = orders.filter((order: any) => {
@@ -491,7 +495,7 @@ export default function Insights() {
                   const trend = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
                   return (
-                    <tr key={product.productId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr key={`product-${product.productId}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <span className={`text-lg font-bold ${

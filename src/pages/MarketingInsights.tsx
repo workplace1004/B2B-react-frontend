@@ -112,7 +112,7 @@ export default function MarketingInsights() {
         orders: stat.orders.size,
       }))
       .sort((a: any, b: any) => b.revenue - a.revenue)
-      .slice(0, 20);
+      .slice(0, 10);
   }, [orders, dateRange]);
 
   // Calculate trends
