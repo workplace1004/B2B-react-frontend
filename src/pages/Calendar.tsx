@@ -180,7 +180,7 @@ export default function Calendar() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigateMonth('prev')}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -192,7 +192,7 @@ export default function Calendar() {
               </button>
               <button
                 onClick={() => navigateMonth('next')}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
