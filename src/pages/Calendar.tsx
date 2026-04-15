@@ -161,7 +161,7 @@ export default function Calendar() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-black">Calendar</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Calendar</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">View and manage your events and meetings</p>
           </div>
           <button className="px-4 text-[14px] py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
