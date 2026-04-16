@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Layout from './components/Layout';
-import Login from './pages/Login';
 import SalesDashboard from './pages/SalesDashboard';
 import FinanceDashboard from './pages/FinanceDashboard';
 import Review from './pages/Review';
@@ -135,7 +134,6 @@ function App() {
       />
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
             element={<Navigate to="/executive-overview" replace />}
