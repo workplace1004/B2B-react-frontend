@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
 import {
   LayoutDashboard,
@@ -12,7 +11,6 @@ import {
   Bell,
   Sun,
   Moon,
-  LogOut,
   User,
   Settings,
   Calendar,
@@ -61,9 +59,7 @@ interface SidebarItem {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [selectedNavbarItem, setSelectedNavbarItem] = useState<string>('dashboards');
@@ -75,11 +71,6 @@ export default function Layout({ children }: LayoutProps) {
   const documentsRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/dashboard');
-  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -522,19 +513,6 @@ export default function Layout({ children }: LayoutProps) {
             </nav>
           </div>
 
-          {/* Logout at bottom */}
-          <div className="border-gray-200 dark:border-gray-700 py-2 px-3.5 mb-5">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center p-2.5 rounded-lg transition-all text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-              title="Log Out"
-            >
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path opacity="0.5" d="M9.00195 7C9.01406 4.82497 9.11051 3.64706 9.87889 2.87868C10.7576 2 12.1718 2 15.0002 2H16.0002C18.8286 2 20.2429 2 21.1215 2.87868C22.0002 3.75736 22.0002 5.17157 22.0002 8V16C22.0002 18.8284 22.0002 20.2426 21.1215 21.1213C20.2429 22 18.8286 22 16.0002 22H15.0002C12.1718 22 10.7576 22 9.87889 21.1213C9.11051 20.3529 9.01406 19.175 9.00195 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M15 12H2M2 12L5.5 9M2 12L5.5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
         </div>
 
         {/* Sidebar section - Hideable */}
@@ -1108,16 +1086,16 @@ export default function Layout({ children }: LayoutProps) {
                 >
                   <div className="hidden lg:block text-right mr-2">
                     <div className="text-[14px] font-semibold text-gray-900 dark:text-white">
-                      {user?.firstName} {user?.lastName}
+                      Admin User
                     </div>
                     <div className="text-[12.25px] text-gray-500 dark:text-white flex items-center gap-1">
                       <ChevronDown className="w-3 h-3" />
-                      {user?.role || 'User'}
+                      Admin
                     </div>
                   </div>
                   <div className="relative">
                     <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white text-md font-medium">
-                      {user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}
+                      AU
                     </div>
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
                   </div>
@@ -1133,14 +1111,14 @@ export default function Layout({ children }: LayoutProps) {
                       <div className="p-3 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium">
-                            {user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}
+                            AU
                           </div>
                           <div>
                             <div className="text-[14px] font-semibold text-gray-900 dark:text-white">
-                              {user?.firstName} {user?.lastName}
+                              Admin User
                             </div>
                             <div className="text-[12.25px] text-gray-500 dark:text-gray-400">
-                              {user?.email}
+                              admin@example.com
                             </div>
                           </div>
                         </div>
@@ -1170,14 +1148,6 @@ export default function Layout({ children }: LayoutProps) {
                           <Settings className="w-4 h-4 text-gray-900 dark:text-white" />
                           Account Settings
                         </Link>
-                        <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Log Out
-                        </button>
                       </div>
                     </div>
                   </>

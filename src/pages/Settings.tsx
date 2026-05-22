@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
 import { User, Mail, Lock, Bell, Globe, Moon, Sun, Save, Eye, EyeOff } from 'lucide-react';
 import { validators } from '../utils/validation';
 import { useCheckUserEmail, useDebounce } from '../utils/emailDuplicateCheck';
@@ -7,8 +6,15 @@ import Breadcrumb from '../components/Breadcrumb';
 import { CustomDropdown } from '../components/ui';
 
 
+const defaultUser = {
+  id: 1,
+  firstName: 'Admin',
+  lastName: 'User',
+  email: 'admin@example.com',
+};
+
 export default function Settings() {
-  const { user } = useAuthStore();
+  const user = defaultUser;
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'preferences'>('profile');
   const [darkMode, setDarkMode] = useState(document.documentElement.classList.contains('dark'));
   

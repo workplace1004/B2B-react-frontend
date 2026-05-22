@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { ProtectedRoute } from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import SalesDashboard from './pages/SalesDashboard';
 import FinanceDashboard from './pages/FinanceDashboard';
@@ -141,906 +140,728 @@ function App() {
           <Route
             path="/sales"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SalesDashboard />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/finance"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <FinanceDashboard />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/review"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Review />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/products"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Products />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/collections"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <CollectionsDrops />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/inventory"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Inventory />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/warehouses"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Warehouses />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/orders"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Orders />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/customers"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Customers />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/analytics"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Analytics />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Profile />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/settings"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Settings />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/notifications"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Notifications />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/calendar"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Calendar />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/upcoming-events"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <UpcomingEvents />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/documents"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AssetsDAM />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Dashboard / KPIs Routes */}
           <Route
             path="/alerts"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Alerts />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/exceptions"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Exceptions />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/my-tasks"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <MyTasks />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/kpi-reports"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <KPIReports />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Product Routes */}
           <Route
             path="/bom"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <BOMCosting />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/costing"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <BOMCosting />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/drops"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Drops />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/pricing"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Pricing />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Sales Routes */}
           <Route
             path="/retailers"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Retailers />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/returns"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Returns />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/wholesale"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Wholesale />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Marketing Routes */}
           <Route
             path="/launch-planning"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <LaunchPlanning />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/retailer-enablement"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <RetailerEnablement />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/content-readiness"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ContentReadiness />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Operations Routes */}
           <Route
             path="/fulfillment"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Fulfillment />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/receiving"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Receiving />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/purchasing"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Purchasing />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/replenishment"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Replenishment />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/forecast"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Forecast />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Admin Routes */}
           <Route
             path="/users"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Users />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/roles"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Roles />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/integrations"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Integrations />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/audit-log"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AuditLog />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/rules"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Rules />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Dashboards Routes */}
           <Route
             path="/executive-overview"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ExecutiveOverview />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/product-collection-dashboard"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ProductCollectionDashboard />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/inventory-fulfillment-dashboard"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <InventoryFulfillmentDashboard />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/sales-dashboard"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SalesDashboard />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/finance-dashboard"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <FinanceDashboard />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/alerts-exceptions-dashboard"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AlertsExceptionsDashboard />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Product Routes */}
           <Route
             path="/sku-ean-barcodes"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SkuEanBarcodes />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/size-fit"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SizeFit />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/sustainability-compliance"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SustainabilityCompliance />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Sales Routes */}
           <Route
             path="/b2b-portal"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <B2BPortal />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/quotes-proformas"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <QuotesProformas />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/sales-reps"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SalesReps />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/sales-analytics"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SalesAnalytics />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Marketing Routes */}
           <Route
             path="/campaign-planner"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <CampaignPlanner />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/assortment-merchandising"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AssortmentMerchandising />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/marketing-insights"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <MarketingInsights />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/marketing-integrations"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <MarketingIntegrations />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Customer Experience Routes */}
           <Route
             path="/customer-profile"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <CustomerProfile />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/b2b-terms"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <B2BTerms />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/service"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Service />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Operations Routes */}
           <Route
             path="/production-mrp"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ProductionMRP />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/vendors-factories"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <VendorsFactories />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/production-orders"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ProductionOrders />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/landed-cost"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <LandedCost />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/inventory-warehouse"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <InventoryWarehouse />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/warehouses-locations"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <WarehousesLocations />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/stock-control"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <StockControl />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/scanning"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Scanning />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/counting"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Counting />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/orders-fulfillment"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <OrdersFulfillment />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/pick-pack-ship"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <PickPackShip />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/returns-rma"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ReturnsRMA />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/omnichannel"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Omnichannel />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Planning & Intelligence Routes */}
           <Route
             path="/forecasting-ai"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ForecastingAI />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/auto-po-proposals"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AutoPOProposals />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/open-to-buy"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <OpenToBuy />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/dead-stock-markdown"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <DeadStockMarkdown />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/allocation-intelligence"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AllocationIntelligence />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/next-best-actions"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <NextBestActions />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Finance Routes */}
           <Route
             path="/invoicing"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Invoicing />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/ar-ap"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <ARAP />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/taxes-vat"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <TaxesVAT />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/multi-currency-fx"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <MultiCurrencyFX />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/accounting-integrations"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AccountingIntegrations />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/audit-trail"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <AuditTrail />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           {/* Admin Routes */}
           <Route
             path="/organization-settings"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <OrganizationSettings />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/system-settings"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <SystemSettings />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/security"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <Security />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/data-exports"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <Layout>
                   <DataExports />
-                </Layout>
-              </ProtectedRoute>
+              </Layout>
             }
           />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
